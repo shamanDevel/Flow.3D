@@ -1,0 +1,45 @@
+﻿Build started 22/09/2016 10:11:17.
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Preprocessor\Preprocessor.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /I"C:\Program Files (x86)\Visual Leak Detector\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\include" /Zi /nologo /W3 /WX- /Od /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Debug\\" /Fd"x64\Debug\vc120.pdb" /Gd /TP /errorReport:prompt ..\shared\CompressVolume.cpp ..\shared\FilePool.cpp ..\shared\GPUResources.cpp ..\shared\SysTools.cpp ..\shared\TimerCPU.cpp ..\shared\TimeVolumeInfo.cpp ..\shared\TimeVolumeIO.cpp Preprocessor.cpp Statistics.cpp
+         Statistics.cpp
+         Preprocessor.cpp
+         TimeVolumeIO.cpp
+         TimeVolumeInfo.cpp
+         TimerCPU.cpp
+         SysTools.cpp
+     1>..\shared\SysTools.cpp(153): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+         GPUResources.cpp
+         FilePool.cpp
+         CompressVolume.cpp
+         Generating Code...
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\x64\Debug\Preprocessor.exe" /INCREMENTAL /NOLOGO /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v7.5\lib\x64" cudart.lib cudaCompressd.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\x64\Debug\Preprocessor.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\x64\Debug\Preprocessor.lib" /MACHINE:X64 x64\Debug\CompressVolume.obj
+         x64\Debug\FilePool.obj
+         x64\Debug\GPUResources.obj
+         x64\Debug\SysTools.obj
+         x64\Debug\TimerCPU.obj
+         x64\Debug\TimeVolumeInfo.obj
+         x64\Debug\TimeVolumeIO.obj
+         x64\Debug\Preprocessor.obj
+         x64\Debug\Statistics.obj
+         Preprocessor.vcxproj -> D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\x64\Debug\Preprocessor.exe
+       PostBuildEvent:
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\dll" "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\x64\Debug\\" *.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\dll\Debug" "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\x64\Debug\\" *.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         exit 0
+         :error
+         exit 1
+         :VCEnd
+         
+         	                   2	D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\dll\
+         
+         	                   1	D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\dll\Debug\
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Preprocessor\Preprocessor.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:09.29

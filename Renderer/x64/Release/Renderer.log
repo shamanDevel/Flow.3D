@@ -1,0 +1,229 @@
+﻿Build started 10/10/2016 11:06:58.
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" on node 2 (Build target(s)).
+     1>FxCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\fxc.exe /nologo /E"main" /T fx_5_0 /Fo "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Box.fxo" Box.fx 
+     1>FXC : warning X4717: Effects deprecated for D3DCompiler_47
+         
+         compilation object save succeeded; see D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Box.fxo
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\fxc.exe /nologo /E"main" /T fx_5_0 /Fo "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Line.fxo" /Od Line.fx 
+     1>FXC : warning X4717: Effects deprecated for D3DCompiler_47
+         
+         compilation object save succeeded; see D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Line.fxo
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\fxc.exe /nologo /E"main" /T fx_5_0 /Fo "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\ProgressBar.fxo" ProgressBar.fx 
+     1>FXC : warning X4717: Effects deprecated for D3DCompiler_47
+         
+         compilation object save succeeded; see D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\ProgressBar.fxo
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\fxc.exe /nologo /E"main" /T fx_5_0 /Fo "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Screen.fxo" Screen.fx 
+     1>FXC : warning X4717: Effects deprecated for D3DCompiler_47
+         
+         compilation object save succeeded; see D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Screen.fxo
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\fxc.exe /nologo /E"main" /T fx_5_0 /Fo "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\TransferFunctionEditor.fxo" TransferFunctionEditor\TransferFunctionEditor.fx 
+     1>FXC : warning X4717: Effects deprecated for D3DCompiler_47
+         
+         compilation object save succeeded; see D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\TransferFunctionEditor.fxo
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:9) on node 2 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Skipping CUDA source file RaycasterKernelMs2IsoCascade.cu (excluded from build).
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:11) on node 2 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Skipping CUDA source file RaycasterKernelMs3IsoCascade.cu (excluded from build).
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:12) on node 1 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Skipping CUDA source file RaycasterKernelMs3Sivr.cu (excluded from build).
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /ID:\Research\Projects\TurbulenceVisualisation\gitrepo\include /IDXUT/Core /I"C:\Program Files (x86)\Visual Leak Detector\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" /Zi /nologo /W3 /WX- /O2 /Oi /GL /D NOMINMAX /D WIN32_LEAN_AND_MEAN /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /openmp /Fo"x64\Release\\" /Fd"x64\Release\vc120.pdb" /Gd /TP /errorReport:prompt ..\shared\CompressVolume.cpp ..\shared\ConfigFile.cpp ..\shared\CSysTools.cpp ..\shared\FilePool.cpp ..\shared\GPUResources.cpp ..\shared\MultiTimerGPU.cpp ..\shared\SysTools.cpp ..\shared\TimerCPU.cpp ..\shared\TimerGPU.cpp ..\shared\TimeVolumeInfo.cpp ..\shared\TimeVolumeIO.cpp ..\shared\tinythread.cpp AdvectMode.cpp BallBuffers.cpp BatchTraceParams.cpp Box.cpp BoxEffect.cpp BoxUtils.cpp DXUT\Core\dxerr.cpp DXUT\Core\DXUT.cpp DXUT\Core\DXUTDevice11.cpp DXUT\Core\DXUTmisc.cpp Effect.cpp FilteredVolume.cpp FilteringManager.cpp FilterParams.cpp FlowGraph.cpp IntegratorKernelStreamDenseCPU.cpp LineBuffers.cpp LineEffect.cpp LineMode.cpp LineRenderMode.cpp main.cpp Measure.cpp ParticleRenderParams.cpp ProgressBarEffect.cpp ProjectionParams.cpp Range.cpp RaycastMode.cpp RaycastParams.cpp RenderingManager.cpp ScreenEffect.cpp TracingTestData.cpp TransferFunctionEditor\TransferFunctionEditor.cpp TransferFunctionEditor\TransferFunctionLine.cpp WorkerThread.cpp StereoParams.cpp TextureFilterMode.cpp TimeVolume.cpp BrickUpload.cpp ParticleTraceParams.cpp TracingBenchmark.cpp TracingManager.cpp ViewParams.cpp
+         CompressVolume.cpp
+         ConfigFile.cpp
+         CSysTools.cpp
+         FilePool.cpp
+         GPUResources.cpp
+         MultiTimerGPU.cpp
+         SysTools.cpp
+     1>..\shared\SysTools.cpp(153): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+         TimerCPU.cpp
+         TimerGPU.cpp
+         TimeVolumeInfo.cpp
+         TimeVolumeIO.cpp
+         tinythread.cpp
+         AdvectMode.cpp
+         BallBuffers.cpp
+         BatchTraceParams.cpp
+         Box.cpp
+         BoxEffect.cpp
+         BoxUtils.cpp
+         dxerr.cpp
+         DXUT.cpp
+         Compiling...
+         DXUTDevice11.cpp
+         DXUTmisc.cpp
+         Effect.cpp
+         FilteredVolume.cpp
+         FilteringManager.cpp
+         FilterParams.cpp
+         FlowGraph.cpp
+     1>FlowGraph.cpp(164): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+         IntegratorKernelStreamDenseCPU.cpp
+         LineBuffers.cpp
+         LineEffect.cpp
+         LineMode.cpp
+         LineRenderMode.cpp
+         main.cpp
+         Measure.cpp
+         ParticleRenderParams.cpp
+         ProgressBarEffect.cpp
+         ProjectionParams.cpp
+         Range.cpp
+         RaycastMode.cpp
+         RaycastParams.cpp
+         Compiling...
+         RenderingManager.cpp
+     1>RenderingManager.cpp(138): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+         ScreenEffect.cpp
+         TracingTestData.cpp
+         TransferFunctionEditor.cpp
+         TransferFunctionLine.cpp
+         WorkerThread.cpp
+         StereoParams.cpp
+         TextureFilterMode.cpp
+         TimeVolume.cpp
+         BrickUpload.cpp
+         ParticleTraceParams.cpp
+         TracingBenchmark.cpp
+         TracingManager.cpp
+         ViewParams.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\CL.exe /c /ID:\Research\Projects\TurbulenceVisualisation\gitrepo\include /IDXUT/Core /I"C:\Program Files (x86)\Visual Leak Detector\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" /Zi /nologo /W3 /WX- /O2 /Oi /GL /D NOMINMAX /D WIN32_LEAN_AND_MEAN /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /openmp /Fo"x64\Release\\" /Fd"x64\Release\vc120.pdb" /Gd /TC /errorReport:prompt stb_image.c stb_image_write.c
+         stb_image.c
+     1>stb_image.c(559): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+     1>stb_image.c(621): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+     1>stb_image.c(659): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+     1>stb_image.c(760): warning C4244: 'initializing' : conversion from '__int64' to 'int', possible loss of data
+     1>stb_image.c(773): warning C4244: 'initializing' : conversion from '__int64' to 'int', possible loss of data
+     1>stb_image.c(4552): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+         stb_image_write.c
+     1>d:\research\projects\turbulencevisualisation\gitrepo\renderer\stb_image_write.h(156): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+     1>d:\research\projects\turbulencevisualisation\gitrepo\renderer\stb_image_write.h(321): warning C4244: 'initializing' : conversion from '__int64' to 'int', possible loss of data
+     1>d:\research\projects\turbulencevisualisation\gitrepo\renderer\stb_image_write.h(495): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdio.h(211) : see declaration of 'fopen'
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Renderer.exe" /NOLOGO /LIBPATH:D:\Research\Projects\TurbulenceVisualisation\gitrepo\lib /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" d3d11.lib d3dcompiler.lib dxgi.lib cudart.lib AntTweakBar64.lib comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Effects11.lib cudaCompress.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Renderer.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Renderer.lib" /MACHINE:X64 /PROFILE x64\Release\BrickIndexGPU.cu.obj
+         x64\Release\BrickRequestsGPU.cu.obj
+         x64\Release\BrickSlot.cu.obj
+         x64\Release\ClearCudaArray.cu.obj
+         x64\Release\IntegrationParamsGPU.cu.obj
+         x64\Release\Integrator.cu.obj
+         x64\Release\IntegratorKernelPath.cu.obj
+         x64\Release\IntegratorKernelSimpleParticle.cu.obj
+         x64\Release\IntegratorKernelStream.cu.obj
+         x64\Release\IntegratorKernelStreamDense.cu.obj
+         x64\Release\LineInfoGPU.cu.obj
+         x64\Release\Measures.cu.obj
+         x64\Release\Raycaster.cu.obj
+         x64\Release\RaycasterFillMeasureBrick.cu.obj
+         x64\Release\RaycasterKernelDvr.cu.obj
+         x64\Release\RaycasterKernelDvrEe.cu.obj
+         x64\Release\RaycasterKernelIso.cu.obj
+         x64\Release\RaycasterKernelIso2Separate.cu.obj
+         x64\Release\RaycasterKernelIso2.cu.obj
+         x64\Release\VolumeFilter.cu.obj
+         x64\Release\VolumeInfoGPU.cu.obj
+         x64\Release\CompressVolume.obj
+         x64\Release\ConfigFile.obj
+         x64\Release\CSysTools.obj
+         x64\Release\FilePool.obj
+         x64\Release\GPUResources.obj
+         x64\Release\MultiTimerGPU.obj
+         x64\Release\SysTools.obj
+         x64\Release\TimerCPU.obj
+         x64\Release\TimerGPU.obj
+         x64\Release\TimeVolumeInfo.obj
+         x64\Release\TimeVolumeIO.obj
+         x64\Release\tinythread.obj
+         x64\Release\AdvectMode.obj
+         x64\Release\BallBuffers.obj
+         x64\Release\BatchTraceParams.obj
+         x64\Release\Box.obj
+         x64\Release\BoxEffect.obj
+         x64\Release\BoxUtils.obj
+         x64\Release\dxerr.obj
+         x64\Release\DXUT.obj
+         x64\Release\DXUTDevice11.obj
+         x64\Release\DXUTmisc.obj
+         x64\Release\Effect.obj
+         x64\Release\FilteredVolume.obj
+         x64\Release\FilteringManager.obj
+         x64\Release\FilterParams.obj
+         x64\Release\FlowGraph.obj
+         x64\Release\IntegratorKernelStreamDenseCPU.obj
+         x64\Release\LineBuffers.obj
+         x64\Release\LineEffect.obj
+         x64\Release\LineMode.obj
+         x64\Release\LineRenderMode.obj
+         x64\Release\main.obj
+         x64\Release\Measure.obj
+         x64\Release\ParticleRenderParams.obj
+         x64\Release\ProgressBarEffect.obj
+         x64\Release\ProjectionParams.obj
+         x64\Release\Range.obj
+         x64\Release\RaycastMode.obj
+         x64\Release\RaycastParams.obj
+         x64\Release\RenderingManager.obj
+         x64\Release\ScreenEffect.obj
+         x64\Release\TracingTestData.obj
+         x64\Release\TransferFunctionEditor.obj
+         x64\Release\TransferFunctionLine.obj
+         x64\Release\WorkerThread.obj
+         x64\Release\stb_image.obj
+         x64\Release\stb_image_write.obj
+         x64\Release\StereoParams.obj
+         x64\Release\TextureFilterMode.obj
+         x64\Release\TimeVolume.obj
+         x64\Release\BrickUpload.obj
+         x64\Release\ParticleTraceParams.obj
+         x64\Release\TracingBenchmark.obj
+         x64\Release\TracingManager.obj
+         x64\Release\ViewParams.obj
+         "x64\Release\Renderer.device-link.obj"
+         Generating code
+         Finished generating code
+         Renderer.vcxproj -> D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\Renderer.exe
+       PostBuildEvent:
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\\" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Release" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy “C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64” "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" D3DCompiler_*.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         exit 0
+         :error
+         exit 1
+         :VCEnd
+         
+         	                   4	D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\
+         
+         	                   1	D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor\
+         
+         	                   2	D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\
+         
+         	                   1	D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Release\
+         
+         	                   1	C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64\
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:34.81

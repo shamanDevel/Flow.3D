@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <PropertyPageSchema
+      Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+    <AvailableItemName
+      Include="FX_HLSL">
+      <Targets>_FX_HLSL</Targets>
+    </AvailableItemName>
+  </ItemGroup>
+  <UsingTask
+    TaskName="FX_HLSL"
+    TaskFactory="XamlTaskFactory"
+    AssemblyName="Microsoft.Build.Tasks.v4.0">
+    <Task>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml</Task>
+  </UsingTask>
+  <Target
+    Name="_FX_HLSL"
+    BeforeTargets="$(FX_HLSLBeforeTargets)"
+    AfterTargets="$(FX_HLSLAfterTargets)"
+    Condition="'@(FX_HLSL)' != ''"
+    DependsOnTargets="$(FX_HLSLDependsOn);ComputeFX_HLSLOutput"
+    Outputs="@(FX_HLSL-&gt;Metadata('Outputs')-&gt;Distinct())"
+    Inputs="@(FX_HLSL);%(FX_HLSL.AdditionalDependencies);$(MSBuildProjectFile)">
+    <ItemGroup
+      Condition="'@(SelectedFiles)' != ''">
+      <FX_HLSL
+        Remove="@(FX_HLSL)"
+        Condition="'%(Identity)' != '@(SelectedFiles)'" />
+    </ItemGroup>
+    <ItemGroup>
+      <FX_HLSL_tlog
+        Include="%(FX_HLSL.Outputs)"
+        Condition="'%(FX_HLSL.Outputs)' != '' and '%(FX_HLSL.ExcludedFromBuild)' != 'true'">
+        <Source>@(FX_HLSL, '|')</Source>
+      </FX_HLSL_tlog>
+    </ItemGroup>
+    <Message
+      Importance="High"
+      Text="%(FX_HLSL.ExecutionDescription)" />
+    <WriteLinesToFile
+      Condition="'@(FX_HLSL_tlog)' != '' and '%(FX_HLSL_tlog.ExcludedFromBuild)' != 'true'"
+      File="$(IntDir)$(ProjectName).write.1.tlog"
+      Lines="^%(FX_HLSL_tlog.Source);@(FX_HLSL_tlog-&gt;'%(Fullpath)')" />
+    <FX_HLSL
+      Condition="'@(FX_HLSL)' != '' and '%(FX_HLSL.ExcludedFromBuild)' != 'true'"
+      CommandLineTemplate="%(FX_HLSL.CommandLineTemplate)"
+      DisplayVerboseInclude="%(FX_HLSL.DisplayVerboseInclude)"
+      DisableOptimizations="%(FX_HLSL.DisableOptimizations)"
+      DisablePreshaders="%(FX_HLSL.DisablePreshaders)"
+      WarningAsErrors="%(FX_HLSL.WarningAsErrors)"
+      DisableValidation="%(FX_HLSL.DisableValidation)"
+      EnableDebugInfo="%(FX_HLSL.EnableDebugInfo)"
+      PackMatricesRow="%(FX_HLSL.PackMatricesRow)"
+      PackMatricesColumn="%(FX_HLSL.PackMatricesColumn)"
+      ForcePartialPrecision="%(FX_HLSL.ForcePartialPrecision)"
+      AvoidFlowControlConstructs="%(FX_HLSL.AvoidFlowControlConstructs)"
+      PreferFlowControlConstructs="%(FX_HLSL.PreferFlowControlConstructs)"
+      DisablePerfMode="%(FX_HLSL.DisablePerfMode)"
+      EnableStrictMode="%(FX_HLSL.EnableStrictMode)"
+      EnableBackwardsCompatibilityMode="%(FX_HLSL.EnableBackwardsCompatibilityMode)"
+      ForceIEEEStrictness="%(FX_HLSL.ForceIEEEStrictness)"
+      CompileChildFx4="%(FX_HLSL.CompileChildFx4)"
+      EntryPointName="%(FX_HLSL.EntryPointName)"
+      IncludePaths="%(FX_HLSL.IncludePaths)"
+      ObjectFileName="%(FX_HLSL.ObjectFileName)"
+      AssemblyFileName="%(FX_HLSL.AssemblyFileName)"
+      PreprocessorDefinitions="%(FX_HLSL.PreprocessorDefinitions)"
+      PreprocessToFile="%(FX_HLSL.PreprocessToFile)"
+      TargetProfile="%(FX_HLSL.TargetProfile)"
+      OptimizationLevel="%(FX_HLSL.OptimizationLevel)"
+      AdditionalOptions="%(FX_HLSL.AdditionalOptions)"
+      Inputs="@(FX_HLSL)" />
+  </Target>
+  <PropertyGroup>
+    <ComputeLinkInputsTargets>
+            $(ComputeLinkInputsTargets);
+            ComputeFX_HLSLOutput;
+          </ComputeLinkInputsTargets>
+    <ComputeLibInputsTargets>
+            $(ComputeLibInputsTargets);
+            ComputeFX_HLSLOutput;
+          </ComputeLibInputsTargets>
+  </PropertyGroup>
+  <Target
+    Name="ComputeFX_HLSLOutput"
+    Condition="'@(FX_HLSL)' != ''">
+    <ItemGroup>
+      <FX_HLSLDirsToMake
+        Condition="'@(FX_HLSL)' != '' and '%(FX_HLSL.ExcludedFromBuild)' != 'true'"
+        Include="%(FX_HLSL.Outputs)" />
+      <Link
+        Include="%(FX_HLSLDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <Lib
+        Include="%(FX_HLSLDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <ImpLib
+        Include="%(FX_HLSLDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+    </ItemGroup>
+    <MakeDir
+      Directories="@(FX_HLSLDirsToMake-&gt;'%(RootDir)%(Directory)')" />
+  </Target>
+</Project>

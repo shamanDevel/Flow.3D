@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(FX_HLSLBeforeTargets)' == '' and '$(FX_HLSLAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <FX_HLSLBeforeTargets>Midl</FX_HLSLBeforeTargets>
+    <FX_HLSLAfterTargets>CustomBuild</FX_HLSLAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <FX_HLSLDependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(FX_HLSLDependsOn)</FX_HLSLDependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <FX_HLSL>
+      <DisplayVerboseInclude>False</DisplayVerboseInclude>
+      <DisableOptimizations>False</DisableOptimizations>
+      <DisablePreshaders>False</DisablePreshaders>
+      <WarningAsErrors>False</WarningAsErrors>
+      <DisableValidation>False</DisableValidation>
+      <EnableDebugInfo>False</EnableDebugInfo>
+      <PackMatricesRow>False</PackMatricesRow>
+      <PackMatricesColumn>False</PackMatricesColumn>
+      <ForcePartialPrecision>False</ForcePartialPrecision>
+      <AvoidFlowControlConstructs>False</AvoidFlowControlConstructs>
+      <PreferFlowControlConstructs>False</PreferFlowControlConstructs>
+      <DisablePerfMode>False</DisablePerfMode>
+      <EnableStrictMode>False</EnableStrictMode>
+      <EnableBackwardsCompatibilityMode>False</EnableBackwardsCompatibilityMode>
+      <ForceIEEEStrictness>False</ForceIEEEStrictness>
+      <CompileChildFx4>False</CompileChildFx4>
+      <ObjectFileName>$(OutDir)%(Filename).fxo</ObjectFileName>
+      <AssemblyFileName>$(OutDir)%(Filename).fxc</AssemblyFileName>
+      <TargetProfile>5</TargetProfile>
+      <OptimizationLevel>1</OptimizationLevel>
+      <CommandLineTemplate>"C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Utilities\bin\x64\fxc" [AllOptions] [AdditionalOptions] "%(FullPath)"</CommandLineTemplate>
+      <Outputs>%(ObjectFileName);%(AssemblyFileName)</Outputs>
+      <ExecutionDescription>Compiles .fx scripts (generate .fxo object output)</ExecutionDescription>
+      <AdditionalDependencies></AdditionalDependencies>
+    </FX_HLSL>
+  </ItemDefinitionGroup>
+</Project>

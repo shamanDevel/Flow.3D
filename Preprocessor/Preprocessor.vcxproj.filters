@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\include\global.h" />
+    <ClInclude Include="..\include\SysTools.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="..\include\TimeVolumeIO.h" />
+    <ClInclude Include="..\include\Utils.h" />
+    <ClInclude Include="Statistics.h" />
+    <ClInclude Include="..\include\Vec.h" />
+    <ClInclude Include="..\include\TimeVolumeInfo.h" />
+    <ClInclude Include="..\include\FilePool.h" />
+    <ClInclude Include="..\include\LargeArray3D.h" />
+    <ClInclude Include="..\include\TimerCPU.h" />
+    <ClInclude Include="..\include\MemUtils.h" />
+    <ClInclude Include="..\include\cudaCompress\BitStream.h">
+      <Filter>cudaCompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\Encode.h">
+      <Filter>cudaCompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\EncodeCommon.h">
+      <Filter>cudaCompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\global.h">
+      <Filter>cudaCompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\Init.h">
+      <Filter>cudaCompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\Timing.h">
+      <Filter>cudaCompress</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\util\Bits.h">
+      <Filter>cudaCompress\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\util\CudaTimer.h">
+      <Filter>cudaCompress\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\util\DWT.h">
+      <Filter>cudaCompress\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\util\Quantize.h">
+      <Filter>cudaCompress\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cudaCompress\util\YCoCg.h">
+      <Filter>cudaCompress\util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\CompressVolume.h" />
+    <ClInclude Include="..\include\GPUResources.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
+    <ClCompile Include="Preprocessor.cpp" />
+    <ClCompile Include="..\shared\SysTools.cpp" />
+    <ClCompile Include="Statistics.cpp" />
+    <ClCompile Include="..\shared\TimeVolumeInfo.cpp" />
+    <ClCompile Include="..\shared\FilePool.cpp" />
+    <ClCompile Include="..\shared\TimerCPU.cpp" />
+    <ClCompile Include="..\shared\CompressVolume.cpp" />
+    <ClCompile Include="..\shared\GPUResources.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="cudaCompress">
+      <UniqueIdentifier>{303003ea-4d10-44c0-89d8-0b03526c0287}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cudaCompress\util">
+      <UniqueIdentifier>{3461c7aa-8ade-4ecf-91e1-cbba8a07fa87}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

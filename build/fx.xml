@@ -1,0 +1,470 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions xmlns="clr-namespace:Microsoft.Build.Framework.XamlTypes;assembly=Microsoft.Build.Framework" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib" xmlns:transformCallback="Microsoft.Cpp.Dev10.ConvertPropertyCallback">
+  <Rule
+    Name="FX_HLSL"
+    PageTemplate="tool"
+    DisplayName=".fx HLSL Compiler"
+    Order="200">
+    <Rule.DataSource>
+      <DataSource
+        Persistence="ProjectFile"
+        ItemType="FX_HLSL" />
+    </Rule.DataSource>
+    <Rule.Categories>
+      <Category
+        Name="General">
+        <Category.DisplayName>
+          <sys:String>General</sys:String>
+        </Category.DisplayName>
+      </Category>
+      <Category
+        Name="Command Line"
+        Subtype="CommandLine">
+        <Category.DisplayName>
+          <sys:String>Command Line</sys:String>
+        </Category.DisplayName>
+      </Category>
+    </Rule.Categories>
+    <StringListProperty
+      Name="Inputs"
+      Category="Command Line"
+      IsRequired="true"
+      Switch=" ;">
+      <StringListProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType="FX_HLSL"
+          SourceType="Item" />
+      </StringListProperty.DataSource>
+    </StringListProperty>
+    <BoolProperty
+      Name="DisplayVerboseInclude"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Display details about the include process"
+      Description="Display details about the include process(/Vi)"
+      Switch="/Vi" />
+    <BoolProperty
+      Name="DisableOptimizations"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Disable Optimizations"
+      Description="Disable Optimizations (/Od)"
+      Switch="/Od" />
+    <BoolProperty
+      Name="DisablePreshaders"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Disable PreShaders"
+      Description="Disable PreShaders(/Op)"
+      Switch="/Op" />
+    <BoolProperty
+      Name="WarningAsErrors"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Treat warnings as errors"
+      Description="Treat warnings as errors (/WX)"
+      Switch="/WX" />
+    <BoolProperty
+      Name="DisableValidation"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Disable Validation"
+      Description="Disable Validation (/Vd)"
+      Switch="/Vd" />
+    <BoolProperty
+      Name="EnableDebugInfo"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Enable debugging information"
+      Description="Enable debugging information (/Zi)"
+      Switch="/Zi" />
+    <BoolProperty
+      Name="PackMatricesRow"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Pack matrices in row-major order"
+      Description="Pack matrices in row-major order (/Zpr)"
+      Switch="/Zpr" />
+    <BoolProperty
+      Name="PackMatricesColumn"
+      Category="Optimizations"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Pack matrices in column-major order"
+      Description="Pack matrices in column-major order (/Zpc)"
+      Switch="/Zpc" />
+    <BoolProperty
+      Name="ForcePartialPrecision"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Force partial precision"
+      Description="Force partial precision (/Gpp)"
+      Switch="/Gpp" />
+    <BoolProperty
+      Name="AvoidFlowControlConstructs"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Avoid flow control constructs"
+      Description="Avoid flow control constructs (/Gfa)"
+      Switch="/Gfa" />
+    <BoolProperty
+      Name="PreferFlowControlConstructs"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Prefer flow control constructs"
+      Description="Prefer flow control constructs (/Gfp)"
+      Switch="/Gfp" />
+    <BoolProperty
+      Name="DisablePerfMode"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Disable effect performance mode"
+      Description="Disable effect performance mode (/Gdp)"
+      Switch="/Gdp" />
+    <BoolProperty
+      Name="EnableStrictMode"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Enable strict mode"
+      Description="Enable strict mode (/Ges)"
+      Switch="/Ges" />
+    <BoolProperty
+      Name="EnableBackwardsCompatibilityMode"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Enable backwards compatibility mode"
+      Description="Enable backwards compatibility mode (/Gec)"
+      Switch="/Gec" />
+    <BoolProperty
+      Name="ForceIEEEStrictness"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Force IEEE strictness"
+      Description="Force IEEE strictness (/Gis)"
+      Switch="/Gis" />
+    <BoolProperty
+      Name="CompileChildFx4"
+      Category="Optimization Advanced"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Compile as a child effect for FX 4.x targets"
+      Description="Compile as a child effect for FX 4.x targets (/Gch)"
+      Switch="/Gch" />
+    <StringProperty
+      Name="EntryPointName"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Entrypoint name"
+      Description="Set the entrypoint for this fx file. Entry point must be specified if you are not using a fx_* profile (/E [name])"
+      Switch="/E [value]" />
+    <StringListProperty
+      Name="IncludePaths"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Include Paths"
+      Description="Sets additional include path. (/I [path])"
+      Separator=";"
+      Switch="/I &quot;[value]&quot;" />
+    <StringProperty
+      Name="ObjectFileName"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Object File Name"
+      Description="Specifies the name of the output object file.     (/Fo [file])"
+      Switch="/Fo&quot;[value]&quot;" />
+    <StringProperty
+      Name="AssemblyFileName"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Assembly File Name"
+      Description="Specifies the name of the output assembly file.     (/Fc [file])"
+      Switch="/Fc&quot;[value]&quot;" />
+    <StringListProperty
+      Name="PreprocessorDefinitions"
+      Category="Preprocessor"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Preprocessor Definitions"
+      Description="Defines a text macro with the given name. (/D [id]=[text])"
+      Separator=";"
+      Switch="/D [value]" />
+    <StringProperty
+      Name="PreprocessToFile"
+      Category="Preprocessor"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Preprocess to file"
+      Description="Preprocess to file (must be used alone). (/P [file])"
+      Switch="/P &quot;[value]&quot;" />
+    <EnumProperty
+      Name="TargetProfile"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Target Profile"
+      Description="Set the target profile (fx_2_0 ...)">
+      <EnumValue
+        Name="0"
+        DisplayName="cs_4_0"
+        Switch="/T cs_4_0" />
+      <EnumValue
+        Name="1"
+        DisplayName="cs_4_1"
+        Switch="/T cs_4_1" />
+      <EnumValue
+        Name="2"
+        DisplayName="cs_5_0"
+        Switch="/T cs_5_0" />
+      <EnumValue
+        Name="3"
+        DisplayName="ds_5_0"
+        Switch="/T ds_5_0" />
+      <EnumValue
+        Name="4"
+        DisplayName="fx_2_0"
+        Switch="/T fx_2_0" />
+      <EnumValue
+        Name="5"
+        DisplayName="fx_4_0"
+        Switch="/T fx_4_0" />
+      <EnumValue
+        Name="6"
+        DisplayName="fx_4_1"
+        Switch="/T fx_4_1" />
+      <EnumValue
+        Name="7"
+        DisplayName="fx_5_0"
+        Switch="/T fx_5_0" />
+      <EnumValue
+        Name="8"
+        DisplayName="gs_4_0"
+        Switch="/T gs_4_0" />
+      <EnumValue
+        Name="9"
+        DisplayName="gs_4_1"
+        Switch="/T gs_4_1" />
+      <EnumValue
+        Name="10"
+        DisplayName="gs_5_0"
+        Switch="/T gs_5_0" />
+      <EnumValue
+        Name="11"
+        DisplayName="hs_5_0"
+        Switch="/T hs_5_0" />
+      <EnumValue
+        Name="12"
+        DisplayName="ps_2_0"
+        Switch="/T ps_2_0" />
+      <EnumValue
+        Name="13"
+        DisplayName="ps_2_a"
+        Switch="/T ps_2_a" />
+      <EnumValue
+        Name="14"
+        DisplayName="ps_2_b"
+        Switch="/T ps_2_b" />
+      <EnumValue
+        Name="15"
+        DisplayName="ps_2_sw"
+        Switch="/T ps_2_sw" />
+      <EnumValue
+        Name="16"
+        DisplayName="ps_3_0"
+        Switch="/T ps_3_0" />
+      <EnumValue
+        Name="17"
+        DisplayName="ps_3_sw"
+        Switch="/T ps_3_sw" />
+      <EnumValue
+        Name="18"
+        DisplayName="ps_4_0"
+        Switch="/T ps_4_0" />
+      <EnumValue
+        Name="19"
+        DisplayName="ps_4_0_level_9_1"
+        Switch="/T ps_4_0_level_9_1" />
+      <EnumValue
+        Name="20"
+        DisplayName="ps_4_0_level_9_3"
+        Switch="/T ps_4_0_level_9_3" />
+      <EnumValue
+        Name="21"
+        DisplayName="ps_4_1"
+        Switch="/T ps_4_1" />
+      <EnumValue
+        Name="22"
+        DisplayName="ps_5_0"
+        Switch="/T ps_5_0" />
+      <EnumValue
+        Name="23"
+        DisplayName="tx_1_0"
+        Switch="/T tx_1_0" />
+      <EnumValue
+        Name="24"
+        DisplayName="vs_1_1"
+        Switch="/T vs_1_1" />
+      <EnumValue
+        Name="25"
+        DisplayName="vs_2_0"
+        Switch="/T vs_2_0" />
+      <EnumValue
+        Name="26"
+        DisplayName="vs_2_a"
+        Switch="/T vs_2_a" />
+      <EnumValue
+        Name="27"
+        DisplayName="vs_2_sw"
+        Switch="/T vs_2_sw" />
+      <EnumValue
+        Name="28"
+        DisplayName="vs_3_0"
+        Switch="/T vs_3_0" />
+      <EnumValue
+        Name="29"
+        DisplayName="vs_3_sw"
+        Switch="/T vs_3_sw" />
+      <EnumValue
+        Name="30"
+        DisplayName="vs_4_0"
+        Switch="/T vs_4_0" />
+      <EnumValue
+        Name="31"
+        DisplayName="vs_4_0_level_9_1"
+        Switch="/T vs_4_0_level_9_1" />
+      <EnumValue
+        Name="32"
+        DisplayName="vs_4_0_level_9_3"
+        Switch="/T vs_4_0_level_9_3" />
+      <EnumValue
+        Name="33"
+        DisplayName="vs_4_1"
+        Switch="/T vs_4_1" />
+      <EnumValue
+        Name="34"
+        DisplayName="vs_5_0"
+        Switch="/T vs_5_0" />
+    </EnumProperty>
+    <EnumProperty
+      Name="OptimizationLevel"
+      HelpContext="0"
+      HelpUrl="http://msdn.microsoft.com/en-us/library/ee418538%28VS.85%29.aspx"
+      DisplayName="Optimization Level"
+      Description="Specifies the optimization level (0..3, 1 is default)">
+      <EnumValue
+        Name="0"
+        DisplayName="Level 0"
+        Switch="/O0" />
+      <EnumValue
+        Name="1"
+        DisplayName="Default - Level 1"
+        Switch="/O1" />
+      <EnumValue
+        Name="2"
+        DisplayName="Level 2"
+        Switch="/O2" />
+      <EnumValue
+        Name="3"
+        DisplayName="Level 3"
+        Switch="/O3" />
+    </EnumProperty>
+    <StringProperty
+      Name="CommandLineTemplate"
+      DisplayName="Command Line"
+      Visible="False"
+      IncludeInCommandLine="False" />
+    <DynamicEnumProperty
+      Name="FX_HLSLBeforeTargets"
+      Category="General"
+      EnumProvider="Targets"
+      IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute Before</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run before.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^FX_HLSLBeforeTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+    <DynamicEnumProperty
+      Name="FX_HLSLAfterTargets"
+      Category="General"
+      EnumProvider="Targets"
+      IncludeInCommandLine="False">
+      <DynamicEnumProperty.DisplayName>
+        <sys:String>Execute After</sys:String>
+      </DynamicEnumProperty.DisplayName>
+      <DynamicEnumProperty.Description>
+        <sys:String>Specifies the targets for the build customization to run after.</sys:String>
+      </DynamicEnumProperty.Description>
+      <DynamicEnumProperty.ProviderSettings>
+        <NameValuePair
+          Name="Exclude"
+          Value="^FX_HLSLAfterTargets|^Compute" />
+      </DynamicEnumProperty.ProviderSettings>
+      <DynamicEnumProperty.DataSource>
+        <DataSource
+          Persistence="ProjectFile"
+          ItemType=""
+          HasConfigurationCondition="true" />
+      </DynamicEnumProperty.DataSource>
+    </DynamicEnumProperty>
+    <StringListProperty
+      Name="Outputs"
+      DisplayName="Outputs"
+      Visible="False"
+      IncludeInCommandLine="False" />
+    <StringProperty
+      Name="ExecutionDescription"
+      DisplayName="Execution Description"
+      Visible="False"
+      IncludeInCommandLine="False" />
+    <StringListProperty
+      Name="AdditionalDependencies"
+      DisplayName="Additional Dependencies"
+      IncludeInCommandLine="False"
+      Visible="false" />
+    <StringProperty
+      Subtype="AdditionalOptions"
+      Name="AdditionalOptions"
+      Category="Command Line">
+      <StringProperty.DisplayName>
+        <sys:String>Additional Options</sys:String>
+      </StringProperty.DisplayName>
+      <StringProperty.Description>
+        <sys:String>Additional Options</sys:String>
+      </StringProperty.Description>
+    </StringProperty>
+  </Rule>
+  <ItemType
+    Name="FX_HLSL"
+    DisplayName=".fx HLSL Compiler" />
+  <FileExtension
+    Name="*.fx; *.fxh; *.fxi"
+    ContentType="FX_HLSL" />
+  <ContentType
+    Name="FX_HLSL"
+    DisplayName=".fx HLSL Compiler"
+    ItemType="FX_HLSL" />
+</ProjectSchemaDefinitions>
