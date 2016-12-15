@@ -1,0 +1,10 @@
+*.suo
+*.ncb
+*.user
+*.ccscc
+*.cache
+
+*/Debug/*
+*/Release/*
+
+Thumbs.db
