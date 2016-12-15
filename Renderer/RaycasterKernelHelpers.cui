@@ -27,13 +27,13 @@ __device__ inline float3 binarySearch(texture<float4, cudaTextureType3D, cudaRea
 	return texCoordMiddle;
 }
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C>
+template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
 __device__ inline float3 binarySearch(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 texCoordOutside, float3 texCoordInside, float h, float iso, float measureScale)
 {
 	float3 texCoordMiddle = 0.5f * (texCoordOutside + texCoordInside);
 	for(uint k = 0; k < BIN_SEARCH_STEPS; k++) 
 	{
-		float v = getMeasure<fromJac,F,C>(measure, tex, texCoordMiddle, h, measureScale);
+		float v = getMeasure<source,F,C>(measure, tex, texCoordMiddle, h, measureScale);
 		if (v >= iso)
 			texCoordInside = texCoordMiddle;
 		else
@@ -61,14 +61,14 @@ __device__ inline float3 getGradient(texture<float4, cudaTextureType3D, cudaRead
 	return normalize(grad);
 }
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C>
+template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
 __device__ inline float3 getGradient(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, float h)
 {
 	const float off = 1.0f;
 	float3 grad;
-	grad.x = getMeasure<fromJac,F,C>(measure, tex, make_float3(pos.x+off, pos.y, pos.z), h, 1.0f) - getMeasure<fromJac,F,C>(measure, tex, make_float3(pos.x-off, pos.y, pos.z), h, 1.0f);
-	grad.y = getMeasure<fromJac,F,C>(measure, tex, make_float3(pos.x, pos.y+off, pos.z), h, 1.0f) - getMeasure<fromJac,F,C>(measure, tex, make_float3(pos.x, pos.y-off, pos.z), h, 1.0f);
-	grad.z = getMeasure<fromJac,F,C>(measure, tex, make_float3(pos.x, pos.y, pos.z+off), h, 1.0f) - getMeasure<fromJac,F,C>(measure, tex, make_float3(pos.x, pos.y, pos.z-off), h, 1.0f);
+	grad.x = getMeasure<source,F,C>(measure, tex, make_float3(pos.x+off, pos.y, pos.z), h, 1.0f) - getMeasure<source,F,C>(measure, tex, make_float3(pos.x-off, pos.y, pos.z), h, 1.0f);
+	grad.y = getMeasure<source,F,C>(measure, tex, make_float3(pos.x, pos.y+off, pos.z), h, 1.0f) - getMeasure<source,F,C>(measure, tex, make_float3(pos.x, pos.y-off, pos.z), h, 1.0f);
+	grad.z = getMeasure<source,F,C>(measure, tex, make_float3(pos.x, pos.y, pos.z+off), h, 1.0f) - getMeasure<source,F,C>(measure, tex, make_float3(pos.x, pos.y, pos.z-off), h, 1.0f);
 	return normalize(grad);
 }
 
@@ -228,17 +228,17 @@ __device__ inline float4 getColor(texture<float4, cudaTextureType3D, cudaReadMod
 }
 
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
+template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
 struct getColor_Impl2
 {
 	__device__ static inline float4 exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, float h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 	{
 		// same default code for all "normal" scalar measures
-		float val = getMeasure<fromJac,F,C>(measure, tex, pos, h, measureScale);
+		float val = getMeasure<source,F,C>(measure, tex, pos, h, measureScale);
 		float4 color = evaluateTf(val, transferOffset, transferScale, tfAlphaScale);
 		if(lighting)
 		{
-			float3 gradient = getGradient<fromJac,F,C>(measure, tex, pos, h);
+			float3 gradient = getGradient<source,F,C>(measure, tex, pos, h);
 			float nDotV = dot(dir, gradient);
 			computeLighting(color, nDotV);
 		}
@@ -247,10 +247,10 @@ struct getColor_Impl2
 	}
 };
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
 __device__ inline float4 getColor(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, float h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 {
-    return getColor_Impl2<fromJac,F,C,lighting>::exec(measure, tex, pos, dir, h, stepFactor, transferOffset, transferScale, tfAlphaScale, measureScale);
+    return getColor_Impl2<measureSource,F,C,lighting>::exec(measure, tex, pos, dir, h, stepFactor, transferOffset, transferScale, tfAlphaScale, measureScale);
 }
 
 

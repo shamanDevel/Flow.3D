@@ -4210,94 +4210,106 @@ HRESULT DXUTSnapDeviceSettingsToEnumDevice( DXUTDeviceSettings* pDeviceSettings,
     {
         pDeviceSettings->d3d11.sd.Windowed = 1;
     }   
-    int bestModeIndex=0;
-    int bestMSAAIndex=0;
+    //int bestModeIndex=0;
+    //int bestMSAAIndex=0;
 
-    //DXUTSetDefaultDeviceSettings
-    CD3D11Enumeration *pEnum = DXUTGetD3D11Enumeration( forceEnum, false, forceFL);
+    ////DXUTSetDefaultDeviceSettings
+    //CD3D11Enumeration *pEnum = DXUTGetD3D11Enumeration( forceEnum, false, forceFL);
 
-    CD3D11EnumAdapterInfo* pAdapterInfo = nullptr; 
-    auto pAdapterList = pEnum->GetAdapterInfoList();
-    for( auto it = pAdapterList->cbegin(); it != pAdapterList->cend(); ++it )
-    {
-        auto tempAdapterInfo = *it;
-        if (tempAdapterInfo->AdapterOrdinal == pDeviceSettings->d3d11.AdapterOrdinal) pAdapterInfo = tempAdapterInfo;
-    }
-    if ( !pAdapterInfo )
-        return E_FAIL; // no adapters found.
-    CD3D11EnumDeviceSettingsCombo* pDeviceSettingsCombo = nullptr;
-    float biggestScore = 0;
+    //CD3D11EnumAdapterInfo* pAdapterInfo = nullptr; 
+    //auto pAdapterList = pEnum->GetAdapterInfoList();
+    //for( auto it = pAdapterList->cbegin(); it != pAdapterList->cend(); ++it )
+    //{
+    //    auto tempAdapterInfo = *it;
+    //    if (tempAdapterInfo->AdapterOrdinal == pDeviceSettings->d3d11.AdapterOrdinal) pAdapterInfo = tempAdapterInfo;
+    //}
+    //if ( !pAdapterInfo )
+    //    return E_FAIL; // no adapters found.
+    //CD3D11EnumDeviceSettingsCombo* pDeviceSettingsCombo = nullptr;
+    //float biggestScore = 0;
 
-    for( size_t iDeviceCombo = 0; iDeviceCombo < pAdapterInfo->deviceSettingsComboList.size(); iDeviceCombo++ )
-    {
-        CD3D11EnumDeviceSettingsCombo* tempDeviceSettingsCombo = pAdapterInfo->deviceSettingsComboList[ iDeviceCombo ];
-    
-        DXGI_MODE_DESC adapterDisplayMode;
-        DXUTGetD3D11AdapterDisplayMode( pAdapterInfo->AdapterOrdinal, 0, &adapterDisplayMode );
+    //for( size_t iDeviceCombo = 0; iDeviceCombo < pAdapterInfo->deviceSettingsComboList.size(); iDeviceCombo++ )
+    //{
+    //    CD3D11EnumDeviceSettingsCombo* tempDeviceSettingsCombo = pAdapterInfo->deviceSettingsComboList[ iDeviceCombo ];
+    //
+    //    DXGI_MODE_DESC adapterDisplayMode;
+    //    DXUTGetD3D11AdapterDisplayMode( pAdapterInfo->AdapterOrdinal, 0, &adapterDisplayMode );
 
-        int bestMode;
-        int bestMSAA;
-        float score = DXUTRankD3D11DeviceCombo(tempDeviceSettingsCombo, &(pDeviceSettings->d3d11), bestMode, bestMSAA );
-        if (score > biggestScore)
-        {
-            biggestScore = score;
-            pDeviceSettingsCombo = tempDeviceSettingsCombo;
-            bestModeIndex = bestMode;
-            bestMSAAIndex = bestMSAA;
-        }
-    }
-    if (!pDeviceSettingsCombo )
-    {
-        return E_FAIL; // no settings found.
-    }
+    //    int bestMode;
+    //    int bestMSAA;
+    //    float score = DXUTRankD3D11DeviceCombo(tempDeviceSettingsCombo, &(pDeviceSettings->d3d11), bestMode, bestMSAA );
+    //    if (score > biggestScore)
+    //    {
+    //        biggestScore = score;
+    //        pDeviceSettingsCombo = tempDeviceSettingsCombo;
+    //        bestModeIndex = bestMode;
+    //        bestMSAAIndex = bestMSAA;
+    //    }
+    //}
+    //if (!pDeviceSettingsCombo )
+    //{
+    //    return E_FAIL; // no settings found.
+    //}
 
-    pDeviceSettings->d3d11.AdapterOrdinal = pDeviceSettingsCombo->AdapterOrdinal;
-    pDeviceSettings->d3d11.DriverType = pDeviceSettingsCombo->DeviceType;
-    pDeviceSettings->d3d11.Output = pDeviceSettingsCombo->Output;
-    
-    pDeviceSettings->d3d11.sd.Windowed = pDeviceSettingsCombo->Windowed;
-    if( GetSystemMetrics(SM_REMOTESESSION) != 0 )
-    {
-        pDeviceSettings->d3d11.sd.Windowed = 1;
-    }   
-    if (pDeviceSettingsCombo->pOutputInfo)
-    {
-        DXGI_MODE_DESC bestDisplayMode;
-        bestDisplayMode = pDeviceSettingsCombo->pOutputInfo->displayModeList[ bestModeIndex ];
-        if (!pDeviceSettingsCombo->Windowed)
-        {
-            pDeviceSettings->d3d11.sd.BufferDesc.Height = bestDisplayMode.Height;
-            pDeviceSettings->d3d11.sd.BufferDesc.Width = bestDisplayMode.Width;
-            pDeviceSettings->d3d11.sd.BufferDesc.RefreshRate.Numerator = bestDisplayMode.RefreshRate.Numerator;
-            pDeviceSettings->d3d11.sd.BufferDesc.RefreshRate.Denominator = bestDisplayMode.RefreshRate.Denominator;
-            pDeviceSettings->d3d11.sd.BufferDesc.Scaling = bestDisplayMode.Scaling;
-            pDeviceSettings->d3d11.sd.BufferDesc.ScanlineOrdering = bestDisplayMode.ScanlineOrdering;
-        }
-    }
-    if (pDeviceSettings->d3d11.DeviceFeatureLevel == 0)
-        pDeviceSettings->d3d11.DeviceFeatureLevel = pDeviceSettingsCombo->pDeviceInfo->SelectedLevel;
+    //pDeviceSettings->d3d11.AdapterOrdinal = pDeviceSettingsCombo->AdapterOrdinal;
+    //pDeviceSettings->d3d11.DriverType = pDeviceSettingsCombo->DeviceType;
+    //pDeviceSettings->d3d11.Output = pDeviceSettingsCombo->Output;
+    //
+    //pDeviceSettings->d3d11.sd.Windowed = pDeviceSettingsCombo->Windowed;
+    //if( GetSystemMetrics(SM_REMOTESESSION) != 0 )
+    //{
+    //    pDeviceSettings->d3d11.sd.Windowed = 1;
+    //}   
+    //if (pDeviceSettingsCombo->pOutputInfo)
+    //{
+    //    DXGI_MODE_DESC bestDisplayMode;
+    //    bestDisplayMode = pDeviceSettingsCombo->pOutputInfo->displayModeList[ bestModeIndex ];
+    //    if (!pDeviceSettingsCombo->Windowed)
+    //    {
+    //        pDeviceSettings->d3d11.sd.BufferDesc.Height = bestDisplayMode.Height;
+    //        pDeviceSettings->d3d11.sd.BufferDesc.Width = bestDisplayMode.Width;
+    //        pDeviceSettings->d3d11.sd.BufferDesc.RefreshRate.Numerator = bestDisplayMode.RefreshRate.Numerator;
+    //        pDeviceSettings->d3d11.sd.BufferDesc.RefreshRate.Denominator = bestDisplayMode.RefreshRate.Denominator;
+    //        pDeviceSettings->d3d11.sd.BufferDesc.Scaling = bestDisplayMode.Scaling;
+    //        pDeviceSettings->d3d11.sd.BufferDesc.ScanlineOrdering = bestDisplayMode.ScanlineOrdering;
+    //    }
+    //}
+    //if (pDeviceSettings->d3d11.DeviceFeatureLevel == 0)
+    //    pDeviceSettings->d3d11.DeviceFeatureLevel = pDeviceSettingsCombo->pDeviceInfo->SelectedLevel;
 
-    if ( pDeviceSettings->d3d11.DriverType == D3D_DRIVER_TYPE_WARP )
-    {
-        D3D_FEATURE_LEVEL maxWarpFL = pEnum->GetWARPFeaturevel();
+    //if ( pDeviceSettings->d3d11.DriverType == D3D_DRIVER_TYPE_WARP )
+    //{
+    //    D3D_FEATURE_LEVEL maxWarpFL = pEnum->GetWARPFeaturevel();
 
-        if ( pDeviceSettings->d3d11.DeviceFeatureLevel > maxWarpFL )
-            pDeviceSettings->d3d11.DeviceFeatureLevel = maxWarpFL;
-    }
+    //    if ( pDeviceSettings->d3d11.DeviceFeatureLevel > maxWarpFL )
+    //        pDeviceSettings->d3d11.DeviceFeatureLevel = maxWarpFL;
+    //}
 
-    if ( pDeviceSettings->d3d11.DriverType == D3D_DRIVER_TYPE_REFERENCE )
-    {
-        D3D_FEATURE_LEVEL maxRefFL = pEnum->GetREFFeaturevel();
+    //if ( pDeviceSettings->d3d11.DriverType == D3D_DRIVER_TYPE_REFERENCE )
+    //{
+    //    D3D_FEATURE_LEVEL maxRefFL = pEnum->GetREFFeaturevel();
 
-        if ( pDeviceSettings->d3d11.DeviceFeatureLevel > maxRefFL )
-            pDeviceSettings->d3d11.DeviceFeatureLevel = maxRefFL;
-    }
+    //    if ( pDeviceSettings->d3d11.DeviceFeatureLevel > maxRefFL )
+    //        pDeviceSettings->d3d11.DeviceFeatureLevel = maxRefFL;
+    //}
 
-    pDeviceSettings->d3d11.sd.SampleDesc.Count = pDeviceSettingsCombo->multiSampleCountList[ bestMSAAIndex ];
-    if (pDeviceSettings->d3d11.sd.SampleDesc.Quality > pDeviceSettingsCombo->multiSampleQualityList[ bestMSAAIndex ] - 1)
-        pDeviceSettings->d3d11.sd.SampleDesc.Quality = pDeviceSettingsCombo->multiSampleQualityList[ bestMSAAIndex ] - 1;
-        
-    pDeviceSettings->d3d11.sd.BufferDesc.Format = pDeviceSettingsCombo->BackBufferFormat;
+    //pDeviceSettings->d3d11.sd.SampleDesc.Count = pDeviceSettingsCombo->multiSampleCountList[ bestMSAAIndex ];
+    //if (pDeviceSettings->d3d11.sd.SampleDesc.Quality > pDeviceSettingsCombo->multiSampleQualityList[ bestMSAAIndex ] - 1)
+    //    pDeviceSettings->d3d11.sd.SampleDesc.Quality = pDeviceSettingsCombo->multiSampleQualityList[ bestMSAAIndex ] - 1;
+    //    
+    //pDeviceSettings->d3d11.sd.BufferDesc.Format = pDeviceSettingsCombo->BackBufferFormat;
+
+	pDeviceSettings->d3d11.AdapterOrdinal = 0;
+	pDeviceSettings->d3d11.DriverType = D3D_DRIVER_TYPE_HARDWARE;
+	pDeviceSettings->d3d11.Output = 0;
+
+	pDeviceSettings->d3d11.sd.Windowed = 1;
+
+	pDeviceSettings->d3d11.DeviceFeatureLevel = D3D_FEATURE_LEVEL_11_1;
+
+	pDeviceSettings->d3d11.sd.SampleDesc.Count = 1;
+
+	pDeviceSettings->d3d11.sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 
     return S_OK;
 }

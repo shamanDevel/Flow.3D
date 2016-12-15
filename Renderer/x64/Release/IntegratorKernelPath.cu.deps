@@ -296,11 +296,11 @@ c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\host_defines.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_functions.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\device_launch_parameters.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_types.h
-D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include\global.h
+D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\global.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cstdint
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdint.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\AdvectMode.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\AdvectMode.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\string
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iterator
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\istream
@@ -375,35 +375,35 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cerrno
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\errno.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\share.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\BrickIndexGPU.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\BrickIndexGPU.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\vector_functions.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\vector_types.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\BrickRequestsGPU.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\IntegrationParamsGPU.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\TracingCommon.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\BrickRequestsGPU.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\IntegrationParamsGPU.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\TracingCommon.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\random
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\vector
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory
-D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include\Vec.h
+D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\Vec.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iostream
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cassert
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\assert.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\algorithm
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\cutil_math.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\cutil_math.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\LineInfoGPU.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\TextureFilterMode.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\LineInfoGPU.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilterMode.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\VolumeInfoGPU.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\VolumeInfoGPU.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\vector_types.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\AdvectTime.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\Coords.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\TextureFilterTime.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\TextureFilter.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\AdvectTime.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\Coords.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilterTime.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilter.cuh
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_constants.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_functions.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\IntegratorCommon.cuh
-D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include\cudaUtil.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\IntegratorCommon.cuh
+D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\cudaUtil.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\IntegratorKernelDefines.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\IntegratorKernelDefines.h

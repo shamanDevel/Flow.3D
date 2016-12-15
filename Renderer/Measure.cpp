@@ -5,6 +5,7 @@ static const std::string g_measureNames[MEASURE_COUNT + 1] =
 {
 	"Velocity",
 	"Velocity.Z",
+	"Temperature",
 	"Vorticity",
 	"Lambda2",
 	"QHunt",
@@ -15,6 +16,10 @@ static const std::string g_measureNames[MEASURE_COUNT + 1] =
 	"Square Rate Of Strain",
 	"Trace JJT",
 	"Preferential Vorticity Alignment",
+	"Heat Current",
+	"Heat Current.X",
+	"Heat Current.Y",
+	"Heat Current.Z",
 	"Unknown"
 };
 
@@ -73,16 +78,23 @@ float GetDefaultMeasureQuantStep(eMeasure e)
 }
 
 
-bool MeasureIsFromJacobian(eMeasure mode)
+eMeasureSource GetMeasureSource(eMeasure mode)
 {
 	switch(mode)
 	{
 		case MEASURE_VELOCITY:
 		case MEASURE_VELOCITY_Z:
-			return false;
+		case MEASURE_TEMPERATURE:
+			return MEASURE_SOURCE_RAW;
+
+		case MEASURE_HEAT_CURRENT:
+		case MEASURE_HEAT_CURRENT_X:
+		case MEASURE_HEAT_CURRENT_Y:
+		case MEASURE_HEAT_CURRENT_Z:
+			return MEASURE_SOURCE_HEAT_CURRENT;
 
 		default:
-			return true;
+			return MEASURE_SOURCE_JACOBIAN;
 	}
 }
 

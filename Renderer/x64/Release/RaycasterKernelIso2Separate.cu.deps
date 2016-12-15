@@ -296,8 +296,8 @@ c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\host_defines.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_functions.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\device_launch_parameters.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_types.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\RaycasterKernelParams.h
-D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include\global.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycasterKernelParams.h
+D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\global.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cstdint
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdint.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
@@ -354,9 +354,9 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\ammintrin.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdexcept
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xstring
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\cutil_math.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\cutil_math.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\Measure.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\Measure.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\string
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iterator
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\istream
@@ -380,19 +380,20 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cerrno
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\errno.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\share.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\RaycastMode.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\TextureFilterMode.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycastMode.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilterMode.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include\cudaUtil.h
+D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\cudaUtil.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\RaycasterKernelDefines.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\RaycasterKernelGlobals.cui
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\RaycasterKernelHelpers.cui
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\Coords.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\MatrixMath.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\Measures.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\Jacobian.cuh
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\TextureFilter.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycasterKernelDefines.h
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycasterKernelGlobals.cui
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycasterKernelHelpers.cui
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\Coords.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\MatrixMath.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\Measures.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\Jacobian.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilter.cuh
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_constants.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_functions.h
-d:\research\projects\turbulencevisualisation\turbulence\branches\particletracecpu\renderer\RaycasterKernelIso2SeparateStep.cui
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\HeatCurrent.cuh
+d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycasterKernelIso2SeparateStep.cui

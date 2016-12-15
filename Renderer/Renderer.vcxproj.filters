@@ -442,6 +442,9 @@
     </ClInclude>
     <ClInclude Include="..\include\CompressVolume.h" />
     <ClInclude Include="..\include\GPUResources.h" />
+    <ClInclude Include="HeatCurrent.cuh">
+      <Filter>cudaTurbulence</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />

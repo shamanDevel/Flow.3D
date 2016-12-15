@@ -10,7 +10,7 @@
 #include "RaycasterKernelHelpers.cui"
 
 
-template <bool measureFromJac, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI>
 __device__ inline void isoStep(
 	float4& sum,
 	bool& wasInside,
@@ -20,16 +20,16 @@ __device__ inline void isoStep(
 	const float3& step,
 	const float3& rayDir)
 {
-	bool isInside = (getMeasure<measureFromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1) >= c_raycastParams.isoValues.x);
+	bool isInside = (getMeasure<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1) >= c_raycastParams.isoValues.x);
 
 	// did we cross an iso-surface?
 	if(wasInside != isInside)
 	{
 		float3 posOut = isInside ? pos - step : pos;
 		float3 posIn  = isInside ? pos : pos - step;
-		float3 posIsoTex = binarySearch<measureFromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(posOut), w2t(posIn), c_raycastParams.gridSpacing, c_raycastParams.isoValues.x, c_raycastParams.measureScale1);
+		float3 posIsoTex = binarySearch<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(posOut), w2t(posIn), c_raycastParams.gridSpacing, c_raycastParams.isoValues.x, c_raycastParams.measureScale1);
 
-		float3 grad = getGradient<measureFromJac,F,C>(c_raycastParams.measure1, g_texVolume1, posIsoTex, c_raycastParams.gridSpacing);
+		float3 grad = getGradient<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, posIsoTex, c_raycastParams.gridSpacing);
 		float4 color = shadeSI ? shadeScaleInvariant(rayDir, grad, c_raycastParams.isoColor1) : shadeIsosurface(rayDir, grad, c_raycastParams.isoColor1);
 		// color from vorticity direction:
 		//float3 vort = fabs(normalize(getVorticity<F>(g_texVolume1, pos)));
@@ -41,7 +41,7 @@ __device__ inline void isoStep(
 	wasInside = isInside;
 }
 
-template <bool measureFromJac, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI>
 __device__ inline void isoRaycast(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -94,7 +94,7 @@ __device__ inline void isoRaycast(
 
 	float4 sum = rgbaUCharToFloat(colorStart);
 
-	bool wasInside = (getMeasure<measureFromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1) >= c_raycastParams.isoValues.x);
+	bool wasInside = (getMeasure<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1) >= c_raycastParams.isoValues.x);
 
 	// march along ray from front to back
 	while((depthLinear + depthStepLinear) < depthMaxLinear && sum.w < opacityThreshold)
@@ -103,7 +103,7 @@ __device__ inline void isoRaycast(
 		pos += step;
 		depthLinear += depthStepLinear;
 
-		isoStep<measureFromJac,F,C,shadeSI>(sum, wasInside, world2texOffset, world2texScale, pos, step, rayDir);
+		isoStep<measureSource, F, C, shadeSI>(sum, wasInside, world2texOffset, world2texScale, pos, step, rayDir);
 	}
 
 	// check at z buffer hit (or brick exit point)
@@ -112,14 +112,14 @@ __device__ inline void isoRaycast(
 		step *= (depthMaxLinear - depthLinear) / depthStepLinear;
 		pos += step;
 
-		isoStep<measureFromJac,F,C,shadeSI>(sum, wasInside, world2texOffset, world2texScale, pos, step, rayDir);
+		isoStep<measureSource, F, C, shadeSI>(sum, wasInside, world2texOffset, world2texScale, pos, step, rayDir);
 	}
 
 	// write output color
 	surf2Dwrite(rgbaFloatToUChar(sum), g_surfTarget, x * 4, y);
 }
 
-template <bool measureFromJac, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 __global__ void isoKernel(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -130,10 +130,10 @@ __global__ void isoKernel(
 	float world2texScale
 )
 {
-	isoRaycast<measureFromJac,F,C,false>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
+	isoRaycast<measureSource, F, C, false>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
 }
 
-template <bool measureFromJac, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 __global__ void isoSiKernel(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -144,7 +144,7 @@ __global__ void isoSiKernel(
 	float world2texScale
 )
 {
-	isoRaycast<measureFromJac,F,C,true>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
+	isoRaycast<measureSource, F, C, true>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
 }
 #endif
 

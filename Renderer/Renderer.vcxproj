@@ -271,6 +271,7 @@ exit 1</Command>
     <ClInclude Include="FilteringManager.h" />
     <ClInclude Include="FilterParams.h" />
     <ClInclude Include="FlowGraph.h" />
+    <ClInclude Include="HeatCurrent.cuh" />
     <ClInclude Include="IntegratorCommonCPU.h" />
     <ClInclude Include="IntegratorKernelDefines.h" />
     <ClInclude Include="IntegratorKernels.h" />

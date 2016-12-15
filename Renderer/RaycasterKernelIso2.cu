@@ -11,7 +11,7 @@
 
 
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI>
 __device__ inline void iso2Step(
 	float4& sum,
 	float& oldVal,
@@ -22,7 +22,7 @@ __device__ inline void iso2Step(
 	const float3& step,
 	const float3& rayDir)
 {
-	float val = getMeasure<fromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1);
+	float val = getMeasure<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1);
 
 	float fDist = 1e10;
 	float4 vColors[2] = {make_float4(0,0,0,0), make_float4(0,0,0,0)};
@@ -31,9 +31,9 @@ __device__ inline void iso2Step(
 	if ((val>=c_raycastParams.isoValues.x) != (oldVal>=c_raycastParams.isoValues.x))
 	{
 		float factor = (val>=c_raycastParams.isoValues.x) ? 1.0f : 0.0f;
-		float3 pp = binarySearch<fromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos - factor * step), w2t(pos - (1.0f-factor) * step), c_raycastParams.gridSpacing, c_raycastParams.isoValues.x, c_raycastParams.measureScale1);
+		float3 pp = binarySearch<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos - factor * step), w2t(pos - (1.0f - factor) * step), c_raycastParams.gridSpacing, c_raycastParams.isoValues.x, c_raycastParams.measureScale1);
 
-		float3 grad = getGradient<fromJac,F,C>(c_raycastParams.measure1, g_texVolume1, pp, c_raycastParams.gridSpacing);
+		float3 grad = getGradient<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, pp, c_raycastParams.gridSpacing);
 		if(shadeSI)
 			vColors[0] = shadeScaleInvariant(rayDir, grad, c_raycastParams.isoColor1);
 		else
@@ -46,13 +46,13 @@ __device__ inline void iso2Step(
 	if ((val>=c_raycastParams.isoValues.y) != (oldVal>=c_raycastParams.isoValues.y))
 	{
 		float factor = (val>=c_raycastParams.isoValues.y) ? 1.0f : 0.0f;
-		float3 pp = binarySearch<fromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos - factor * step), w2t(pos - (1.0f-factor) * step), c_raycastParams.gridSpacing, c_raycastParams.isoValues.y, c_raycastParams.measureScale1);
+		float3 pp = binarySearch<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos - factor * step), w2t(pos - (1.0f - factor) * step), c_raycastParams.gridSpacing, c_raycastParams.isoValues.y, c_raycastParams.measureScale1);
 
 		// sort hits
 		vColors[1] = vColors[0];
 		int index = (lengthSq(pp-rayPosTx) <= fDist) ? 0 : 1;
 
-		float3 grad = getGradient<fromJac,F,C>(c_raycastParams.measure1, g_texVolume1, pp, c_raycastParams.gridSpacing);
+		float3 grad = getGradient<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, pp, c_raycastParams.gridSpacing);
 		if(shadeSI)
 			vColors[index] = shadeScaleInvariant(rayDir, grad, c_raycastParams.isoColor2);
 		else
@@ -66,7 +66,7 @@ __device__ inline void iso2Step(
 	oldVal = val;
 }
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI>
 __device__ inline void iso2Raycast(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -124,7 +124,7 @@ __device__ inline void iso2Raycast(
 
 
 	// get value at entry point
-	float oldVal = getMeasure<fromJac,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1);
+	float oldVal = getMeasure<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1);
 
 	// march along ray from front to back
 	while((depthLinear + depthStepLinear) < depthMaxLinear && sum.w < opacityThreshold)
@@ -133,7 +133,7 @@ __device__ inline void iso2Raycast(
 		pos += step;
 		depthLinear += depthStepLinear;
 
-		iso2Step<fromJac,F,C,shadeSI>(sum, oldVal, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
+		iso2Step<measureSource, F, C, shadeSI>(sum, oldVal, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
 	}
 
 	// if we didn't hit the alpha threshold, do final (smaller) step to z buffer hit (or brick exit point)
@@ -142,14 +142,14 @@ __device__ inline void iso2Raycast(
 		step *= (depthMaxLinear - depthLinear) / depthStepLinear;
 		pos += step;
 
-		iso2Step<fromJac,F,C,shadeSI>(sum, oldVal, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
+		iso2Step<measureSource, F, C, shadeSI>(sum, oldVal, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
 	}
 
 	// write output color
 	surf2Dwrite(rgbaFloatToUChar(sum), g_surfTarget, x * 4, y);
 }
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 __global__ void iso2Kernel(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -160,10 +160,10 @@ __global__ void iso2Kernel(
 	float world2texScale
 )
 {
-	iso2Raycast<fromJac,F,C,false>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
+	iso2Raycast<measureSource, F, C, false>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
 }
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 __global__ void iso2SiKernel(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -174,7 +174,7 @@ __global__ void iso2SiKernel(
 	float world2texScale
 )
 {
-	iso2Raycast<fromJac,F,C,true>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
+	iso2Raycast<measureSource, F, C, true>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
 }
 #endif
 

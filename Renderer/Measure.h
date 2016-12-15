@@ -11,6 +11,7 @@ enum eMeasure
 {
 	MEASURE_VELOCITY=0,
 	MEASURE_VELOCITY_Z,
+	MEASURE_TEMPERATURE,
 	MEASURE_VORTICITY,
 	MEASURE_LAMBDA2,
 	MEASURE_QHUNT,
@@ -21,6 +22,10 @@ enum eMeasure
 	MEASURE_SQUARE_RATE_OF_STRAIN,
 	MEASURE_TRACE_JJT,
 	MEASURE_PVA,
+	MEASURE_HEAT_CURRENT,
+	MEASURE_HEAT_CURRENT_X,
+	MEASURE_HEAT_CURRENT_Y,
+	MEASURE_HEAT_CURRENT_Z,
 	MEASURE_COUNT,
 	MEASURE_FORCE32 =  0xFFFFFFFF
 };
@@ -28,8 +33,16 @@ std::string GetMeasureName(eMeasure mode);
 eMeasure GetMeasureFromName(const std::string& name);
 float GetDefaultMeasureScale(eMeasure mode);
 float GetDefaultMeasureQuantStep(eMeasure mode);
-bool MeasureIsFromJacobian(eMeasure mode);
 
+enum eMeasureSource
+{
+	MEASURE_SOURCE_RAW=0,
+	MEASURE_SOURCE_HEAT_CURRENT,
+	MEASURE_SOURCE_JACOBIAN,
+	MEASURE_SOURCE_COUNT,
+	MEASURE_SOURCE_FORCE32 = 0xFFFFFFFF
+};
+eMeasureSource GetMeasureSource(eMeasure mode);
 
 enum eMeasureComputeMode
 {

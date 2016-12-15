@@ -13,7 +13,7 @@
 
 
 
-template <bool fromJac1, bool fromJac2, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM> 
+template <eMeasureSource measureSource1, eMeasureSource measureSource2, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 __global__ void iso2separateKernel(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -70,8 +70,8 @@ __global__ void iso2separateKernel(
 
 
 	// get value at entry point
-	bool bInsideCoarse = (c_raycastParams.isoValues.x < getMeasure<fromJac1,F,C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1));
-	bool bInsideFine = (c_raycastParams.isoValues.y < getMeasure<fromJac2,F,C>(c_raycastParams.measure2, g_texVolume2, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale2));
+	bool bInsideCoarse = (c_raycastParams.isoValues.x < getMeasure<measureSource1, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale1));
+	bool bInsideFine = (c_raycastParams.isoValues.y < getMeasure<measureSource2, F, C>(c_raycastParams.measure2, g_texVolume2, w2t(pos), c_raycastParams.gridSpacing, c_raycastParams.measureScale2));
 
 	// march along ray from front to back
 	while((depthLinear + depthStepLinear) < depthMaxLinear && sum.w < opacityThreshold)
@@ -80,7 +80,7 @@ __global__ void iso2separateKernel(
 		pos += step;
 		depthLinear += depthStepLinear;
 
-		iso2separateStep<fromJac1,fromJac2,F,C,CM>(sum, bInsideCoarse, bInsideFine, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
+		iso2separateStep<measureSource1, measureSource2, F, C, CM>(sum, bInsideCoarse, bInsideFine, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
 	}
 
 	// if we didn't hit the alpha threshold, do final (smaller) step to z buffer hit (or brick exit point)
@@ -89,7 +89,7 @@ __global__ void iso2separateKernel(
 		step *= (depthMaxLinear - depthLinear) / depthStepLinear;
 		pos += step;
 
-		iso2separateStep<fromJac1,fromJac2,F,C,CM>(sum, bInsideCoarse, bInsideFine, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
+		iso2separateStep<measureSource1, measureSource2, F, C, CM>(sum, bInsideCoarse, bInsideFine, world2texOffset, world2texScale, w2t(rayPos), pos, step, rayDir);
 	}
 
 	// write output color

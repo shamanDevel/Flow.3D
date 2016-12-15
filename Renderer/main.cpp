@@ -3191,8 +3191,6 @@ int main(int argc, char* argv[])
 		StartBatchTracing();
 	}
 
-
-
 	DXUTMainLoop(); // Enter into the DXUT render loop
 
 	// Perform application-level cleanup

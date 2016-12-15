@@ -272,7 +272,9 @@ void BrickSlot::FillTextureFromGPUChannels(uint textureIndex, const float** dppC
 
 	cudaSafeCall(cudaBindSurfaceToArray(g_surfArray, m_pArray[textureIndex]));
 
-	uint channelCountThisTex = ((textureIndex == textureCount - 1) ? (m_channelCount % 4) : 4);
+	// Extraneous channels if they aren't divisible by 4
+	uint rem = m_channelCount % 4;
+	uint channelCountThisTex = ((textureIndex == textureCount - 1) && rem ? rem : 4);
 	switch(channelCountThisTex) {
 		case 1:
 			BrickCopyFromChannelKernel<<<blockCount, blockSize>>>(

@@ -10,15 +10,16 @@
 //#define RAYCASTER_ENABLE_WENO4
 
 
-#define RAYCASTER_RENDER_VOLUME_RT(kernel, fromJac, filter, computemode, colormode) \
-	kernel<fromJac, filter, computemode, colormode> \
+#define RAYCASTER_RENDER_VOLUME_RT(kernel, measureSource, filter, computemode, colormode) \
+	kernel<measureSource, filter, computemode, colormode> \
 	<<<params.gridSize, params.blockSize>>> \
 	(params.brickMinScreen, params.brickSizeScreen, params.renderTargetOffset, params.boxMin, params.boxMax, params.world2texOffset, params.world2texScale)
 
 #define RAYCASTER_MEASURE_SWITCH_RT(kernel, filter, computemode, colormode) \
-	switch(MeasureIsFromJacobian(params.measure1)) { \
-		case true:  RAYCASTER_RENDER_VOLUME_RT(kernel, true,  filter, computemode, colormode); break; \
-		case false: RAYCASTER_RENDER_VOLUME_RT(kernel, false, filter, computemode, colormode); break; \
+	switch(GetMeasureSource(params.measure1)) { \
+		case MEASURE_SOURCE_RAW:		RAYCASTER_RENDER_VOLUME_RT(kernel, MEASURE_SOURCE_RAW,  filter, computemode, colormode); break; \
+		case MEASURE_SOURCE_HEAT_CURRENT:	RAYCASTER_RENDER_VOLUME_RT(kernel, MEASURE_SOURCE_HEAT_CURRENT, filter, computemode, colormode); break; \
+		case MEASURE_SOURCE_JACOBIAN:		RAYCASTER_RENDER_VOLUME_RT(kernel, MEASURE_SOURCE_JACOBIAN, filter, computemode, colormode); break; \
 	}
 
 // for non-multiscale kernels: precomputed vs. on-the-fly measure computation, but no color mode switch
@@ -30,24 +31,34 @@
 
 
 
-#define RAYCASTER_RENDER_VOLUME_RT2(kernel, fromJac1, fromJac2, filter, computemode, colormode) \
-	kernel<fromJac1, fromJac2, filter, computemode, colormode> \
+#define RAYCASTER_RENDER_VOLUME_RT2(kernel, measureSource1, measureSource2, filter, computemode, colormode) \
+	kernel<measureSource1, measureSource2, filter, computemode, colormode> \
 	<<<params.gridSize, params.blockSize>>> \
 	(params.brickMinScreen, params.brickSizeScreen, params.renderTargetOffset, params.boxMin, params.boxMax, params.world2texOffset, params.world2texScale)
 
 #define RAYCASTER_MEASURE_SWITCH_RT2(kernel, filter, computemode, colormode) \
-	if(MeasureIsFromJacobian(params.measure1)) { \
-		if(MeasureIsFromJacobian(params.measure2)) { \
-			RAYCASTER_RENDER_VOLUME_RT2(kernel, true,  true, filter, computemode, colormode); \
-		} else { \
-			RAYCASTER_RENDER_VOLUME_RT2(kernel, true, false, filter, computemode, colormode); \
+    switch(GetMeasureSource(params.measure1)) { \
+    case MEASURE_SOURCE_RAW: \
+        switch(GetMeasureSource(params.measure2)) { \
+        case MEASURE_SOURCE_RAW: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_RAW, MEASURE_SOURCE_RAW, filter, computemode, colormode); break; \
+        case MEASURE_SOURCE_HEAT_CURRENT: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_RAW, MEASURE_SOURCE_HEAT_CURRENT, filter, computemode, colormode); break; \
+        case MEASURE_SOURCE_JACOBIAN: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_RAW, MEASURE_SOURCE_JACOBIAN, filter, computemode, colormode); break; \
 		} \
-	} else { \
-		if(MeasureIsFromJacobian(params.measure2)) { \
-			RAYCASTER_RENDER_VOLUME_RT2(kernel, false, true,  filter, computemode, colormode); \
-		} else { \
-			RAYCASTER_RENDER_VOLUME_RT2(kernel, false, false, filter, computemode, colormode); \
+        break; \
+    case MEASURE_SOURCE_HEAT_CURRENT: \
+        switch(GetMeasureSource(params.measure2)) { \
+        case MEASURE_SOURCE_RAW: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_HEAT_CURRENT, MEASURE_SOURCE_RAW, filter, computemode, colormode); break; \
+        case MEASURE_SOURCE_HEAT_CURRENT: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_HEAT_CURRENT, MEASURE_SOURCE_HEAT_CURRENT, filter, computemode, colormode); break; \
+        case MEASURE_SOURCE_JACOBIAN: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_HEAT_CURRENT, MEASURE_SOURCE_JACOBIAN, filter, computemode, colormode); break; \
 		} \
+        break; \
+    case MEASURE_SOURCE_JACOBIAN: \
+        switch(GetMeasureSource(params.measure2)) { \
+        case MEASURE_SOURCE_RAW: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_JACOBIAN, MEASURE_SOURCE_RAW, filter, computemode, colormode); break; \
+        case MEASURE_SOURCE_HEAT_CURRENT: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_JACOBIAN, MEASURE_SOURCE_HEAT_CURRENT, filter, computemode, colormode); break; \
+        case MEASURE_SOURCE_JACOBIAN: RAYCASTER_RENDER_VOLUME_RT2(kernel, MEASURE_SOURCE_JACOBIAN, MEASURE_SOURCE_JACOBIAN, filter, computemode, colormode); break; \
+		} \
+        break; \
 	}
 
 // for multiscale kernels: color mode (vorticity alignment vs. uniform color), but no measure compute mode switch

@@ -1,34 +1,269 @@
-﻿Build started 06/10/2016 13:53:29.
-     1>Project "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\Renderer.vcxproj" on node 2 (Rebuild target(s)).
-     1>CudaClean:
-         cmd.exe /C "C:\Users\ga86kex\AppData\Local\Temp\tmp3c9c92722f6e4a67a7b69914bdae3ea1.cmd"
-         "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\BrickIndexGPU.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\BrickIndexGPU.cu" -clean
+﻿Build started 16/11/2016 11:16:27.
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" on node 2 (Build target(s)).
+     1>AddCudaCompileDeps:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\cl.exe /E /nologo /showIncludes /TP /D__CUDACC__ /DNOMINMAX /DWIN32_LEAN_AND_MEAN /D_UNICODE /DUNICODE /ID:\Research\Projects\TurbulenceVisualisation\gitrepo\include /IDXUT/Core /I"C:\Program Files (x86)\Visual Leak Detector\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin" /I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" /I. /FIcuda_runtime.h /c D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\RaycasterKernelIso2Separate.cu 
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:16) on node 4 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Skipping CUDA source file RaycasterKernelMs2IsoCascade.cu (excluded from build).
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:18) on node 8 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Skipping CUDA source file RaycasterKernelMs3Sivr.cu (excluded from build).
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:19) on node 10 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Compiling CUDA source file RaycasterKernelIso2Separate.cu...
+     1>Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1) is building "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (1:23) on node 9 (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         Skipping CUDA source file RaycasterKernelMs3IsoCascade.cu (excluded from build).
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>CudaBuildCore:
+         cmd.exe /C "C:\Users\ga86kex\AppData\Local\Temp\tmpb339ac5a927d4235af3ebff40a4cbe5b.cmd"
+         "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -gencode=arch=compute_50,code=\"sm_50,compute_50\" --use-local-env --cl-version 2013 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64" -rdc=true -ID:\Research\Projects\TurbulenceVisualisation\gitrepo\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile -cudart static  -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\RaycasterKernelIso2Separate.cu.obj "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\RaycasterKernelIso2Separate.cu"
          
-         D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\BrickIndexGPU.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\BrickIndexGPU.cu" -clean 
-     1>CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
-         BrickIndexGPU.cu
-       CudaClean:
-         cmd.exe /C "C:\Users\ga86kex\AppData\Local\Temp\tmpfe931d3bef2b41f7aad3e99984b78f84.cmd"
-         "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\BrickRequestsGPU.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\BrickRequestsGPU.cu" -clean
+         D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -gencode=arch=compute_50,code=\"sm_50,compute_50\" --use-local-env --cl-version 2013 -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64" -rdc=true -ID:\Research\Projects\TurbulenceVisualisation\gitrepo\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile -cudart static  -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\RaycasterKernelIso2Separate.cu.obj "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\RaycasterKernelIso2Separate.cu" 
+         ptxas info    : 288 bytes gmem, 128 bytes cmem[3]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource1ELS0_1EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource1ELS0_1EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 158 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Function properties for cudaDeviceGetAttribute
+             0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource1ELS0_0EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource1ELS0_0EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 200 registers, 384 bytes cmem[0], 116 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource0ELS0_0EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource0ELS0_0EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 118 registers, 384 bytes cmem[0], 108 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource2ELS0_1EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource2ELS0_1EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 221 registers, 384 bytes cmem[0], 116 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource2ELS0_2EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource2ELS0_2EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             720 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 160 registers, 384 bytes cmem[0], 108 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource0ELS0_2EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource0ELS0_2EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 192 registers, 384 bytes cmem[0], 108 bytes cmem[2]
+         ptxas info    : Function properties for cudaMalloc
+             0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource0ELS0_1EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource0ELS0_1EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 183 registers, 384 bytes cmem[0], 116 bytes cmem[2]
+         ptxas info    : Function properties for cudaOccupancyMaxActiveBlocksPerMultiprocessor
+             0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource1ELS0_2EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource1ELS0_2EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 208 registers, 384 bytes cmem[0], 116 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource2ELS0_0EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource2ELS0_0EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 190 registers, 384 bytes cmem[0], 108 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource1ELS0_2EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource1ELS0_2EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 205 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Function properties for cudaGetDevice
+             0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource1ELS0_1EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource1ELS0_1EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 229 registers, 384 bytes cmem[0], 116 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource0ELS0_1EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource0ELS0_1EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 149 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource2ELS0_2EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource2ELS0_2EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             720 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 216 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource0ELS0_0EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource0ELS0_0EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 160 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource1ELS0_0EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource1ELS0_0EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             32 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 143 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Function properties for cudaFuncGetAttributes
+             0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource0ELS0_2EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource0ELS0_2EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 190 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Function properties for cudaOccupancyMaxActiveBlocksPerMultiprocessorWithFlags
+             0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource2ELS0_0EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource2ELS0_0EL18eTextureFilterMode1EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 192 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         ptxas info    : Compiling entry function '_Z18iso2separateKernelIL14eMeasureSource2ELS0_1EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f' for 'sm_50'
+         ptxas info    : Function properties for _Z18iso2separateKernelIL14eMeasureSource2ELS0_1EL18eTextureFilterMode0EL19eMeasureComputeMode0EL10eColorMode0EEv4int2S4_S4_6float3S5_S5_f
+             400 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+         ptxas info    : Used 206 registers, 384 bytes cmem[0], 112 bytes cmem[2]
+         RaycasterKernelIso2Separate.cu
+     1>D:/Research/Projects/TurbulenceVisualisation/gitrepo/Renderer/RaycasterKernelIso2Separate.cu(106): warning C4065: switch statement contains 'default' but no 'case' labels
+     1>D:/Research/Projects/TurbulenceVisualisation/gitrepo/Renderer/RaycasterKernelIso2Separate.cu(109): warning C4065: switch statement contains 'default' but no 'case' labels
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (CudaBuildCore target(s)).
+     1>CudaLink:
+         cmd.exe /C "C:\Users\ga86kex\AppData\Local\Temp\tmpbfc6cf1ecc69449dad9f64dfab0b10bd.cmd"
+         "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -dlink -o x64\Debug\Renderer.device-link.obj -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MDd " -LD:\Research\Projects\TurbulenceVisualisation\gitrepo\lib -L"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" d3d11.lib d3dcompiler.lib dxgi.lib cudart.lib AntTweakBar64.lib comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Effects11d.lib cudaCompressd.lib  -gencode=arch=compute_50,code=sm_50  --machine 64 x64\Debug\BrickIndexGPU.cu.obj x64\Debug\BrickRequestsGPU.cu.obj x64\Debug\BrickSlot.cu.obj x64\Debug\ClearCudaArray.cu.obj x64\Debug\IntegrationParamsGPU.cu.obj x64\Debug\Integrator.cu.obj x64\Debug\IntegratorKernelPath.cu.obj x64\Debug\IntegratorKernelSimpleParticle.cu.obj x64\Debug\IntegratorKernelStream.cu.obj x64\Debug\IntegratorKernelStreamDense.cu.obj x64\Debug\LineInfoGPU.cu.obj x64\Debug\Measures.cu.obj x64\Debug\Raycaster.cu.obj x64\Debug\RaycasterFillMeasureBrick.cu.obj x64\Debug\RaycasterKernelDvr.cu.obj x64\Debug\RaycasterKernelDvrEe.cu.obj x64\Debug\RaycasterKernelIso.cu.obj x64\Debug\RaycasterKernelIso2Separate.cu.obj x64\Debug\RaycasterKernelIso2.cu.obj x64\Debug\VolumeFilter.cu.obj x64\Debug\VolumeInfoGPU.cu.obj
          
-         D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\BrickRequestsGPU.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\BrickRequestsGPU.cu" -clean 
-     1>CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
-         BrickRequestsGPU.cu
-       CudaClean:
-         cmd.exe /C "C:\Users\ga86kex\AppData\Local\Temp\tmp45081db943344cef944b760cd5eef5aa.cmd"
-         "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\BrickSlot.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\BrickSlot.cu" -clean
+         D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -dlink -o x64\Debug\Renderer.device-link.obj -Xcompiler "/EHsc /W3 /nologo /Od /Zi /RTC1 /MDd " -LD:\Research\Projects\TurbulenceVisualisation\gitrepo\lib -L"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" -L"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" d3d11.lib d3dcompiler.lib dxgi.lib cudart.lib AntTweakBar64.lib comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Effects11d.lib cudaCompressd.lib  -gencode=arch=compute_50,code=sm_50  --machine 64 x64\Debug\BrickIndexGPU.cu.obj x64\Debug\BrickRequestsGPU.cu.obj x64\Debug\BrickSlot.cu.obj x64\Debug\ClearCudaArray.cu.obj x64\Debug\IntegrationParamsGPU.cu.obj x64\Debug\Integrator.cu.obj x64\Debug\IntegratorKernelPath.cu.obj x64\Debug\IntegratorKernelSimpleParticle.cu.obj x64\Debug\IntegratorKernelStream.cu.obj x64\Debug\IntegratorKernelStreamDense.cu.obj x64\Debug\LineInfoGPU.cu.obj x64\Debug\Measures.cu.obj x64\Debug\Raycaster.cu.obj x64\Debug\RaycasterFillMeasureBrick.cu.obj x64\Debug\RaycasterKernelDvr.cu.obj x64\Debug\RaycasterKernelDvrEe.cu.obj x64\Debug\RaycasterKernelIso.cu.obj x64\Debug\RaycasterKernelIso2Separate.cu.obj x64\Debug\RaycasterKernelIso2.cu.obj x64\Debug\VolumeFilter.cu.obj x64\Debug\VolumeInfoGPU.cu.obj 
+         d3d11.lib
+         d3dcompiler.lib
+         dxgi.lib
+         cudart.lib
+         AntTweakBar64.lib
+         comctl32.lib
+         kernel32.lib
+         user32.lib
+         gdi32.lib
+         winspool.lib
+         comdlg32.lib
+         advapi32.lib
+         shell32.lib
+         ole32.lib
+         oleaut32.lib
+         uuid.lib
+         odbc32.lib
+         odbccp32.lib
+         Effects11d.lib
+         cudaCompressd.lib
+         BrickIndexGPU.cu.obj
+         BrickRequestsGPU.cu.obj
+         BrickSlot.cu.obj
+         ClearCudaArray.cu.obj
+         IntegrationParamsGPU.cu.obj
+         Integrator.cu.obj
+         IntegratorKernelPath.cu.obj
+         IntegratorKernelSimpleParticle.cu.obj
+         IntegratorKernelStream.cu.obj
+         IntegratorKernelStreamDense.cu.obj
+         LineInfoGPU.cu.obj
+         Measures.cu.obj
+         Raycaster.cu.obj
+         RaycasterFillMeasureBrick.cu.obj
+         RaycasterKernelDvr.cu.obj
+         RaycasterKernelDvrEe.cu.obj
+         RaycasterKernelIso.cu.obj
+         RaycasterKernelIso2Separate.cu.obj
+         RaycasterKernelIso2.cu.obj
+         VolumeFilter.cu.obj
+         VolumeInfoGPU.cu.obj
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\Renderer.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:D:\Research\Projects\TurbulenceVisualisation\gitrepo\lib /LIBPATH:"C:\Program Files (x86)\Visual Leak Detector\lib\Win64" /LIBPATH:"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\lib\x64" d3d11.lib d3dcompiler.lib dxgi.lib cudart.lib AntTweakBar64.lib comctl32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib Effects11d.lib cudaCompressd.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\Renderer.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\Renderer.lib" /MACHINE:X64 /PROFILE x64\Debug\BrickIndexGPU.cu.obj
+         x64\Debug\BrickRequestsGPU.cu.obj
+         x64\Debug\BrickSlot.cu.obj
+         x64\Debug\ClearCudaArray.cu.obj
+         x64\Debug\IntegrationParamsGPU.cu.obj
+         x64\Debug\Integrator.cu.obj
+         x64\Debug\IntegratorKernelPath.cu.obj
+         x64\Debug\IntegratorKernelSimpleParticle.cu.obj
+         x64\Debug\IntegratorKernelStream.cu.obj
+         x64\Debug\IntegratorKernelStreamDense.cu.obj
+         x64\Debug\LineInfoGPU.cu.obj
+         x64\Debug\Measures.cu.obj
+         x64\Debug\Raycaster.cu.obj
+         x64\Debug\RaycasterFillMeasureBrick.cu.obj
+         x64\Debug\RaycasterKernelDvr.cu.obj
+         x64\Debug\RaycasterKernelDvrEe.cu.obj
+         x64\Debug\RaycasterKernelIso.cu.obj
+         x64\Debug\RaycasterKernelIso2Separate.cu.obj
+         x64\Debug\RaycasterKernelIso2.cu.obj
+         x64\Debug\VolumeFilter.cu.obj
+         x64\Debug\VolumeInfoGPU.cu.obj
+         x64\Debug\CompressVolume.obj
+         x64\Debug\ConfigFile.obj
+         x64\Debug\CSysTools.obj
+         x64\Debug\FilePool.obj
+         x64\Debug\GPUResources.obj
+         x64\Debug\MultiTimerGPU.obj
+         x64\Debug\SysTools.obj
+         x64\Debug\TimerCPU.obj
+         x64\Debug\TimerGPU.obj
+         x64\Debug\TimeVolumeInfo.obj
+         x64\Debug\TimeVolumeIO.obj
+         x64\Debug\tinythread.obj
+         x64\Debug\AdvectMode.obj
+         x64\Debug\BallBuffers.obj
+         x64\Debug\BatchTraceParams.obj
+         x64\Debug\Box.obj
+         x64\Debug\BoxEffect.obj
+         x64\Debug\BoxUtils.obj
+         x64\Debug\dxerr.obj
+         x64\Debug\DXUT.obj
+         x64\Debug\DXUTDevice11.obj
+         x64\Debug\DXUTmisc.obj
+         x64\Debug\Effect.obj
+         x64\Debug\FilteredVolume.obj
+         x64\Debug\FilteringManager.obj
+         x64\Debug\FilterParams.obj
+         x64\Debug\FlowGraph.obj
+         x64\Debug\IntegratorKernelStreamDenseCPU.obj
+         x64\Debug\LineBuffers.obj
+         x64\Debug\LineEffect.obj
+         x64\Debug\LineMode.obj
+         x64\Debug\LineRenderMode.obj
+         x64\Debug\main.obj
+         x64\Debug\Measure.obj
+         x64\Debug\ParticleRenderParams.obj
+         x64\Debug\ProgressBarEffect.obj
+         x64\Debug\ProjectionParams.obj
+         x64\Debug\Range.obj
+         x64\Debug\RaycastMode.obj
+         x64\Debug\RaycastParams.obj
+         x64\Debug\RenderingManager.obj
+         x64\Debug\ScreenEffect.obj
+         x64\Debug\TracingTestData.obj
+         x64\Debug\TransferFunctionEditor.obj
+         x64\Debug\TransferFunctionLine.obj
+         x64\Debug\WorkerThread.obj
+         x64\Debug\stb_image.obj
+         x64\Debug\stb_image_write.obj
+         x64\Debug\StereoParams.obj
+         x64\Debug\TextureFilterMode.obj
+         x64\Debug\TimeVolume.obj
+         x64\Debug\BrickUpload.obj
+         x64\Debug\ParticleTraceParams.obj
+         x64\Debug\TracingBenchmark.obj
+         x64\Debug\TracingManager.obj
+         x64\Debug\ViewParams.obj
+         "x64\Debug\Renderer.device-link.obj"
+         Renderer.vcxproj -> D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\Renderer.exe
+       PostBuildEvent:
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\\" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\\" *.fx /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\\" *.fx /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\\" *.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Debug" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\\" *.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         robocopy “C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64” "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Debug\\" D3DCompiler_*.dll /XX /NJH /NJS /NP
+         if errorlevel 4 goto error
+         exit 0
+         :error
+         exit 1
+         :VCEnd
          
-         D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\BrickSlot.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\BrickSlot.cu" -clean 
-     1>CUDACOMPILE : nvcc warning : The 'compute_20', 'sm_20', and 'sm_21' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
-         BrickSlot.cu
-       CudaClean:
-         cmd.exe /C "C:\Users\ga86kex\AppData\Local\Temp\tmp06685e030abf439c8b9302e7f1149509.cmd"
-         "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\ClearCudaArray.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\ClearCudaArray.cu" -clean
+         	                   4	D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\
          
-         D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\nvcc.exe" -ccbin "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\x86_amd64"  -ID:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\include -IDXUT/Core -I"C:\Program Files (x86)\Visual Leak Detector\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include"   -lineinfo  --keep-dir x64\Debug -maxrregcount=0 --ptxas-options=-v --machine 64 --compile   -g   -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_UNICODE -DUNICODE -Xcompiler "/EHsc /W3 /nologo /Od /FS /Zi /RTC1 /MDd " -o x64\Debug\ClearCudaArray.cu.obj "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\ClearCudaArray.cu" -clean 
-     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V120\BuildCustomizations\CUDA 8.0.targets(863,9): warning MSB5021: "cmd" and its child processes are being terminated in order to cancel the build.
-     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\Turbulence\branches\ParticleTraceCPU\Renderer\Renderer.vcxproj" (Rebuild target(s)) -- FAILED.
+         	                   1	D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor\
+         
+         	                   2	D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\
+         
+         	                   1	D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Debug\
+         
+         	                   1	C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64\
+     1>Done Building Project "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\Renderer.vcxproj" (Build target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:06.30
+Time Elapsed 00:01:03.74

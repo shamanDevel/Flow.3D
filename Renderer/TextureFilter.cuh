@@ -1067,6 +1067,30 @@ struct sampleVolumeGradient_impl<TEXTURE_FILTER_CATROM>
 	}
 };
 
+template <eTextureFilterMode F>
+struct sampleScalarGradient_impl
+{
+	__device__ static inline float3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+	{
+		// default implementation: just get derivatives in x, y, z
+		float3 grad;
+
+		// derivative in x direction
+		float4 dx = sampleVolumeDerivativeX<F, float4, float4>(tex, coord, h);
+		grad.x = dx.w;
+
+		// derivative in y direction
+		float4 dy = sampleVolumeDerivativeY<F, float4, float4>(tex, coord, h);
+		grad.y = dy.w;
+
+		// derivative in z direction
+		float4 dz = sampleVolumeDerivativeZ<F, float4, float4>(tex, coord, h);
+		grad.z = dz.w;
+
+		return grad;
+	}
+};
+
 } // namespace (sampleVolumeGradient implementations)
 
 // "public" sampleVolumeGradient function:
@@ -1075,6 +1099,12 @@ template <eTextureFilterMode F>
 __device__ inline float3x3 sampleVolumeGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
 {
 	return sampleVolumeGradient_impl<F>::exec(tex, coord, h);
+}
+
+template <eTextureFilterMode F>
+__device__ inline float3 sampleScalarGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+{
+	return sampleScalarGradient_impl<F>::exec(tex, coord, h);
 }
 
 

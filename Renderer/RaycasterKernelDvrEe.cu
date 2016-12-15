@@ -11,7 +11,7 @@
 
 
 
-template <bool fromJac, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM> 
+template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 __global__ void dvrEeKernel(
 	int2 brickMinScreen,
 	int2 brickSizeScreen,
@@ -69,7 +69,7 @@ __global__ void dvrEeKernel(
 	// march along ray from front to back, accumulating color
 	while((depthLinear + depthStepLinear) < depthMaxLinear && sum.w < opacityThreshold)
 	{
-		float4 color = getColor<fromJac,F,C,true>(c_raycastParams.measure1, g_texVolume1, w2t(pos), rayDir,
+		float4 color = getColor<measureSource, F, C, true>(c_raycastParams.measure1, g_texVolume1, w2t(pos), rayDir,
 			c_raycastParams.gridSpacing, stepFactor, c_raycastParams.transferOffset, c_raycastParams.transferScale, c_raycastParams.tfAlphaScale, c_raycastParams.measureScale1);
 		sum += (1.0f - sum.w) * color;
 
@@ -79,7 +79,7 @@ __global__ void dvrEeKernel(
 
 	// do last (partial) step
 	float lastStepRatio = min((depthMaxLinear - depthLinear) / depthStepLinear, 1.0f);
-	float4 color = getColor<fromJac,F,C,false>(c_raycastParams.measure1, g_texVolume1, w2t(pos), rayDir,
+	float4 color = getColor<measureSource, F, C, false>(c_raycastParams.measure1, g_texVolume1, w2t(pos), rayDir,
 		c_raycastParams.gridSpacing, stepFactor * lastStepRatio, c_raycastParams.transferOffset, c_raycastParams.transferScale, c_raycastParams.tfAlphaScale, c_raycastParams.measureScale1);
 	sum += (1.0f - sum.w) * color;
 
