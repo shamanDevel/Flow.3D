@@ -121,7 +121,10 @@ private:
 
 
 	void RenderBoxes(bool enableColor, bool blendBehind);
+
+	//Renders the stream + path lines
 	void RenderLines(const LineBuffers* pLineBuffers, bool enableColor, bool blendBehind);
+	
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);
 

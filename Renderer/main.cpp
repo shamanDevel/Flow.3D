@@ -59,8 +59,9 @@ using namespace tum3D;
 #include "FlowGraph.h"
 //#include "TracingBenchmark.h"
 
+#if 0
 #include <vld.h>
-
+#endif
 
 
 

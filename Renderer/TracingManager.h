@@ -55,8 +55,13 @@ public:
 
 	bool& GetVerbose() { return m_verbose; }
 
+	//Starts the tracing, performs the first tracing step
 	bool StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph);
+
+	//Performs one tracing step. Is called multiple times (once per frame), until it is done and returns true
 	bool Trace(); // returns true if finished TODO error code
+	
+	//Cancels the tracing: resets all parameters
 	void CancelTracing();
 	bool IsTracing() const;
 	float GetTracingProgress() const;
