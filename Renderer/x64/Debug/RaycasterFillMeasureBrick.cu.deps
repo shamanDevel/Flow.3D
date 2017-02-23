@@ -296,8 +296,8 @@ c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\host_defines.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_functions.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\device_launch_parameters.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_types.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Raycaster.h
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\global.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Raycaster.h
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\global.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cstdint
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdint.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
@@ -355,7 +355,7 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\ammintrin.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdexcept
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xstring
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\Vec.h
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\Vec.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iostream
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\istream
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\ostream
@@ -382,29 +382,29 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cassert
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\assert.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\algorithm
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\cutil_math.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\cutil_math.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\ProjectionParams.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Range.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\StereoParams.h
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\ConfigFile.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\ProjectionParams.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Range.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\StereoParams.h
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\ConfigFile.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\string
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iterator
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycasterKernelParams.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Measure.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycastMode.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilterMode.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\RaycasterKernelParams.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Measure.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\RaycastMode.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\TextureFilterMode.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\cudaUtil.h
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\cudaUtil.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\cudaTum3D.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\BrickSlot.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\cudaTum3D.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\BrickSlot.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\RaycastParams.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Measures.cuh
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Jacobian.cuh
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\MatrixMath.cuh
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilter.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\RaycastParams.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Measures.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Jacobian.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\MatrixMath.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\TextureFilter.cuh
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_constants.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_functions.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\HeatCurrent.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\HeatCurrent.cuh

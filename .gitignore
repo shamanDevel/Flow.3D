@@ -3,6 +3,9 @@
 *.user
 *.ccscc
 *.cache
+*.sdf
+*.db
+*.opendb
 
 */Debug/*
 */Release/*

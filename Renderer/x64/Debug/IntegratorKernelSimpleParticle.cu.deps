@@ -296,11 +296,11 @@ c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\host_defines.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_functions.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\device_launch_parameters.h
 c:\program files\nvidia gpu computing toolkit\cuda\v8.0\include\vector_types.h
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\global.h
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\global.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cstdint
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\stdint.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\AdvectMode.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\AdvectMode.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\string
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iterator
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\istream
@@ -375,33 +375,33 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cerrno
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\errno.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\share.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\BrickIndexGPU.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\BrickIndexGPU.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\vector_functions.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\vector_types.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\BrickRequestsGPU.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\IntegrationParamsGPU.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\TracingCommon.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\BrickRequestsGPU.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\IntegrationParamsGPU.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\TracingCommon.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\random
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\vector
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\xmemory
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\Vec.h
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\Vec.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\iostream
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\cassert
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\assert.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\crtdefs.h
 C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include\algorithm
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\cutil_math.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\cutil_math.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilterMode.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\TextureFilterMode.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\VolumeInfoGPU.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\VolumeInfoGPU.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\vector_types.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Advect.cuh
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\Coords.cuh
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\TextureFilter.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Advect.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\Coords.cuh
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\TextureFilter.cuh
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_constants.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\math_functions.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\IntegratorCommon.cuh
-D:\Research\Projects\TurbulenceVisualisation\gitrepo\include\cudaUtil.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\IntegratorCommon.cuh
+C:\Users\ga38cat\LocalDocuments\turbulence-vis\include\cudaUtil.h
 C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include\cuda_runtime.h
-d:\research\projects\turbulencevisualisation\gitrepo\renderer\IntegratorKernelDefines.h
+c:\users\ga38cat\localdocuments\turbulence-vis\renderer\IntegratorKernelDefines.h

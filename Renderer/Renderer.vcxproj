@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;DXUT/Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;DXUT/Core;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>
@@ -81,8 +81,8 @@ robocopy "$(SolutionDir)dll" "$(TargetDir)\" *.dll /XX /NJH /NJS /NP
 if errorlevel 4 goto error
 robocopy "$(SolutionDir)dll\$(Configuration)" "$(TargetDir)\" *.dll /XX /NJH /NJS /NP
 if errorlevel 4 goto error
-robocopy “$(WindowsSdkDir)redist\d3d\x64” "$(TargetDir)\" D3DCompiler_*.dll /XX /NJH /NJS /NP
-if errorlevel 4 goto error
+#robocopy “$(WindowsSdkDir)redist\d3d\x64” "$(TargetDir)\" D3DCompiler_*.dll /XX /NJH /NJS /NP
+#if errorlevel 4 goto error
 exit 0
 :error
 exit 1</Command>
