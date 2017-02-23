@@ -7,6 +7,7 @@ namespace
 		"Line",
 		"Ribbon",
 		"Tube",
+		"Particle",
 		"Unknown"
 	};
 }

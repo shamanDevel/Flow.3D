@@ -80,6 +80,45 @@ BlendState BlendBehind
 };
 
 
+// for Particles
+// [
+DepthStencilState dsNoDepth
+{
+	DepthEnable = FALSE;
+};
+
+RasterizerState SpriteRS
+{
+	CullMode = None;
+};
+
+BlendState AlphaBlending
+{
+	AlphaToCoverageEnable = FALSE;
+	BlendEnable[0] = TRUE;
+	SrcBlend = SRC_ALPHA;
+	DestBlend = INV_SRC_ALPHA;
+	BlendOp = ADD;
+	SrcBlendAlpha = ONE;
+	DestBlendAlpha = ONE;
+	BlendOpAlpha = ADD;
+	RenderTargetWriteMask[0] = 0x0F;
+};
+
+BlendState AdditionBlending
+{
+	AlphaToCoverageEnable = FALSE;
+	BlendEnable[0] = TRUE;
+	SrcBlend = SRC_COLOR;
+	DestBlend = DEST_COLOR;
+	BlendOp = ADD;
+	SrcBlendAlpha = ONE;
+	DestBlendAlpha = ONE;
+	BlendOpAlpha = ADD;
+	RenderTargetWriteMask[0] = 0x0F;
+};
+// ]
+
 
 struct LineVertex
 {
@@ -397,6 +436,88 @@ float4 psSphere(SpherePSIn input, out float depth : SV_Depth) : SV_Target
 }
 
 
+
+struct ParticleGSIn
+{
+	float3 pos    : POSITION;
+	float  time : TIME;
+	float3 normal : NORMAL;
+	float3 vel    : VELOCITY;
+	float3 vort   : VORTICITY;
+	nointerpolation uint lineID : LINE_ID;
+};
+
+struct ParticlePSIn
+{
+	float4 pos        : SV_Position;
+	float2 tex    : TEXTURE;
+	float3 posWorld   : POS_WORLD;
+	float3 tubeCenter : TUBE_CENTER;
+	float  time : TIME;
+	float3 normal     : NORMAL;
+	nointerpolation uint lineID : LINE_ID;
+};
+
+void vsParticle(LineVertex input, out ParticleGSIn output)
+{
+	output.pos = input.pos;
+	output.time = input.time;
+	output.normal = input.normal;
+	output.vel = input.vel;
+	output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
+	output.lineID = input.lineID;
+}
+
+[maxvertexcount(6)]
+void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSIn> outStream)
+{
+	ParticlePSIn o;
+	o.time = input[0].time;
+	o.tubeCenter = input[0].pos;
+	o.posWorld = o.tubeCenter;
+	o.normal = input[0].normal;
+	o.lineID = input[0].lineID;
+	float4 pos = mul(g_mWorldViewProj, float4(input[0].pos, 1.0));
+
+	float size = sqrt(1 - saturate((o.time - g_fTimeMin) / (g_fTimeMax - g_fTimeMin)))
+		* g_fTubeRadius * 5;
+	float spriteSizeW = size;
+	float spriteSizeH = size; // * (gScreenResolution.x / gScreenResolution.y);
+
+	o.pos = float4(pos.x - spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
+	o.tex = float2(0, 1);
+	outStream.Append(o);
+	o.pos = float4(pos.x - spriteSizeW, pos.y - spriteSizeH, pos.z, pos.w);
+	o.tex = float2(0, 0);
+	outStream.Append(o);
+	o.pos = float4(pos.x + spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
+	o.tex = float2(1, 1);
+	outStream.Append(o);
+	outStream.RestartStrip();
+
+	o.pos = float4(pos.x + spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
+	o.tex = float2(1, 1);
+	outStream.Append(o);
+	o.pos = float4(pos.x - spriteSizeW, pos.y - spriteSizeH, pos.z, pos.w);
+	o.tex = float2(0, 0);
+	outStream.Append(o);
+	o.pos = float4(pos.x + spriteSizeW, pos.y - spriteSizeH, pos.z, pos.w);
+	o.tex = float2(1, 0);
+	outStream.Append(o);
+	outStream.RestartStrip();
+}
+
+float4 psParticle(ParticlePSIn input) : SV_Target
+{
+	float4 color = getColor(input.lineID, input.time);
+
+	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
+	float alpha = 1; //smoothstep(0, 0.3, 1 - dist);
+	if (dist > 0.5) discard;
+
+	return float4(color.rgb, color.a * alpha);
+}
+
 technique11 tLine
 {
 	pass P0_Line
@@ -457,6 +578,16 @@ technique11 tLine
 		SetRasterizerState( CullNone );
 		SetDepthStencilState( DepthEqual, 0 );
 		SetBlendState( BlendBehind, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+	}
+
+	pass P6_Particle
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsParticle()));
+		SetGeometryShader(CompileShader(gs_5_0, gsParticle()));
+		SetPixelShader(CompileShader(ps_5_0, psParticle()));
+		SetRasterizerState(SpriteRS);
+		SetDepthStencilState(dsNoDepth, 0);
+		SetBlendState(AdditionBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
 	}
 }
 

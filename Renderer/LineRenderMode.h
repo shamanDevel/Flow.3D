@@ -12,6 +12,7 @@ enum eLineRenderMode
 	LINE_RENDER_LINE = 0,
 	LINE_RENDER_RIBBON,
 	LINE_RENDER_TUBE,
+	LINE_RENDER_PARTICLES,
 	LINE_RENDER_MODE_COUNT
 };
 std::string GetLineRenderModeName(eLineRenderMode renderMode);
