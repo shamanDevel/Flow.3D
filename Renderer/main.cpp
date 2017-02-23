@@ -71,7 +71,8 @@ using namespace tum3D;
 
 Vec2i            g_windowSize(0, 0);
 float            g_renderBufferSizeFactor = 2.0f;
-
+Vec4f            g_rotationX = Vec4f(0, 0, 0, 1);
+Vec4f            g_rotationY = Vec4f(0, 0, 0, 1);
 
 ProjectionParams g_projParams;
 StereoParams     g_stereoParams;
@@ -2828,13 +2829,17 @@ void OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddleButtonDow
 		if(bLeftButtonDown && bLeftButtonDownPrev) {
 			// rotate
 			Vec4f rotationX;
-			tum3D::rotationQuaternion(xDelta * PI, Vec3f(0.0f, 1.0f, 0.0f), rotationX);
+			tum3D::rotationQuaternion(-xDelta * PI, Vec3f(0.0f, 1.0f, 0.0f), rotationX);
 			Vec4f rotationY;
 			tum3D::rotationQuaternion(yDelta * PI, Vec3f(1.0f, 0.0f, 0.0f), rotationY);
 
-			Vec4f temp, temp2;
-			tum3D::multQuaternion(rotationX, g_viewParams.m_rotationQuat, temp);
-			tum3D::multQuaternion(rotationY, temp, g_viewParams.m_rotationQuat);
+			//add to global rotation
+			Vec4f temp;
+			tum3D::multQuaternion(rotationX, g_rotationX, temp); g_rotationX = temp;
+			tum3D::multQuaternion(rotationY, g_rotationY, temp); g_rotationY = temp;
+
+			//combine and set to view params
+			tum3D::multQuaternion(g_rotationY, g_rotationX, g_viewParams.m_rotationQuat);
 		}
 		if(bMiddleButtonDown && bMiddleButtonDownPrev) {
 			if(bShiftDown) {
