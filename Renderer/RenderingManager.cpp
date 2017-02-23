@@ -742,12 +742,16 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 		}
 	}
 
+	//This would stop rendering if lines and raycasting are disabled
+	//By removing that, at least the outlines are rendered and one can see the camera interactions
+#if 0
 	if(!doRaycasting && !m_particleRenderParams.m_linesEnabled && pBallBuffers.empty())
 	{
 		// nothing to do...
 		CancelRendering();
 		return STATE_DONE;
 	}
+#endif
 
 	if(doRaycasting)
 	{

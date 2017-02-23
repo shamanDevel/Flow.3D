@@ -7,7 +7,7 @@
 *.db
 *.opendb
 
-*/Debug/*
-*/Release/*
+**/Debug/**
+**/Release/**
 
 Thumbs.db
