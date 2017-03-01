@@ -1221,7 +1221,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	m_lineEffect.m_pvLightPosVariable->SetFloatVector(m_viewParams.GetCameraPosition());
 	m_lineEffect.m_pfRibbonHalfWidthVariable->SetFloat(0.01f * m_particleRenderParams.m_ribbonWidth * 0.5f);
 	m_lineEffect.m_pfTubeRadiusVariable->SetFloat(0.01f * m_particleRenderParams.m_tubeRadius);
-
+	m_lineEffect.m_pfParticleTransparencyVariable->SetFloat(m_particleRenderParams.m_particleRenderMode);
 	m_lineEffect.m_pbTubeRadiusFromVelocityVariable->SetBool(m_particleRenderParams.m_tubeRadiusFromVelocity);
 	m_lineEffect.m_pfReferenceVelocityVariable->SetFloat(m_particleRenderParams.m_referenceVelocity);
 

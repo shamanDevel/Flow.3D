@@ -8,7 +8,7 @@
 #include <Vec.h>
 
 #include "LineRenderMode.h"
-
+#include "ParticleRenderMode.h"
 
 struct ParticleRenderParams
 {
@@ -24,6 +24,9 @@ struct ParticleRenderParams
 	eLineRenderMode m_lineRenderMode;
 	float m_ribbonWidth;
 	float m_tubeRadius;
+
+	float m_particleTransparency;
+	eParticleRenderMode m_particleRenderMode;
 
 	bool  m_tubeRadiusFromVelocity;
 	float m_referenceVelocity;

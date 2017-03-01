@@ -1409,6 +1409,12 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		strLineRenderModes << "," << GetLineRenderModeName(eLineRenderMode(i));
 	TwType twLineRenderMode = TwDefineEnumFromString("EnumLineRenderMode", strLineRenderModes.str().c_str());
 
+	std::ostringstream strParticleRenderModes;
+	strParticleRenderModes << GetParticleRenderModeName(eParticleRenderMode(0));
+	for (uint i = 1; i < PARTICLE_RENDER_MODE_COUNT; i++)
+		strParticleRenderModes << "," << GetParticleRenderModeName(eParticleRenderMode(i));
+	TwType twParticleRenderMode = TwDefineEnumFromString("EnumParticleRenderMode", strParticleRenderModes.str().c_str());
+
 	std::ostringstream strAdvectModes;
 	strAdvectModes << GetAdvectModeName(eAdvectMode(0));
 	for(uint i = 1; i < ADVECT_MODE_COUNT; i++) 
@@ -1551,6 +1557,9 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "TubeRadius",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_tubeRadius,		"label='Tube Radius' step=0.01 group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "RadiusFromVel",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_tubeRadiusFromVelocity,"label='Tube Radius from Velocity' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ReferenceVel",	TW_TYPE_FLOAT,		&g_particleRenderParams.m_referenceVelocity,"label='Reference Velocity' min=0.001 step=0.01 precision=3 group=ParticleRender");
+	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "ParticleRenderMode", twParticleRenderMode, &g_particleRenderParams.m_particleRenderMode, "label='Particle Render Mode' group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "ParticleTransparency", TW_TYPE_FLOAT, &g_particleRenderParams.m_particleTransparency, "label='Particle Transparency' group=ParticleRender min=0 max=1");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ColorByTime",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_colorByTime,		"label='Color by Age' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "Color0",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color0,			"label='Color 0' group=ParticleRender");

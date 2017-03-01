@@ -23,6 +23,8 @@ public:
 	ID3DX11EffectScalarVariable*			m_pfRibbonHalfWidthVariable;
 	ID3DX11EffectScalarVariable*			m_pfTubeRadiusVariable;
 
+	ID3DX11EffectScalarVariable*			m_pfParticleTransparencyVariable;
+
 	ID3DX11EffectScalarVariable*			m_pbTubeRadiusFromVelocityVariable;
 	ID3DX11EffectScalarVariable*			m_pfReferenceVelocityVariable;
 

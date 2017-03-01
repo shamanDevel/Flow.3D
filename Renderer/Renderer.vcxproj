@@ -198,6 +198,7 @@ exit 1</Command>
     <ClCompile Include="LineRenderMode.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Measure.cpp" />
+    <ClCompile Include="ParticleRenderMode.cpp" />
     <ClCompile Include="ParticleRenderParams.cpp" />
     <ClCompile Include="ProgressBarEffect.cpp" />
     <ClCompile Include="ProjectionParams.cpp" />
@@ -285,6 +286,7 @@ exit 1</Command>
     <ClInclude Include="LineRenderMode.h" />
     <ClInclude Include="Measure.h" />
     <ClInclude Include="Integrator.h" />
+    <ClInclude Include="ParticleRenderMode.h" />
     <ClInclude Include="ParticleRenderParams.h" />
     <ClInclude Include="ProgressBarEffect.h" />
     <ClInclude Include="ProjectionParams.h" />

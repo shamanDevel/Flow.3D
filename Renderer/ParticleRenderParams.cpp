@@ -19,6 +19,9 @@ void ParticleRenderParams::Reset()
 	m_ribbonWidth = 0.8f;
 	m_tubeRadius = 0.4f;
 
+	m_particleRenderMode = PARTICLE_RENDER_ADDITIVE;
+	m_particleTransparency = 0.1f;
+
 	m_tubeRadiusFromVelocity = true;
 	m_referenceVelocity = 0.4f;
 

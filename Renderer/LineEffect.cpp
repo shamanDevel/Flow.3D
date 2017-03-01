@@ -23,6 +23,8 @@ HRESULT LineEffect::GetVariables()
 	V_RETURN( GetScalarVariable("g_fRibbonHalfWidth", m_pfRibbonHalfWidthVariable) );
 	V_RETURN( GetScalarVariable("g_fTubeRadius", m_pfTubeRadiusVariable) );
 
+	V_RETURN( GetScalarVariable("g_fParticleTransparency", m_pfParticleTransparencyVariable) );
+
 	V_RETURN( GetScalarVariable("g_bTubeRadiusFromVelocity", m_pbTubeRadiusFromVelocityVariable) );
 	V_RETURN( GetScalarVariable("g_fReferenceVelocity", m_pfReferenceVelocityVariable) );
 

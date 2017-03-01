@@ -143,6 +143,9 @@
     </ClCompile>
     <ClCompile Include="..\shared\CompressVolume.cpp" />
     <ClCompile Include="..\shared\GPUResources.cpp" />
+    <ClCompile Include="ParticleRenderMode.cpp">
+      <Filter>Enums</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -444,6 +447,9 @@
     <ClInclude Include="..\include\GPUResources.h" />
     <ClInclude Include="HeatCurrent.cuh">
       <Filter>cudaTurbulence</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleRenderMode.h">
+      <Filter>Enums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

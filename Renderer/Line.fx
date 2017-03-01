@@ -12,6 +12,8 @@ cbuffer PerFrame
 	bool     g_bTubeRadiusFromVelocity;
 	float    g_fReferenceVelocity;
 
+	float    g_fParticleTransparency;
+
 	bool     g_bColorByTime;
 	float4   g_vColor0;
 	float4   g_vColor1;
@@ -507,12 +509,12 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	outStream.RestartStrip();
 }
 
-float4 psParticle(ParticlePSIn input) : SV_Target
+float4 psParticleAdditive(ParticlePSIn input) : SV_Target
 {
 	float4 color = getColor(input.lineID, input.time);
 
 	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
-	float alpha = 1; //smoothstep(0, 0.3, 1 - dist);
+	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
 	if (dist > 0.5) discard;
 
 	return float4(color.rgb, color.a * alpha);
@@ -584,7 +586,7 @@ technique11 tLine
 	{
 		SetVertexShader(CompileShader(vs_5_0, vsParticle()));
 		SetGeometryShader(CompileShader(gs_5_0, gsParticle()));
-		SetPixelShader(CompileShader(ps_5_0, psParticle()));
+		SetPixelShader(CompileShader(ps_5_0, psParticleAdditive()));
 		SetRasterizerState(SpriteRS);
 		SetDepthStencilState(dsNoDepth, 0);
 		SetBlendState(AdditionBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
