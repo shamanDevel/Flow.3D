@@ -86,7 +86,8 @@ BlendState BlendBehind
 // [
 DepthStencilState dsNoDepth
 {
-	DepthEnable = FALSE;
+	DepthEnable = true;
+	DepthWriteMask = 0;
 };
 
 RasterizerState SpriteRS

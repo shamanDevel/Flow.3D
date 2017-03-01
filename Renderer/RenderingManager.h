@@ -34,6 +34,7 @@
 #include "GPUResources.h"
 #include "CompressVolume.h"
 
+#include "ScreenEffect.h"
 
 class RenderingManager
 {
@@ -124,6 +125,8 @@ private:
 
 	//Renders the stream + path lines
 	void RenderLines(const LineBuffers* pLineBuffers, bool enableColor, bool blendBehind);
+	//If lineRenderMode==Particles, RenderLines delegates to this method after setting the shader parameters
+	void RenderParticles(const LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport);
 	
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);
@@ -158,6 +161,9 @@ private:
 	ID3D11ShaderResourceView* m_pRaycastSRV;
 	ID3D11RenderTargetView*   m_pRaycastRTV;
 	cudaGraphicsResource*     m_pRaycastTexCuda;
+	ID3D11Texture2D*          m_pTransparentTex;
+	ID3D11ShaderResourceView* m_pTransparentSRV;
+	ID3D11RenderTargetView*   m_pTransparentRTV;
 	ID3D11Texture2D*          m_pDepthTex;
 	ID3D11DepthStencilView*   m_pDepthDSV;
 	ID3D11Texture2D*          m_pDepthTexCopy;
@@ -166,6 +172,7 @@ private:
 	cudaArray*                m_pRaycastArray;
 	//TODO m_pDepthArray?
 
+	ScreenEffect*             m_pScreenEffect;
 
 	// volume-dependent resources
 	std::vector<float*> m_dpChannelBuffer;
