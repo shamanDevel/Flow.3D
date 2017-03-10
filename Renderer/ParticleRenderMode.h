@@ -8,7 +8,7 @@
 enum eParticleRenderMode
 {
 	PARTICLE_RENDER_ADDITIVE = 0,
-	PARTICLE_RENDER_ORDER_INDEPENDENT,
+	PARTICLE_RENDER_MULTIPLICATIVE,
 	PARTICLE_RENDER_MODE_COUNT
 };
 std::string GetParticleRenderModeName(eParticleRenderMode renderMode);

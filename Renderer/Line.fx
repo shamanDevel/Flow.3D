@@ -112,14 +112,28 @@ BlendState AdditionBlending
 {
 	AlphaToCoverageEnable = FALSE;
 	BlendEnable[0] = TRUE;
-	SrcBlend = SRC_COLOR;
-	DestBlend = DEST_COLOR;
+	SrcBlend = ONE;
+	DestBlend = ONE;
 	BlendOp = ADD;
 	SrcBlendAlpha = ONE;
 	DestBlendAlpha = ONE;
 	BlendOpAlpha = ADD;
 	RenderTargetWriteMask[0] = 0x0F;
 };
+
+BlendState MultiplicationBlending
+{
+	AlphaToCoverageEnable = FALSE;
+	BlendEnable[0] = TRUE;
+	SrcBlend = DEST_COLOR;
+	DestBlend = ZERO;
+	BlendOp = ADD;
+	SrcBlendAlpha = ONE;
+	DestBlendAlpha = ONE;
+	BlendOpAlpha = ADD;
+	RenderTargetWriteMask[0] = 0x0F;
+};
+
 // ]
 
 
@@ -518,7 +532,19 @@ float4 psParticleAdditive(ParticlePSIn input) : SV_Target
 	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
 	if (dist > 0.5) discard;
 
-	return float4(color.rgb, color.a * alpha);
+	return float4(color.rgb * alpha * color.a, color.a * alpha);
+}
+
+float4 psParticleMultiplicative(ParticlePSIn input) : SV_Target
+{
+	float4 color = getColor(input.lineID, input.time);
+
+	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
+	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
+	if (dist > 0.5) discard;
+
+	//return float4(float3(1,1,1) - (color.rgb * alpha * color.a), color.a * alpha);
+	return float4(color.rgb * (1 - (alpha * color.a)), color.a * alpha);
 }
 
 technique11 tLine
@@ -591,6 +617,16 @@ technique11 tLine
 		SetRasterizerState(SpriteRS);
 		SetDepthStencilState(dsNoDepth, 0);
 		SetBlendState(AdditionBlending, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+	}
+	
+	pass P7_ParticleMult
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsParticle()));
+		SetGeometryShader(CompileShader(gs_5_0, gsParticle()));
+		SetPixelShader(CompileShader(ps_5_0, psParticleMultiplicative()));
+		SetRasterizerState(SpriteRS);
+		SetDepthStencilState(dsNoDepth, 0);
+		SetBlendState(MultiplicationBlending, float4(1.0f, 1.0f, 1.0f, 0.0f), 0xFFFFFFFF);
 	}
 }
 

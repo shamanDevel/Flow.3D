@@ -4,7 +4,7 @@ namespace
 {
 	std::string g_particleRenderModeName[PARTICLE_RENDER_MODE_COUNT + 1] = {
 		"Additive",
-		"Order-Independent",
+		"Multiplicative",
 		"Unknown"
 	};
 }

@@ -421,7 +421,7 @@ HRESULT RenderingManager::CreateScreenDependentResources()
 		cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pRaycastTexCuda, m_pRaycastTex, cudaGraphicsRegisterFlagsSurfaceLoadStore));
 
 		// create texture for transparent particle rendering
-		desc.Format = DXGI_FORMAT_R16G16B16A16_UNORM;
+		desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		hr = m_pDevice->CreateTexture2D(&desc, nullptr, &m_pTransparentTex);
 		if (FAILED(hr)) return hr;
 		hr = m_pDevice->CreateShaderResourceView(m_pTransparentTex, nullptr, &m_pTransparentSRV);
@@ -1357,8 +1357,14 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 	pContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, &pOldDSV);
 
 	// set transparent offscreen target
-	float black[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	pContext->ClearRenderTargetView(m_pTransparentRTV, black);
+	int pass = 6;
+	float clearColorSingle = 0;
+	if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_MULTIPLICATIVE) {
+		pass = 7;
+		clearColorSingle = 1;
+	}
+	float clearColor[4] = { clearColorSingle, clearColorSingle, clearColorSingle, 0.0f };
+	pContext->ClearRenderTargetView(m_pTransparentRTV, clearColor);
 	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, m_pDepthDSV);
 
 	//render
@@ -1373,7 +1379,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		pContext->RSSetViewports(1, &viewport);
 
 		m_lineEffect.m_pmWorldViewProjVariable->SetMatrix(projLeft * viewLeft);
-		m_lineEffect.m_pTechnique->GetPassByIndex(6)->Apply(0, pContext);
+		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 
@@ -1381,7 +1387,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		pContext->RSSetViewports(1, &viewport);
 
 		m_lineEffect.m_pmWorldViewProjVariable->SetMatrix(projRight * viewRight);
-		m_lineEffect.m_pTechnique->GetPassByIndex(6)->Apply(0, pContext);
+		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 	}
@@ -1393,7 +1399,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		pContext->RSSetViewports(1, &viewport);
 
 		m_lineEffect.m_pmWorldViewProjVariable->SetMatrix(proj * view);
-		m_lineEffect.m_pTechnique->GetPassByIndex(6)->Apply(0, pContext);
+		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 	}
@@ -1413,7 +1419,12 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 	pContext->IASetInputLayout(NULL);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	m_pScreenEffect->m_pTexVariable->SetResource(m_pTransparentSRV);
-	m_pScreenEffect->m_pTechnique->GetPassByIndex(2)->Apply(0, pContext);
+	//if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ADDITIVE) {
+		m_pScreenEffect->m_pTechnique->GetPassByIndex(2)->Apply(0, pContext);
+	//}
+	//else if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ORDER_INDEPENDENT) {
+		//m_pScreenEffect->m_pTechnique->GetPassByIndex(3)->Apply(0, pContext);
+	//}
 	pContext->Draw(4, 0);
 
 	// restore viewports and render targets

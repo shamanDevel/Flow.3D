@@ -21,6 +21,10 @@ DepthStencilState DepthDisable
 	DepthWriteMask = 0;
 };
 
+DepthStencilState DepthDefault
+{
+};
+
 BlendState BlendDisable
 {
 };
@@ -33,6 +37,18 @@ BlendState BlendOver
 	SrcBlendAlpha  = ONE;
 	DestBlendAlpha = INV_SRC_ALPHA;
 	BlendOpAlpha   = ADD;
+	BlendEnable[0] = TRUE;
+};
+
+//For order-independent blending
+BlendState BlendOverAlt
+{
+	SrcBlend = ONE;
+	DestBlend = INV_SRC_ALPHA;
+	BlendOp = ADD;
+	SrcBlendAlpha = ONE;
+	DestBlendAlpha = INV_SRC_ALPHA;
+	BlendOpAlpha = ADD;
 	BlendEnable[0] = TRUE;
 };
 
@@ -90,6 +106,17 @@ float4 psTex(float4 pos : SV_Position, float2 texCoord : TEXCOORD) : SV_Target
 	return g_tex.Sample(SamplerLinear, texCoord);
 }
 
+float4 psTexSubWhite(float4 pos : SV_Position, float2 texCoord : TEXCOORD) : SV_Target
+{
+	float4 col = g_tex.Sample(SamplerLinear, texCoord);
+	col.rgb = col.rgb - col.a * float3(1,1,1) + float3(1,1,1);
+	if (col.a > 0) col.a = 1;
+	//if (col.a > 1) {
+	//	col.rgb = col.rgb / col.a;
+	//	col.a = 1;
+	//}
+	return col;
+}
 
 technique11 tScreen
 {
@@ -121,5 +148,15 @@ technique11 tScreen
 		SetRasterizerState( CullNone );
 		SetDepthStencilState( DepthDisable, 0 );
 		SetBlendState( BlendOver, float4( 0.0f, 0.0f, 0.0f, 0.0f ), 0xFFFFFFFF );
+	}
+
+	pass P3_BlitBlendOverSubWhite
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsScreen()));
+		SetGeometryShader(NULL);
+		SetPixelShader(CompileShader(ps_5_0, psTexSubWhite()));
+		SetRasterizerState(CullNone);
+		SetDepthStencilState(DepthDefault, 0);
+		SetBlendState(BlendOverAlt, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
 	}
 }
