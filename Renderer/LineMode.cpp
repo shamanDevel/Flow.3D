@@ -8,6 +8,7 @@ namespace
 	std::string g_lineModeName[LINE_MODE_COUNT + 1] = {
 		"Stream",
 		"Path",
+		"Particle-Stream",
 		//"Streak",
 		"Unknown"
 	};
@@ -40,8 +41,19 @@ bool LineModeIsTimeDependent(eLineMode mode)
 		case LINE_PATH:
 			return true;
 
+		case LINE_PARTICLE_STREAM:
+			return false;
+
 		default:
 			assert(false);
 			return false;
 	}
+}
+
+bool LineModeIsIterative(eLineMode mode)
+{
+	if (mode == LINE_PARTICLE_STREAM) {
+		return true;
+	}
+	return false;
 }

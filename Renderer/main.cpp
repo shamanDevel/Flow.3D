@@ -1515,9 +1515,22 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "AdvectMode",		twAdvectMode,		&g_particleTraceParams.m_advectMode,		"label='Advection' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "DenseOutput",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enableDenseOutput,	"label='Dense Output' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "TraceInterpol",	twFilterMode,		&g_particleTraceParams.m_filterMode,		"label='Interpolation' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "LineMode",		twLineMode,			&g_particleTraceParams.m_lineMode,			"label='Line Mode' group=ParticleTrace");
+	//TwAddVarRW(g_pTwBarMain, "LineMode",		twLineMode,			&g_particleTraceParams.m_lineMode,			"label='Line Mode' group=ParticleTrace");
+	TwAddVarCB(g_pTwBarMain, "LineMode",		twLineMode,
+		[](const void* valueToSet, void* clientData) {
+			g_particleTraceParams.m_lineMode = *((eLineMode*)valueToSet);
+			if (LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
+				//force render mode to 'particles' and preview to true
+				g_particleRenderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
+				g_showPreview = true;
+			}
+		},
+		[](void* value, void* clientData) {
+			*((eLineMode*) value) = g_particleTraceParams.m_lineMode;
+		}, 
+		NULL, "label='Line Mode' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineCount",		TW_TYPE_UINT32,		&g_particleTraceParams.m_lineCount,			"label='Line Count' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' min=2 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=2 step=0.1 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectErrorTol",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectErrorTolerance,"label='Advection Error Tolerance (Voxels)' min=0 precision=5 step=0.001 group=ParticleTrace");
@@ -2111,7 +2124,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 
 	if(!g_volume.IsOpen()) goto NoVolumeLoaded;
 
-
+	//-----------------------------------------------------------
+	// FILTERING
+	//-----------------------------------------------------------
 
 	// start filtering if required
 	bool needFilteredBricks = g_filterParams.HasNonZeroRadius();
@@ -2135,7 +2150,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		s_isFiltering = g_filteringManager.StartFiltering(g_volume, g_filterParams);
 	}
 
-
+	//-----------------------------------------------------------
+	// TRACING
+	//-----------------------------------------------------------
 
 	// start particle tracing if required
 	float timeSinceTraceUpdate = float(curTime - g_lastTraceParamsUpdate) / float(CLOCKS_PER_SEC);
@@ -2176,9 +2193,10 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	g_volume.UpdateLoadingQueue(bricksToLoad);
 	g_volume.UnloadLRUBricks();
 
-
+	//Check if tracing is done and if so, start rendering
 	if(s_isTracing)
 	{
+		std::cout << "Trace" << std::endl;
 		bool finished = g_tracingManager.Trace();
 
 		if(finished)
@@ -2204,6 +2222,10 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		}
 	}
 
+
+	//-----------------------------------------------------------
+	// RENDERING
+	//-----------------------------------------------------------
 
 	bool renderingUpdated = false;
 	if (g_redraw)
@@ -2322,9 +2344,15 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		}
 	}
 
+	//-----------------------------------------------------------
+	// COMBINE RESULTS AND DRAW ON SCREEN
+	//-----------------------------------------------------------
+
 	// if this was the last brick, or we want to see unfinished images, copy from raycast target into finished image tex
 	if (renderingUpdated && (renderingFinished || g_showPreview))
 	{
+		if (s_isTracing) std::cout << "Render while still tracing" << std::endl;
+
 		// common shader vars for fullscreen pass
 		Vec2f screenMin(-1.0f, -1.0f);
 		Vec2f screenMax( 1.0f,  1.0f);
@@ -2435,6 +2463,23 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		pd3dImmediateContext->OMSetRenderTargets(1, &pRTV, DXUTGetD3D11DepthStencilView());
 	}
 
+
+
+	//-----------------------------------------------------------
+	// RESTART RENDERING IF PARTICLES ARE ENABLED
+	//-----------------------------------------------------------
+
+	if (renderingUpdated && renderingFinished) {
+		if (LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
+			g_retrace = true;
+			std::cout << "Particle mode -> start again" << std::endl;
+		}
+	}
+
+
+	//-----------------------------------------------------------
+	// MISCELANOUS TASKS (Screenshots, ...)
+	//-----------------------------------------------------------
 
 NoVolumeLoaded:
 

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <fstream>
 #include <random>
+#include <chrono>
 
 #include "cudaUtil.h"
 #include "cudaTum3D.h"
@@ -185,7 +186,9 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	// create random seed positions
 	std::vector<LineCheckpoint> checkpoints(m_traceParams.m_lineCount);
 	std::uniform_real_distribution<float> rng;
-	std::mt19937 engine;
+	// obtain a seed from the system clock:
+	unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+	std::mt19937 engine(seed1);
 	if(m_traceParams.m_upsampledVolumeHack)
 	{
 		// upsampled volume is offset by half a grid spacing...
