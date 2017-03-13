@@ -60,6 +60,13 @@ public:
 
 	//Performs one tracing step. Is called multiple times (once per frame), until it is done and returns true
 	bool Trace(); // returns true if finished TODO error code
+
+	//Traces particles. If LineModeIsIterative returns true for the selected line mode,
+	//then the line should be treated as particles rather than lines:
+	//The current checkpoint is the seeding point and all particles are advected
+	bool TraceParticlesIteratively();
+	//Start particle tracing. This fills all bricks of the current time steps in the loading queue
+	void StartTracingParticlesIteratively();
 	
 	//Cancels the tracing: resets all parameters
 	void CancelTracing();
@@ -191,6 +198,12 @@ private:
 	// Update data in the given brick slot: Upload the specified time steps as required, limited by the budget.
 	// Returns true if all required time steps were uploaded, false if the budget ran out.
 	bool UpdateBrickSlot(uint& uploadBudget, uint brickSlotIndex, uint brickLinearIndex, int timestepFrom, int timestepTo);
+	
+	// Uploads a whole timestep
+	// Returns true if all bricks of the timestep fit into memory, false if we had to bail out
+	// (if a brick isn't loaded from disk yet, or the upload budget ran out).
+	bool UploadWholeTimestep(int timestep, bool forcePurgeFinished);
+	
 	// Perform one round of particle tracing, using the bricks which are currently on the GPU.
 	void TraceRound();
 
@@ -286,6 +299,9 @@ private:
 	int                       m_timestepMax; // last timestep that might be needed (limited by lineMaxAge!)
 
 	float                     m_progress;
+
+	// for particle tracing
+	bool                      m_needsUploadTimestep;
 
 
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;

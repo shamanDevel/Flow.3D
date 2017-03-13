@@ -45,7 +45,7 @@ TracingManager::TracingManager()
 	, m_pResult(nullptr), m_indexBufferDirty(true)
 	, m_pVolume(nullptr), m_pFlowGraph(nullptr), m_timestepMax(0)
 	, m_progress(0.0f)
-	, m_verbose(false)
+	, m_verbose(true)
 {
 	m_brickIndexGPU.Init();
 	m_brickRequestsGPU.Init();
@@ -246,11 +246,14 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 
 	m_timerTrace.Start();
 
-	// run integration kernel immediately to populate brick request list
-	TraceRound();
-
-
-	UpdateBricksToLoad();
+	if (LineModeIsIterative(m_traceParams.m_lineMode)) {
+		StartTracingParticlesIteratively();
+	}
+	else {
+		// run integration kernel immediately to populate brick request list
+		TraceRound();
+		UpdateBricksToLoad();
+	}
 
 	return true;
 }
@@ -313,6 +316,11 @@ bool TracingManager::Trace()
 		m_timings.WaitDiskWall += m_timerDiskWait.GetElapsedTimeMS();
 	}
 
+	if (LineModeIsIterative(m_traceParams.m_lineMode)) {
+		//particles
+		return TraceParticlesIteratively();
+		//will only return true on errors
+	}
 
 	uint uploadBudget = m_uploadsPerFrame;
 	for(uint round = 0; round < m_roundsPerFrame; round++)
@@ -426,6 +434,28 @@ bool TracingManager::Trace()
 	UpdateBricksToLoad();
 
 	return false;
+}
+
+bool TracingManager::TraceParticlesIteratively()
+{
+	//1. Upload all bricks to the GPU
+	if (m_needsUploadTimestep) {
+		int timestep = m_pVolume->GetCurNearestTimestepIndex();
+		printf("Upload all bricks at timestep %d\n", timestep);
+		if (!UploadWholeTimestep(timestep, false)) {
+			return false; //still uploading
+		}
+		m_needsUploadTimestep = false;
+		printf("uploading done\n");
+	}
+
+	return true;
+}
+
+void TracingManager::StartTracingParticlesIteratively()
+{
+	//start load all blocks
+	m_needsUploadTimestep = true;
 }
 
 void TracingManager::CancelTracing()
@@ -975,10 +1005,10 @@ bool TracingManager::UploadBricks(uint& uploadBudget, bool forcePurgeFinished)
 
 bool TracingManager::UploadBricks(uint& uploadBudget, bool forcePurgeFinished, uint& uploadedCount)
 {
-	//if(m_verbose)
-	//{
-	//	printf("TracingManager::UploadBricks (budget %u forcePurge %i)\n", uploadBudget, int(forcePurgeFinished));
-	//}
+	if(m_verbose)
+	{
+		printf("TracingManager::UploadBricks (budget %u forcePurge %i)\n", uploadBudget, int(forcePurgeFinished));
+	}
 
 	uploadedCount = 0;
 
@@ -1242,6 +1272,94 @@ bool TracingManager::UpdateBrickSlot(uint& uploadBudget, uint brickSlotIndex, ui
 	m_bricksToDoPrioritiesDirty = true;
 
 	return result;
+}
+
+bool TracingManager::UploadWholeTimestep(int timestep, bool forcePurgeFinished)
+{
+	m_bricksToLoad.clear();
+
+	//This is more or less a modified version of UploadBricks
+
+	uint uploadBudget = 8;
+
+	if (m_verbose)
+	{
+		printf("TracingManager::UploadWholeTimestep (budget %u)\n", uploadBudget);
+	}
+
+	uint timeSlotCount = m_brickSlotCount.x();
+
+	uint brickCount = m_pVolume->GetBrickCount().volume();
+
+	// find a brick that needs to be uploaded
+	bool finished = true;
+	for (uint linearBrickIndex = 0; linearBrickIndex < brickCount; ++linearBrickIndex)
+	{
+		uint timestepFrom = timestep;
+		uint timestepTo = timestep;
+
+		if (BrickIsOnGPU(linearBrickIndex, timestepFrom, timestepTo))
+		{
+			assert(m_bricksOnGPU.count(linearBrickIndex) > 0);
+			// update slot's lastUseTimestamp
+			uint slotIndex = m_bricksOnGPU[linearBrickIndex];
+			m_brickSlotInfo[slotIndex].lastUseTimestamp = m_currentTimestamp;
+			continue;
+		}
+
+		bool brickIsLoaded = BrickIsLoaded(linearBrickIndex, timestepFrom, timestepTo);
+
+		if (!brickIsLoaded) {
+			//add to loading queue
+			m_bricksToLoad.push_back(&m_pVolume->GetBrick(timestep, linearBrickIndex));
+		}
+
+		if (!brickIsLoaded && m_traceParams.m_waitForDisk)
+		{
+			// bail out - have to wait for disk IO
+			// track disk io waiting time
+			if (!m_timerDiskWait.IsRunning())
+			{
+				m_timerDiskWait.Start();
+				// this somewhat un-fucks CUDA's timings...
+				cudaSafeCall(cudaDeviceSynchronize());
+			}
+			return false;
+		}
+
+		if (brickIsLoaded)
+		{
+			// okay, we found a brick to upload which is available in CPU memory
+			int slotIndex = -1;
+			// check if the brick is already on the GPU (at different time steps); if so, reuse the slot
+			auto itSlot = m_bricksOnGPU.find(linearBrickIndex);
+			if (itSlot != m_bricksOnGPU.end())
+			{
+				slotIndex = itSlot->second;
+			}
+			else
+			{
+				slotIndex = FindAvailableBrickSlot(forcePurgeFinished);
+			}
+			// if there is no available slot, we're good for now
+			if (slotIndex == -1)
+			{
+				return true;
+			}
+
+			if (m_verbose)
+			{
+				printf("TracingManager::UploadWholeTimestep: uploading brick %u\n", linearBrickIndex);
+			}
+			if (!UpdateBrickSlot(uploadBudget, slotIndex, linearBrickIndex, timestepFrom, timestepTo))
+			{
+				// budget ran out
+				return false;
+			}
+		}
+	}
+
+	return finished;
 }
 
 void TracingManager::TraceRound()

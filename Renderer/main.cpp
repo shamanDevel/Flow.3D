@@ -2463,7 +2463,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		pd3dImmediateContext->OMSetRenderTargets(1, &pRTV, DXUTGetD3D11DepthStencilView());
 	}
 
-
+	/*
+	//Not needed anymore
 
 	//-----------------------------------------------------------
 	// RESTART RENDERING IF PARTICLES ARE ENABLED
@@ -2476,6 +2477,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		}
 	}
 
+	*/
 
 	//-----------------------------------------------------------
 	// MISCELANOUS TASKS (Screenshots, ...)

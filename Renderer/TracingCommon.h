@@ -54,9 +54,12 @@ struct LineInfo
 
 	uint            lineCount;
 
-	LineCheckpoint* dpCheckpoints; // current state of each particle/line, indexed by lineIndex
+	// current state of each line, indexed by lineIndex
+	// for iterative tracing (particles) this is the seed
+	LineCheckpoint* dpCheckpoints;
 
-	LineVertex*     dpVertices; // output: line vertices, indexed by lineIndex * lineLength + vertexIndex
+	// output: line vertices, indexed by lineIndex * lineLength + vertexIndex
+	LineVertex*     dpVertices; 
 	//TODO move vertexcounts into checkpoints?
 	uint*           dpVertexCounts; // current number of vertices per line, indexed by lineIndex
 	uint            lineVertexStride; // stride in dpVertices (= max number of vertices per line)
