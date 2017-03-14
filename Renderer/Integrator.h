@@ -38,9 +38,21 @@ public:
 
 	void IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params);
 
+	//Initializes the particles. This must be called once before IntegrateParticles(...)
+	void InitIntegrateParticles(const LineInfo& lineInfo, const ParticleTraceParams& params);
+
+	//Integrates particles
+	//line vertices are the particles in a circular-buffer fashion per line;
+	//the checkpoints contains the seed.
+	//It can be used interchangeable to IntegrateLines
+	//seed: the seeding position in the line or -1 if nothing should be seeded
+	void IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params, int seed);
+
 	// returns total number of indices
 	uint BuildLineIndexBuffer(const uint* dpLineVertexCounts, uint lineVertexStride, uint* dpIndices, uint lineCount);
 	uint BuildLineIndexBufferCPU(const uint* pLineVertexCounts, uint lineVertexStride, uint* pIndices, uint lineCount);
+
+	uint BuildParticleIndexBuffer(uint* dpIndices, uint lineVertexStride, uint lineCount);
 
 private:
 	void UpdateIntegrationParams(const ParticleTraceParams& params, float timeMax, bool force = false);

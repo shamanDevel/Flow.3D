@@ -9,6 +9,7 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+#include <chrono>
 
 #include <cuda_runtime.h>
 #include <cuda_d3d11_interop.h>
@@ -60,13 +61,6 @@ public:
 
 	//Performs one tracing step. Is called multiple times (once per frame), until it is done and returns true
 	bool Trace(); // returns true if finished TODO error code
-
-	//Traces particles. If LineModeIsIterative returns true for the selected line mode,
-	//then the line should be treated as particles rather than lines:
-	//The current checkpoint is the seeding point and all particles are advected
-	bool TraceParticlesIteratively();
-	//Start particle tracing. This fills all bricks of the current time steps in the loading queue
-	void StartTracingParticlesIteratively();
 	
 	//Cancels the tracing: resets all parameters
 	void CancelTracing();
@@ -208,6 +202,16 @@ private:
 	void TraceRound();
 
 
+	//Traces particles. If LineModeIsIterative returns true for the selected line mode,
+	//then the line should be treated as particles rather than lines:
+	//The current checkpoint is the seeding point and all particles are advected
+	bool TraceParticlesIteratively();
+	//Start particle tracing. This fills all bricks of the current time steps in the loading queue
+	void StartTracingParticlesIteratively();
+	//Builds the index buffer for particles. This is a dummy index buffer / the identity.
+	//Therefore, all particles are rendered
+	void BuildParticlesIndexBuffer();
+
 	void UpdateBricksToDo();
 	void UpdateBricksToLoad();
 
@@ -301,7 +305,9 @@ private:
 	float                     m_progress;
 
 	// for particle tracing
-	bool                      m_needsUploadTimestep;
+	bool                      m_particlesNeedsUploadTimestep;
+	std::chrono::steady_clock::time_point m_particlesLastTime;
+	int                       m_particlesSeedPosition;
 
 
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;

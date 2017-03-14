@@ -451,6 +451,9 @@
     <ClInclude Include="ParticleRenderMode.h">
       <Filter>Enums</Filter>
     </ClInclude>
+    <ClInclude Include="IntegratorParticleKernels.h">
+      <Filter>ParticleTracing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -522,6 +525,9 @@
     </CudaCompile>
     <CudaCompile Include="RaycasterKernelIso2Separate.cu">
       <Filter>Raycaster</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IntegratorParticleKernels.cu">
+      <Filter>ParticleTracing</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

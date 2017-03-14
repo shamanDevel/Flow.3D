@@ -72,6 +72,9 @@ struct ParticleTraceParams
 
 	bool m_cpuTracing;
 
+	//Particles per second and per seed
+	float m_particlesPerSecond;
+
 	bool operator==(const ParticleTraceParams& rhs) const;
 	bool operator!=(const ParticleTraceParams& rhs) const;
 };

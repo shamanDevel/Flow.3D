@@ -15,6 +15,7 @@
 
 #include "IntegratorKernels.h"
 #include "IntegratorKernelsCPU.h"
+#include "IntegratorParticleKernels.h"
 
 using namespace tum3D;
 
@@ -174,6 +175,47 @@ void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lin
 	}
 }
 
+void Integrator::InitIntegrateParticles(const LineInfo& lineInfo, const ParticleTraceParams& params)
+{
+	if (params.m_cpuTracing) {
+		printf("Integrator::InitIntegrateParticles - ERROR: cpu tracing not supported\n");
+		return;
+	}
+
+	UpdateLineInfo(params, lineInfo);
+	integratorKernelInitParticles(lineInfo);
+	printf("Integrator::InitIntegrateParticles: particles initialized\n");
+}
+
+void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, 
+	const ParticleTraceParams& params, int seed)
+{
+	if (params.m_cpuTracing) {
+		return;
+	}
+
+	float timeMax = lineInfo.lineSeedTime + params.m_lineAgeMax;
+	if (LineModeIsTimeDependent(params.m_lineMode))
+	{
+		timeMax = min(timeMax, (m_volumeInfo.GetTimestepCount() - 1) * m_volumeInfo.GetTimeSpacing());
+	}
+	UpdateIntegrationParams(params, timeMax);
+	UpdateLineInfo(params, lineInfo);
+
+	g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
+	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, brickAtlas.GetCudaArray()));
+
+	if (seed >= 0) {
+		//launch seeding kernel
+		integratorKernelSeedParticles(lineInfo, seed);
+	}
+
+	// launch advection kernel
+	integratorKernelParticles(lineInfo, params.m_advectMode, params.m_filterMode);
+
+	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
+}
+
 
 void Integrator::UpdateIntegrationParams(const ParticleTraceParams& params, float timeMax, bool force)
 {
@@ -232,6 +274,10 @@ void Integrator::UpdateLineInfo(const ParticleTraceParams& params, const LineInf
 	lineInfoGPU.pVertexCounts = lineInfo.dpVertexCounts;
 	lineInfoGPU.vertexStride = lineInfo.lineVertexStride;
 	lineInfoGPU.lineLengthMax = params.m_lineLengthMax;
+	if (lineInfo.lineVertexStride != params.m_lineLengthMax) {
+		printf("Integrator::UpdateLineInfo - ERROR: vertex stride (%d) != line length max (%d)\n",
+			lineInfo.lineVertexStride, params.m_lineLengthMax);
+	}
 	if(force || params.m_cpuTracing != m_lineInfoCpuTracingPrev || memcmp(&m_lineInfoGPU, &lineInfoGPU, sizeof(m_lineInfoGPU)) != 0)
 	{
 		cudaSafeCall(cudaEventSynchronize(m_lineInfoUploadEvent));
@@ -314,4 +360,20 @@ uint Integrator::BuildLineIndexBufferCPU(const uint* pLineVertexCounts, uint lin
 		}
 	}
 	return indexCount;
+}
+
+__global__ void fillParticleIndexBufferKernel(uint* pIndices, uint count)
+{
+	uint index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index >= count)
+		return;
+	pIndices[index] = index;
+}
+
+uint Integrator::BuildParticleIndexBuffer(uint* dpIndices, uint lineVertexStride, uint lineCount)
+{
+	uint blockSize = 128;
+	uint blockCount = (lineCount * lineVertexStride + blockSize - 1) / blockSize;
+	fillParticleIndexBufferKernel <<< blockCount, blockSize >>> (dpIndices, (uint) (lineCount * lineVertexStride));
+	return lineCount * lineVertexStride;
 }

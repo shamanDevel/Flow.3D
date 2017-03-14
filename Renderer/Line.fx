@@ -488,6 +488,8 @@ void vsParticle(LineVertex input, out ParticleGSIn output)
 [maxvertexcount(6)]
 void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSIn> outStream)
 {
+	if (input[0].time < 0) return; //discard particle, it is invalid / out of bounds
+
 	ParticlePSIn o;
 	o.time = input[0].time;
 	o.tubeCenter = input[0].pos;

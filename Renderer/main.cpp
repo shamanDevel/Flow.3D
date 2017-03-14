@@ -1546,6 +1546,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "WaitForDisk",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_waitForDisk,		"label='Wait for Disk' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "Prefetching",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enablePrefetching,	"label='Prefetching' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "UpsampledVolume",	TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_upsampledVolumeHack,"label='Upsampled Volume Hack' group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "ParticlesPerSecond",TW_TYPE_FLOAT,	&g_particleTraceParams.m_particlesPerSecond,"label='Particles per second' min=0 step=0.01 group=ParticleTrace");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddButton(g_pTwBarMain, "Retrace", Retrace, nullptr, "label='Retrace' group=ParticleTrace");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
@@ -2196,7 +2197,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	//Check if tracing is done and if so, start rendering
 	if(s_isTracing)
 	{
-		std::cout << "Trace" << std::endl;
+		//std::cout << "Trace" << std::endl;
 		bool finished = g_tracingManager.Trace();
 
 		if(finished)
@@ -2351,7 +2352,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	// if this was the last brick, or we want to see unfinished images, copy from raycast target into finished image tex
 	if (renderingUpdated && (renderingFinished || g_showPreview))
 	{
-		if (s_isTracing) std::cout << "Render while still tracing" << std::endl;
+		//if (s_isTracing) std::cout << "Render while still tracing" << std::endl;
 
 		// common shader vars for fullscreen pass
 		Vec2f screenMin(-1.0f, -1.0f);

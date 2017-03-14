@@ -278,6 +278,7 @@ exit 1</Command>
     <ClInclude Include="IntegratorKernelDefines.h" />
     <ClInclude Include="IntegratorKernels.h" />
     <ClInclude Include="IntegratorKernelsCPU.h" />
+    <ClInclude Include="IntegratorParticleKernels.h" />
     <ClInclude Include="LineBuffers.h" />
     <ClInclude Include="LineEffect.h" />
     <ClInclude Include="IntegrationParamsGPU.h" />
@@ -330,6 +331,7 @@ exit 1</Command>
     <CudaCompile Include="IntegratorKernelSimpleParticle.cu" />
     <CudaCompile Include="IntegratorKernelStream.cu" />
     <CudaCompile Include="IntegratorKernelStreamDense.cu" />
+    <CudaCompile Include="IntegratorParticleKernels.cu" />
     <CudaCompile Include="LineInfoGPU.cu" />
     <CudaCompile Include="Measures.cu" />
     <CudaCompile Include="Raycaster.cu">

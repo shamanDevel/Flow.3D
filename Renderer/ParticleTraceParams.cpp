@@ -49,6 +49,8 @@ void ParticleTraceParams::Reset()
 	m_upsampledVolumeHack = false;
 
 	m_cpuTracing = false;
+
+	m_particlesPerSecond = 5;
 	//TODO config?
 }
 

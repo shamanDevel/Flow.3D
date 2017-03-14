@@ -319,7 +319,6 @@ bool TracingManager::Trace()
 	if (LineModeIsIterative(m_traceParams.m_lineMode)) {
 		//particles
 		return TraceParticlesIteratively();
-		//will only return true on errors
 	}
 
 	uint uploadBudget = m_uploadsPerFrame;
@@ -439,23 +438,88 @@ bool TracingManager::Trace()
 bool TracingManager::TraceParticlesIteratively()
 {
 	//1. Upload all bricks to the GPU
-	if (m_needsUploadTimestep) {
+	if (m_particlesNeedsUploadTimestep) {
 		int timestep = m_pVolume->GetCurNearestTimestepIndex();
 		printf("Upload all bricks at timestep %d\n", timestep);
 		if (!UploadWholeTimestep(timestep, false)) {
 			return false; //still uploading
 		}
-		m_needsUploadTimestep = false;
+		m_particlesNeedsUploadTimestep = false;
 		printf("uploading done\n");
 	}
 
-	return true;
+	// map d3d result buffer
+	cudaSafeCall(cudaGraphicsMapResources(1, &m_pResult->m_pVBCuda));
+	LineVertex* dpVB = nullptr;
+	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, m_pResult->m_pVBCuda));
+
+	//build structures
+	LineVertex* pVertices = (m_traceParams.m_cpuTracing ? m_lineVerticesCPU.data() : dpVB);
+	LineInfo lineInfo(GetLineSpawnTime(), m_traceParams.m_lineCount, m_dpLineCheckpoints, pVertices, m_dpLineVertexCounts, m_traceParams.m_lineLengthMax);
+
+	//check if particles should be seeded
+	int seed = -1;
+	std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now();
+	std::chrono::duration<double> time_passed 
+		= std::chrono::duration_cast<std::chrono::duration<double >> (tp - m_particlesLastTime);
+	double timeBetweenSeeds = 1.0 / m_traceParams.m_particlesPerSecond;
+	if (timeBetweenSeeds < time_passed.count()) {
+		//seed it
+		seed = m_particlesSeedPosition;
+		printf("TracingManager::TraceParticlesIteratively: seed particles at index %d\n", seed);
+		m_particlesSeedPosition = (m_particlesSeedPosition + 1) % m_traceParams.m_lineLengthMax;
+		m_particlesLastTime = tp;
+	}
+
+	// integrate
+	m_timerIntegrateCPU.Start();
+	m_timerIntegrate.StartNextTimer();
+	//cudaSafeCall(cudaDeviceSynchronize());
+	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_traceParams, seed);
+	//cudaSafeCall(cudaDeviceSynchronize());
+	m_timerIntegrate.StopCurrentTimer();
+	m_timerIntegrateCPU.Stop();
+	m_timings.IntegrateCPU += m_timerIntegrateCPU.GetElapsedTimeMS();
+
+	if (m_traceParams.m_cpuTracing)
+	{
+		// copy vertices into d3d buffer
+		cudaSafeCall(cudaMemcpy(dpVB, m_lineVerticesCPU.data(), m_lineVerticesCPU.size() * sizeof(LineVertex), cudaMemcpyHostToDevice));
+	}
+
+	// unmap d3d buffer again
+	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));
+
+	//never return true, it never ends
+	return false;
 }
 
 void TracingManager::StartTracingParticlesIteratively()
 {
 	//start load all blocks
-	m_needsUploadTimestep = true;
+	m_particlesNeedsUploadTimestep = true;
+
+	// map d3d result buffer
+	cudaSafeCall(cudaGraphicsMapResources(1, &m_pResult->m_pVBCuda));
+	LineVertex* dpVB = nullptr;
+	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, m_pResult->m_pVBCuda));
+
+	//build structures
+	LineVertex* pVertices = (m_traceParams.m_cpuTracing ? m_lineVerticesCPU.data() : dpVB);
+	LineInfo lineInfo(GetLineSpawnTime(), m_traceParams.m_lineCount, m_dpLineCheckpoints, pVertices, m_dpLineVertexCounts, m_traceParams.m_lineLengthMax);
+
+	//init particles
+	m_integrator.InitIntegrateParticles(lineInfo, m_traceParams);
+
+	// unmap d3d buffer again
+	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));
+
+	//init timings
+	m_particlesSeedPosition = 0;
+	m_particlesLastTime = std::chrono::steady_clock::now();
+
+	//write index buffer
+	BuildParticlesIndexBuffer();
 }
 
 void TracingManager::CancelTracing()
@@ -1269,6 +1333,12 @@ bool TracingManager::UpdateBrickSlot(uint& uploadBudget, uint brickSlotIndex, ui
 	m_pSlotTimestepMin[brickSlotIndex] = timestepFrom;
 	m_pSlotTimestepMax[brickSlotIndex] = timestepTo;
 
+	if (m_verbose)
+	{
+		printf("TracingManager::UpdateBrickSlot: gpu slot %d assigned to a brick\n",
+			brickLinearIndex);
+	}
+
 	m_bricksToDoPrioritiesDirty = true;
 
 	return result;
@@ -1356,7 +1426,17 @@ bool TracingManager::UploadWholeTimestep(int timestep, bool forcePurgeFinished)
 				// budget ran out
 				return false;
 			}
+			if (uploadBudget == 0) {
+				return false;
+			}
 		}
+	}
+
+	if (finished) {
+		// update brick index
+		m_brickIndexGPU.Update(m_traceParams.m_cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
+		cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
+		printf("TracingManager::UploadWholeTimestep: update brick index\n");
 	}
 
 	return finished;
@@ -1478,6 +1558,31 @@ void TracingManager::BuildIndexBuffer()
 
 	m_indexBufferDirty = false;
 }
+
+
+void TracingManager::BuildParticlesIndexBuffer()
+{
+	if (m_traceParams.m_cpuTracing)
+	{
+		printf("TracingManager::BuildParticlesIndexBuffer - ERROR: cpu tracing not supported\n");
+		return;
+	}
+
+	m_timerBuildIndexBuffer.StartNextTimer();
+
+	// map d3d buffer
+	cudaSafeCall(cudaGraphicsMapResources(1, &m_pResult->m_pIBCuda));
+	uint* dpIB = nullptr;
+	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpIB, nullptr, m_pResult->m_pIBCuda));
+
+	m_pResult->m_indexCountTotal = m_integrator.BuildParticleIndexBuffer(dpIB, m_traceParams.m_lineLengthMax, m_traceParams.m_lineCount);
+
+	// unmap d3d buffer again
+	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pIBCuda));
+
+	m_timerBuildIndexBuffer.StopCurrentTimer();
+}
+
 
 
 void TracingManager::ReleaseResources()
