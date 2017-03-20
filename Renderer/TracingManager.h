@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include <vector>
 #include <chrono>
+#include <random>
 
 #include <cuda_runtime.h>
 #include <cuda_d3d11_interop.h>
@@ -212,6 +213,9 @@ private:
 	//Therefore, all particles are rendered
 	void BuildParticlesIndexBuffer();
 
+	//Creates the initial checkpoints / seeds
+	void CreateInitialCheckpoints(float spawnTime);
+
 	void UpdateBricksToDo();
 	void UpdateBricksToLoad();
 
@@ -311,6 +315,10 @@ private:
 
 
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
+
+	// for checkpoint generation
+	std::mt19937 m_engine;
+	std::uniform_real_distribution<float> m_rng;
 
 
 	// timing

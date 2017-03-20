@@ -46,6 +46,7 @@ TracingManager::TracingManager()
 	, m_pVolume(nullptr), m_pFlowGraph(nullptr), m_timestepMax(0)
 	, m_progress(0.0f)
 	, m_verbose(true)
+	, m_engine(std::chrono::system_clock::now().time_since_epoch().count())
 {
 	m_brickIndexGPU.Init();
 	m_brickRequestsGPU.Init();
@@ -178,40 +179,9 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 
 	UpdateFrameBudgets();
 
-
-	// create initial checkpoints
-	float3 seedBoxMin  = make_float3(m_traceParams.m_seedBoxMin);
-	float3 seedBoxSize = make_float3(m_traceParams.m_seedBoxSize);
-
-	// create random seed positions
-	std::vector<LineCheckpoint> checkpoints(m_traceParams.m_lineCount);
-	std::uniform_real_distribution<float> rng;
-	// obtain a seed from the system clock:
-	unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-	std::mt19937 engine(seed1);
-	if(m_traceParams.m_upsampledVolumeHack)
-	{
-		// upsampled volume is offset by half a grid spacing...
-		float gridSpacingWorld = 2.0f / float(m_pVolume->GetVolumeSize().maximum());
-		seedBoxMin -= 0.5f * gridSpacingWorld;
-	}
+	//create initial checkpoints
 	float spawnTime = GetLineSpawnTime();
-	for(uint i = 0; i < m_traceParams.m_lineCount; i++)
-	{
-		checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, rng, engine);
-		if(!InsideOfDomain(checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
-			printf("WARNING: seed %i is outside of domain!\n", i);
-		checkpoints[i].Time = spawnTime;
-		checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
-		checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
-
-		checkpoints[i].StepsTotal = 0;
-		checkpoints[i].StepsAccepted = 0;
-	}
-
-	// upload checkpoints
-	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
-	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, checkpoints.data(), checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+	CreateInitialCheckpoints(spawnTime);
 
 	// compute last timestep that will be needed for integration
 	m_timestepMax = GetLineFloorTimestepIndex(spawnTime);
@@ -258,6 +228,38 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	return true;
 }
 
+void TracingManager::CreateInitialCheckpoints(float spawnTime)
+{
+	// create initial checkpoints
+	float3 seedBoxMin = make_float3(m_traceParams.m_seedBoxMin);
+	float3 seedBoxSize = make_float3(m_traceParams.m_seedBoxSize);
+
+	// create random seed positions
+	std::vector<LineCheckpoint> checkpoints(m_traceParams.m_lineCount);
+	if (m_traceParams.m_upsampledVolumeHack)
+	{
+		// upsampled volume is offset by half a grid spacing...
+		float gridSpacingWorld = 2.0f / float(m_pVolume->GetVolumeSize().maximum());
+		seedBoxMin -= 0.5f * gridSpacingWorld;
+	}
+	
+	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
+	{
+		checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
+		if (!InsideOfDomain(checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
+			printf("WARNING: seed %i is outside of domain!\n", i);
+		checkpoints[i].Time = spawnTime;
+		checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
+		checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
+
+		checkpoints[i].StepsTotal = 0;
+		checkpoints[i].StepsAccepted = 0;
+	}
+
+	// upload checkpoints
+	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
+	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, checkpoints.data(), checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+}
 
 //static void writeOutFinishedLine() {
 //	// write out finished line
@@ -464,6 +466,11 @@ bool TracingManager::TraceParticlesIteratively()
 		= std::chrono::duration_cast<std::chrono::duration<double >> (tp - m_particlesLastTime);
 	double timeBetweenSeeds = 1.0 / m_traceParams.m_particlesPerSecond;
 	if (timeBetweenSeeds < time_passed.count()) {
+		if (LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
+			//generate new seeds
+			float spawnTime = GetLineSpawnTime();
+			CreateInitialCheckpoints(spawnTime);
+		}
 		//seed it
 		seed = m_particlesSeedPosition;
 		printf("TracingManager::TraceParticlesIteratively: seed particles at index %d\n", seed);

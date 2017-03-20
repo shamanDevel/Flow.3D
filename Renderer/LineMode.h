@@ -12,6 +12,7 @@ enum eLineMode
 	LINE_STREAM = 0,
 	LINE_PATH,
 	LINE_PARTICLE_STREAM,
+	LINE_PARTICLES,
 	//LINE_STREAK,
 	LINE_MODE_COUNT
 };
@@ -23,5 +24,8 @@ bool LineModeIsTimeDependent(eLineMode mode);
 
 //Returns true if the line mode is a particle mode, i.e. the tracing and rendering should be called all the time
 bool LineModeIsIterative(eLineMode mode);
+
+//Returns true if the line mode is a particle mode AND new seeds should be used for every new particle
+bool LineModeGenerateAlwaysNewSeeds(eLineMode mode);
 
 #endif

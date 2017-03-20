@@ -9,6 +9,7 @@ namespace
 		"Stream",
 		"Path",
 		"Particle-Stream",
+		"Particles",
 		//"Streak",
 		"Unknown"
 	};
@@ -42,6 +43,7 @@ bool LineModeIsTimeDependent(eLineMode mode)
 			return true;
 
 		case LINE_PARTICLE_STREAM:
+		case LINE_PARTICLES:
 			return false;
 
 		default:
@@ -52,8 +54,14 @@ bool LineModeIsTimeDependent(eLineMode mode)
 
 bool LineModeIsIterative(eLineMode mode)
 {
-	if (mode == LINE_PARTICLE_STREAM) {
+	if (mode == LINE_PARTICLE_STREAM
+		|| mode == LINE_PARTICLES) {
 		return true;
 	}
 	return false;
+}
+
+bool LineModeGenerateAlwaysNewSeeds(eLineMode mode)
+{
+	return (mode == LINE_PARTICLES);
 }
