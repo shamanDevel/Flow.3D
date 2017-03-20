@@ -1442,16 +1442,18 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	int32 c = g_volume.GetTimestepCount() - 1;
 	TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &c);
 	TwAddVarCB(g_pTwBarMain, "TimeSpacing", TW_TYPE_FLOAT, SetTimeSpacing, GetTimeSpacing, nullptr, "label='Time Spacing' min=0.001 step=0.001 precision=3");
-	TwAddButton(g_pTwBarMain, "LoadTimestep", LoadTimestepCallback, nullptr, "label='Preload Timestep'");
-	TwAddButton(g_pTwBarMain, "WriteTimestepRaw", SelectOutputRawFile, nullptr, "label='Write as .raw'");
-	TwAddButton(g_pTwBarMain, "WriteTimestepLA3D", SelectOutputLA3DFile, nullptr, "label='Write as .la3d'");
+	TwAddButton(g_pTwBarMain, "LoadTimestep", LoadTimestepCallback, nullptr, "label='Preload Timestep' group=MiscSettings");
+	TwAddButton(g_pTwBarMain, "WriteTimestepRaw", SelectOutputRawFile, nullptr, "label='Write as .raw' group=MiscSettings");
+	TwAddButton(g_pTwBarMain, "WriteTimestepLA3D", SelectOutputLA3DFile, nullptr, "label='Write as .la3d' group=MiscSettings");
 
-	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddButton(g_pTwBarMain, "SaveSettings", SaveRenderingParamsDialog, nullptr, "label='Save Settings'");
-	TwAddButton(g_pTwBarMain, "LoadSettings", LoadRenderingParamsDialog, nullptr, "label='Load Settings'");
+	TwAddSeparator(g_pTwBarMain, "", " group=MiscSettings");
+	TwAddButton(g_pTwBarMain, "SaveSettings", SaveRenderingParamsDialog, nullptr, "label='Save Settings' group=MiscSettings");
+	TwAddButton(g_pTwBarMain, "LoadSettings", LoadRenderingParamsDialog, nullptr, "label='Load Settings' group=MiscSettings");
 
-	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddVarCB(g_pTwBarMain, "MemLimit", TW_TYPE_FLOAT, SetMemLimitCallback, GetMemLimitCallback, nullptr, "label='Mem Usage Limit (MB)' precision=1");
+	TwAddSeparator(g_pTwBarMain, "", " group=MiscSettings");
+	TwAddVarCB(g_pTwBarMain, "MemLimit", TW_TYPE_FLOAT, SetMemLimitCallback, GetMemLimitCallback, nullptr, "label='Mem Usage Limit (MB)' precision=1 group=MiscSettings");
+
+	TwDefine("Main/MiscSettings label='Misc. Settings' opened=false");
 
 	// ray casting params
 	TwAddSeparator(g_pTwBarMain, "", "");
@@ -1536,35 +1538,37 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "LineCount",		TW_TYPE_UINT32,		&g_particleTraceParams.m_lineCount,			"label='Line Count' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' min=2 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=2 step=0.1 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectErrorTol",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectErrorTolerance,"label='Advection Error Tolerance (Voxels)' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMin",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMin,	"label='Advection Delta T Min' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMax",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMax,	"label='Advection Delta T Max' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectStepsMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_advectStepsPerRound,"label='Advect Steps per Round' min=0 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "PurgeTimeout",	TW_TYPE_UINT32,		&g_particleTraceParams.m_purgeTimeoutInRounds,"label='Brick Purge Timeout' min=0 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "HeuristicBonus",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicBonusFactor,"label='Heuristic: Bonus Factor' min=0 step=0.01 precision=3 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "HeuristicPenalty",TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicPenaltyFactor,"label='Heuristic: Penalty Factor' min=0 step=0.01 precision=3 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "HeuristicFlags",	TW_TYPE_UINT32,		&g_particleTraceParams.m_heuristicFlags,	"label='Heuristic: Flags' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "OutputPosDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputPosDiff,		"label='Output Pos Diff (Voxels)' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "OutputTimeDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputTimeDiff,	"label='Output Time Diff' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "WaitForDisk",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_waitForDisk,		"label='Wait for Disk' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "Prefetching",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enablePrefetching,	"label='Prefetching' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "UpsampledVolume",	TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_upsampledVolumeHack,"label='Upsampled Volume Hack' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "ParticlesPerSecond",TW_TYPE_FLOAT,	&g_particleTraceParams.m_particlesPerSecond,"label='Particles per second' min=0 step=0.01 group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "AdvectErrorTol",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectErrorTolerance,"label='Advection Error Tolerance (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMin",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMin,	"label='Advection Delta T Min' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMax",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMax,	"label='Advection Delta T Max' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "AdvectStepsMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_advectStepsPerRound,"label='Advect Steps per Round' min=0 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "PurgeTimeout",	TW_TYPE_UINT32,		&g_particleTraceParams.m_purgeTimeoutInRounds,"label='Brick Purge Timeout' min=0 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "HeuristicBonus",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicBonusFactor,"label='Heuristic: Bonus Factor' min=0 step=0.01 precision=3 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "HeuristicPenalty",TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicPenaltyFactor,"label='Heuristic: Penalty Factor' min=0 step=0.01 precision=3 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "HeuristicFlags",	TW_TYPE_UINT32,		&g_particleTraceParams.m_heuristicFlags,	"label='Heuristic: Flags' group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "OutputPosDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputPosDiff,		"label='Output Pos Diff (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "OutputTimeDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputTimeDiff,	"label='Output Time Diff' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "WaitForDisk",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_waitForDisk,		"label='Wait for Disk' group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "Prefetching",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enablePrefetching,	"label='Prefetching' group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "UpsampledVolume",	TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_upsampledVolumeHack,"label='Upsampled Volume Hack' group=ParticleTraceAdvanced");
+	TwDefine("Main/ParticleTraceAdvanced label='Advanced Settings' group=ParticleTrace opened=false");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddButton(g_pTwBarMain, "Retrace", Retrace, nullptr, "label='Retrace' group=ParticleTrace");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "SaveLines", SaveLinesDialog, nullptr, "label='Save Traced Lines' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "LoadLines", LoadLinesDialog, nullptr, "label='Load Lines' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain,  "LineID", TW_TYPE_INT32, &g_lineIDOverride,"label='Line ID Override' min=-1 group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "ClearLines", ClearLinesCallback, nullptr, "label='Clear Loaded Lines' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "LoadBalls", LoadBallsDialog, nullptr, "label='Load Balls' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "BallsRadius", TW_TYPE_FLOAT, &g_ballRadius, "label='Ball Radius' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "ClearBalls", ClearBallsCallback, nullptr, "label='Clear Loaded Balls' group=ParticleTrace");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "FlowGraph", BuildFlowGraphCallback, nullptr, "label='Build Flow Graph' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "SaveFlowGraph", SaveFlowGraphCallback, nullptr, "label='Save Flow Graph' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "LoadFlowGraph", LoadFlowGraphCallback, nullptr, "label='Load Flow Graph' group=ParticleTrace");
+	TwAddButton(g_pTwBarMain, "SaveLines", SaveLinesDialog, nullptr, "label='Save Traced Lines' group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "LoadLines", LoadLinesDialog, nullptr, "label='Load Lines' group=ParticleTraceIO");
+	TwAddVarRW(g_pTwBarMain,  "LineID", TW_TYPE_INT32, &g_lineIDOverride,"label='Line ID Override' min=-1 group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "ClearLines", ClearLinesCallback, nullptr, "label='Clear Loaded Lines' group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "LoadBalls", LoadBallsDialog, nullptr, "label='Load Balls' group=ParticleTraceIO");
+	TwAddVarRW(g_pTwBarMain, "BallsRadius", TW_TYPE_FLOAT, &g_ballRadius, "label='Ball Radius' group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "ClearBalls", ClearBallsCallback, nullptr, "label='Clear Loaded Balls' group=ParticleTraceIO");
+	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "FlowGraph", BuildFlowGraphCallback, nullptr, "label='Build Flow Graph' group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "SaveFlowGraph", SaveFlowGraphCallback, nullptr, "label='Save Flow Graph' group=ParticleTraceIO");
+	TwAddButton(g_pTwBarMain, "LoadFlowGraph", LoadFlowGraphCallback, nullptr, "label='Load Flow Graph' group=ParticleTraceIO");
+	TwDefine("Main/ParticleTraceIO label='Extra IO' group=ParticleTrace opened=false");
 
 	TwDefine("Main/ParticleTrace label='Particle Tracing'");
 
