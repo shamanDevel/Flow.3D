@@ -9,7 +9,7 @@ namespace
 		"Stream",
 		"Path",
 		"Particle-Stream",
-		"Particles",
+		"Particles (new seeds)",
 		//"Streak",
 		"Unknown"
 	};

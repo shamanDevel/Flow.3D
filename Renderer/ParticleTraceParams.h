@@ -75,6 +75,11 @@ struct ParticleTraceParams
 	//Particles per second and per seed
 	float m_particlesPerSecond;
 
+	//Checks if the changes when comparing with 'old' are enough to completely retrace everything.
+	//This is only important for particle modes. For line modes, this delegates to operator!=
+	//But particles can deal with changes in e.g. the seed box without restarting
+	bool hasChangesForRetracing(const ParticleTraceParams& old) const;
+
 	bool operator==(const ParticleTraceParams& rhs) const;
 	bool operator!=(const ParticleTraceParams& rhs) const;
 };

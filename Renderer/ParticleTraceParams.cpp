@@ -240,6 +240,43 @@ void ParticleTraceParams::ScaleSeedBox(const Vec3f& scaling)
 }
 
 
+bool ParticleTraceParams::hasChangesForRetracing(const ParticleTraceParams & old) const
+{
+	if (m_lineMode != old.m_lineMode) return true;
+	if (LineModeIsIterative(m_lineMode)) {
+		//particle mode, compare only a subset
+		//skip seed box, advection mode, filter mode
+		if (m_lineCount != old.m_lineCount
+			|| m_lineLengthMax != old.m_lineLengthMax
+			|| m_lineAgeMax != old.m_lineAgeMax) {
+			//These require different buffer sizes
+			return true;
+		}
+		//skip timesteps
+		if (m_heuristicBonusFactor != old.m_heuristicBonusFactor
+			|| m_heuristicPenaltyFactor != old.m_heuristicPenaltyFactor
+			|| m_heuristicFlags != old.m_heuristicFlags
+			|| m_outputPosDiff != old.m_outputPosDiff
+			|| m_outputTimeDiff != old.m_outputTimeDiff
+			|| m_waitForDisk != old.m_waitForDisk
+			|| m_enablePrefetching != old.m_enablePrefetching
+			|| m_upsampledVolumeHack != old.m_upsampledVolumeHack) {
+			//these influence the loading. I don't know how imporant they are, so be on the safe side
+			return true;
+		}
+		if (m_cpuTracing != old.m_cpuTracing) {
+			return true; //of course
+		}
+		//particles per second skipped
+		//no relevant change
+		return false;
+	}
+	else {
+		//full comparison
+		return (*this != old);
+	}
+}
+
 bool ParticleTraceParams::operator==(const ParticleTraceParams& rhs) const
 {
 	return memcmp(this, &rhs, sizeof(ParticleTraceParams)) == 0;

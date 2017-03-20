@@ -124,6 +124,11 @@ void TracingManager::Release()
 	m_isCreated = false;
 }
 
+void TracingManager::SetParams(const ParticleTraceParams& traceParams)
+{
+	m_traceParams = traceParams;
+	SetCheckpointTimeStep(m_traceParams.m_advectDeltaT);
+}
 
 bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph)
 {
@@ -235,7 +240,7 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 	float3 seedBoxSize = make_float3(m_traceParams.m_seedBoxSize);
 
 	// create random seed positions
-	std::vector<LineCheckpoint> checkpoints(m_traceParams.m_lineCount);
+	m_checkpoints.resize(m_traceParams.m_lineCount);
 	if (m_traceParams.m_upsampledVolumeHack)
 	{
 		// upsampled volume is offset by half a grid spacing...
@@ -245,20 +250,30 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 	
 	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
 	{
-		checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
-		if (!InsideOfDomain(checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
+		m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
+		if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
 			printf("WARNING: seed %i is outside of domain!\n", i);
-		checkpoints[i].Time = spawnTime;
-		checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
-		checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
+		m_checkpoints[i].Time = spawnTime;
+		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
+		m_checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
 
-		checkpoints[i].StepsTotal = 0;
-		checkpoints[i].StepsAccepted = 0;
+		m_checkpoints[i].StepsTotal = 0;
+		m_checkpoints[i].StepsAccepted = 0;
 	}
 
 	// upload checkpoints
 	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
-	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, checkpoints.data(), checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, m_checkpoints.data(), m_checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+}
+
+void TracingManager::SetCheckpointTimeStep(float deltaT)
+{
+	for (size_t i = 0; i < m_checkpoints.size(); ++i) {
+		m_checkpoints[i].DeltaT = deltaT;
+	}
+	// upload checkpoints
+	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
+	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, m_checkpoints.data(), m_checkpoints.size() * sizeof(LineCheckpoint), copyDir));
 }
 
 //static void writeOutFinishedLine() {

@@ -1524,6 +1524,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 				g_particleRenderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
 				g_showPreview = true;
 			}
+			if (LineModeGenerateAlwaysNewSeeds(g_particleTraceParams.m_lineMode)) {
+				//new seeds are always generated -> color-by-line does not make sense, switch to color by age
+				g_particleRenderParams.m_colorByTime = true;
+			}
 		},
 		[](void* value, void* clientData) {
 			*((eLineMode*) value) = g_particleTraceParams.m_lineMode;
@@ -2071,7 +2075,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	}
 
 	static ParticleTraceParams particleTraceParamsPrev;
-	bool particleTraceParamsChanged = (g_particleTraceParams != particleTraceParamsPrev);
+	bool particleTraceParamsChanged = g_particleTraceParams.hasChangesForRetracing(particleTraceParamsPrev);//(g_particleTraceParams != particleTraceParamsPrev);
     bool seedBoxChanged = (g_particleTraceParams.m_seedBoxMin != particleTraceParamsPrev.m_seedBoxMin || g_particleTraceParams.m_seedBoxSize != particleTraceParamsPrev.m_seedBoxSize);
 	particleTraceParamsPrev = g_particleTraceParams;
 	g_retrace = g_retrace || particleTraceParamsChanged;
@@ -2155,6 +2159,11 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	// TRACING
 	//-----------------------------------------------------------
 
+	// set parameters even if tracing is currently enabled.
+	// This allows changes to the parameters in the particle mode, even if they are currently running
+	if (!g_retrace && s_isTracing) {
+		g_tracingManager.SetParams(g_particleTraceParams);
+	}
 	// start particle tracing if required
 	float timeSinceTraceUpdate = float(curTime - g_lastTraceParamsUpdate) / float(CLOCKS_PER_SEC);
 	bool traceDelayPassed = (timeSinceTraceUpdate >= g_startWorkingDelay);

@@ -57,6 +57,9 @@ public:
 
 	bool& GetVerbose() { return m_verbose; }
 
+	//Sets the parameters even when the tracing is not restarted (as an alternate to StartTracing)
+	//This is needed for particles that allow changes of some parameters (e.g. the seed box) without retracing
+	void SetParams(const ParticleTraceParams& traceParams);
 	//Starts the tracing, performs the first tracing step
 	bool StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph);
 
@@ -215,6 +218,8 @@ private:
 
 	//Creates the initial checkpoints / seeds
 	void CreateInitialCheckpoints(float spawnTime);
+	//Sets the delta-t for the checkpoints
+	void SetCheckpointTimeStep(float deltaT);
 
 	void UpdateBricksToDo();
 	void UpdateBricksToLoad();
@@ -319,6 +324,7 @@ private:
 	// for checkpoint generation
 	std::mt19937 m_engine;
 	std::uniform_real_distribution<float> m_rng;
+	std::vector<LineCheckpoint> m_checkpoints;
 
 
 	// timing
