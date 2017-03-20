@@ -45,7 +45,7 @@ TracingManager::TracingManager()
 	, m_pResult(nullptr), m_indexBufferDirty(true)
 	, m_pVolume(nullptr), m_pFlowGraph(nullptr), m_timestepMax(0)
 	, m_progress(0.0f)
-	, m_verbose(true)
+	, m_verbose(false)
 	, m_engine(std::chrono::system_clock::now().time_since_epoch().count())
 {
 	m_brickIndexGPU.Init();

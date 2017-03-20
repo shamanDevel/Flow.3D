@@ -24,7 +24,7 @@ void ParticleRenderParams::Reset()
 	m_particleSize = 0.5f;
 
 	m_tubeRadiusFromVelocity = true;
-	m_referenceVelocity = 0.4f;
+	m_referenceVelocity = 1.5f;
 
 	m_colorByTime = false;
 	m_color0 = Vec4f(0.0f, 0.251f, 1.0f, 1.0f);

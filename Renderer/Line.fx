@@ -506,24 +506,46 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	float spriteSizeW = size;
 	float spriteSizeH = size * g_fScreenAspectRatio;
 
-	o.pos = float4(pos.x - spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
+	float2 xTransform = float2(1, 0);
+	float2 yTransform = float2(0, 1);
+	if (g_bTubeRadiusFromVelocity) {
+		float4 vel = mul(g_mWorldViewProj, float4(input[0].vel, 1.0));
+		float shear = 1 + min(sqrt(length(vel.xy) / g_fReferenceVelocity), 2.0);
+		float sizeZ = 1 + min(sqrt(abs(vel.z) / g_fReferenceVelocity), 2.0);
+		spriteSizeW = spriteSizeW * shear / sizeZ;
+		spriteSizeH = spriteSizeH / shear / sizeZ;
+		float2 dir = normalize(vel.xy);
+		xTransform = float2(dir.x, -dir.y);
+		yTransform = float2(dir.y, dir.x);
+		//radius0 *= clamp(sqrt(g_fReferenceVelocity / length(input[0].vel)), 0.2, 3.0);
+		//radius1 *= clamp(sqrt(g_fReferenceVelocity / length(input[1].vel)), 0.2, 3.0);
+	}
+	float2 offset;
+
+	offset = float2(-spriteSizeW, spriteSizeH);
+	o.pos = float4(pos.x + dot(xTransform, offset), pos.y + dot(yTransform, offset), pos.z, pos.w);
 	o.tex = float2(0, 1);
 	outStream.Append(o);
-	o.pos = float4(pos.x - spriteSizeW, pos.y - spriteSizeH, pos.z, pos.w);
+	offset = float2(-spriteSizeW, -spriteSizeH);
+	o.pos = float4(pos.x + dot(xTransform, offset), pos.y + dot(yTransform, offset), pos.z, pos.w);
 	o.tex = float2(0, 0);
 	outStream.Append(o);
-	o.pos = float4(pos.x + spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
+	offset = float2(spriteSizeW, spriteSizeH);
+	o.pos = float4(pos.x + dot(xTransform, offset), pos.y + dot(yTransform, offset), pos.z, pos.w);
 	o.tex = float2(1, 1);
 	outStream.Append(o);
 	outStream.RestartStrip();
 
-	o.pos = float4(pos.x + spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
+	offset = float2(spriteSizeW, spriteSizeH);
+	o.pos = float4(pos.x + dot(xTransform, offset), pos.y + dot(yTransform, offset), pos.z, pos.w);
 	o.tex = float2(1, 1);
 	outStream.Append(o);
-	o.pos = float4(pos.x - spriteSizeW, pos.y - spriteSizeH, pos.z, pos.w);
+	offset = float2(-spriteSizeW, -spriteSizeH);
+	o.pos = float4(pos.x + dot(xTransform, offset), pos.y + dot(yTransform, offset), pos.z, pos.w);
 	o.tex = float2(0, 0);
 	outStream.Append(o);
-	o.pos = float4(pos.x + spriteSizeW, pos.y - spriteSizeH, pos.z, pos.w);
+	offset = float2(spriteSizeW, -spriteSizeH);
+	o.pos = float4(pos.x + dot(xTransform, offset), pos.y + dot(yTransform, offset), pos.z, pos.w);
 	o.tex = float2(1, 0);
 	outStream.Append(o);
 	outStream.RestartStrip();
