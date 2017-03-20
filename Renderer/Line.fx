@@ -7,12 +7,14 @@ cbuffer PerFrame
 	float3   g_vLightPos;
 
 	float    g_fRibbonHalfWidth;
-	float    g_fTubeRadius;
+	float    g_fTubeRadius; //tube radius + particle size
+
+	float    g_fParticleSize;
+	float    g_fScreenAspectRatio;
+	float    g_fParticleTransparency;
 
 	bool     g_bTubeRadiusFromVelocity;
 	float    g_fReferenceVelocity;
-
-	float    g_fParticleTransparency;
 
 	bool     g_bColorByTime;
 	float4   g_vColor0;
@@ -499,9 +501,10 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	float4 pos = mul(g_mWorldViewProj, float4(input[0].pos, 1.0));
 
 	float size = sqrt(1 - saturate((o.time - g_fTimeMin) / (g_fTimeMax - g_fTimeMin)))
-		* g_fTubeRadius * 5;
+		* g_fParticleSize * 5;
+	//	* g_fTubeRadius * 5;
 	float spriteSizeW = size;
-	float spriteSizeH = size; // * (gScreenResolution.x / gScreenResolution.y);
+	float spriteSizeH = size * g_fScreenAspectRatio;
 
 	o.pos = float4(pos.x - spriteSizeW, pos.y + spriteSizeH, pos.z, pos.w);
 	o.tex = float2(0, 1);

@@ -25,6 +25,7 @@ struct ParticleRenderParams
 	float m_ribbonWidth;
 	float m_tubeRadius;
 
+	float m_particleSize;
 	float m_particleTransparency;
 	eParticleRenderMode m_particleRenderMode;
 
