@@ -171,63 +171,64 @@ struct advectTime_impl<ADVECT_BS32, filterMode>
 	}
 };
 
-//template <eTextureFilterMode filterMode>
-//struct advectTime_impl<ADVECT_RKF34, filterMode>
-//{
-//	__device__ static inline bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
-//		float3& pos, float& time, float3& vel, float& deltaTime,
-//		const float3& world2texOffset, const float world2texScale,
-//		const float velocityScale)
-//	{
-//		//const float a2 = 2.0f / 7.0f;
-//		//const float a3 = 7.0f / 15.0f;
-//		//const float a4 = 35.0f / 38.0f;
-//
-//		const float b21 = 2.0f / 7.0f;
-//		const float b31 = 77.0f / 900.0f;
-//		const float b32 = 343.0f / 900.0f;
-//		const float b41 = 805.0f / 1444.0f;
-//		const float b42 = -77175.0f / 54872.0f;
-//		const float b43 = 97125.0f / 54872.0f;
-//		const float b51 = 79.0f / 490.0f;
-//		const float b53 = 2175.0f / 3626.0f;
-//		const float b54 = 2166.0f / 9065.0f;
-//
-//		const float c1 = 229.0f / 1470.0f;
-//		const float c3 = 1125.0f / 1813.0f;
-//		const float c4 = 13718.0f / 81585.0f;
-//		const float c5 = 1.0f / 18.0f;
-//
-//		const float d1 = -888.0f / 163170.0f;
-//		const float d3 = 3375.0f / 163170.0f;
-//		const float d4 = -11552.0f / 163170.0f;
-//		const float d5 = 9065.0f / 163170.0f;
-//
-//		// h2 = a2 * h;
-//		float3 vel1 = getVelocity(pos); //(*f)(x0, *y);
-//		float3 vel2 = getVelocity(pos + deltaTime * (b21 * vel1)); //(*f)(x0+h2, *y + h2 * k1);
-//		float3 vel3 = getVelocity(pos + deltaTime * (b31 * vel1 + b32 * vel2)); //(*f)(x0+a3*h, *y + h * ( b31*k1 + b32*k2) );
-//		float3 vel4 = getVelocity(pos + deltaTime * (b41 * vel1 + b42 * vel2 + b43 * vel3)); //(*f)(x0+a4*h, *y + h * ( b41*k1 + b42*k2 + b43*k3) );
-//		float3 vel5 = getVelocity(pos + deltaTime * (b51 * vel1 + b53 * vel3 + b54 * vel4)); //(*f)(x0+h,  *y + h * ( b51*k1 + b53*k3 + b54*k4) );
-//
-//		//error = d1*k1 + d3*k3 + d4*k4 + d5*k5;
-//		float3 errorVec = d1*vel1 + d3*vel3 + d4*vel4 + d5*vel5;
-//		float errorSquared = dot(errorVec, errorVec);
-//		bool result = false;
-//		if(errorSquared < c_integrationParams.toleranceSquared || deltaTime <= c_integrationParams.deltaTimeMin) {
-//			//*(y+1) = *y +  h * (c1*k1 + c3*k3 + c4*k4 + c5*k5);
-//			pos += deltaTime * (c1*vel1 + c3*vel3 + c4*vel4 + c5*vel5);
-//			time += deltaTime;
-//			result = true;
-//		}
-//		float scale = SCALE_SAFETY_FACTOR * pow(c_integrationParams.toleranceSquared / errorSquared, (1.0f / 3.0f) * 0.5f); // (tolerance/error)^(1/order)
-//		scale = clamp(scale, SCALE_MIN, SCALE_MAX);
-//		deltaTime *= scale;
-//		deltaTime = clamp(deltaTime, c_integrationParams.deltaTimeMin, c_integrationParams.deltaTimeMax);
-//
-//		return result;
-//	}
-//};
+template <eTextureFilterMode filterMode>
+struct advectTime_impl<ADVECT_RKF34, filterMode>
+{
+	__device__ static inline bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
+		float3& pos, float& time, float3& vel, float& deltaTime,
+		const float3& world2texOffset, const float world2texScale,
+		const float time2texOffset, const float time2texScale, const float timestepInc,
+		const float velocityScale)
+	{
+		//const float a2 = 2.0f / 7.0f;
+		//const float a3 = 7.0f / 15.0f;
+		//const float a4 = 35.0f / 38.0f;
+
+		const float b21 = 2.0f / 7.0f;
+		const float b31 = 77.0f / 900.0f;
+		const float b32 = 343.0f / 900.0f;
+		const float b41 = 805.0f / 1444.0f;
+		const float b42 = -77175.0f / 54872.0f;
+		const float b43 = 97125.0f / 54872.0f;
+		const float b51 = 79.0f / 490.0f;
+		const float b53 = 2175.0f / 3626.0f;
+		const float b54 = 2166.0f / 9065.0f;
+
+		const float c1 = 229.0f / 1470.0f;
+		const float c3 = 1125.0f / 1813.0f;
+		const float c4 = 13718.0f / 81585.0f;
+		const float c5 = 1.0f / 18.0f;
+
+		const float d1 = -888.0f / 163170.0f;
+		const float d3 = 3375.0f / 163170.0f;
+		const float d4 = -11552.0f / 163170.0f;
+		const float d5 = 9065.0f / 163170.0f;
+
+		// h2 = a2 * h;
+		float3 vel1 = getVelocity(pos, 0); //(*f)(x0, *y);
+		float3 vel2 = getVelocity(pos + deltaTime * (b21 * vel1), 0); //(*f)(x0+h2, *y + h2 * k1);
+		float3 vel3 = getVelocity(pos + deltaTime * (b31 * vel1 + b32 * vel2), 0); //(*f)(x0+a3*h, *y + h * ( b31*k1 + b32*k2) );
+		float3 vel4 = getVelocity(pos + deltaTime * (b41 * vel1 + b42 * vel2 + b43 * vel3), 0); //(*f)(x0+a4*h, *y + h * ( b41*k1 + b42*k2 + b43*k3) );
+		float3 vel5 = getVelocity(pos + deltaTime * (b51 * vel1 + b53 * vel3 + b54 * vel4), 0); //(*f)(x0+h,  *y + h * ( b51*k1 + b53*k3 + b54*k4) );
+
+		//error = d1*k1 + d3*k3 + d4*k4 + d5*k5;
+		float3 errorVec = d1*vel1 + d3*vel3 + d4*vel4 + d5*vel5;
+		float errorSquared = dot(errorVec, errorVec);
+		bool result = false;
+		if(errorSquared < c_integrationParams.toleranceSquared || deltaTime <= c_integrationParams.deltaTimeMin) {
+			//*(y+1) = *y +  h * (c1*k1 + c3*k3 + c4*k4 + c5*k5);
+			pos += deltaTime * (c1*vel1 + c3*vel3 + c4*vel4 + c5*vel5);
+			time += deltaTime;
+			result = true;
+		}
+		float scale = SCALE_SAFETY_FACTOR * pow(c_integrationParams.toleranceSquared / errorSquared, (1.0f / 3.0f) * 0.5f); // (tolerance/error)^(1/order)
+		scale = clamp(scale, SCALE_MIN, SCALE_MAX);
+		deltaTime *= scale;
+		deltaTime = clamp(deltaTime, c_integrationParams.deltaTimeMin, c_integrationParams.deltaTimeMax);
+
+		return result;
+	}
+};
 
 template <eTextureFilterMode filterMode>
 struct advectTime_impl<ADVECT_RKF45, filterMode>
