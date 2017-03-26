@@ -574,6 +574,17 @@ float4 psParticleMultiplicative(ParticlePSIn input) : SV_Target
 	return float4(color.rgb * (1 - (alpha * color.a)), color.a * alpha);
 }
 
+float4 psParticleAlpha(ParticlePSIn input) : SV_Target
+{
+	float4 color = getColor(input.lineID, input.time);
+
+	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
+	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
+	if (dist > 0.5) discard;
+
+	return float4(color.rgb, color.a * alpha);
+}
+
 technique11 tLine
 {
 	pass P0_Line
@@ -654,6 +665,16 @@ technique11 tLine
 		SetRasterizerState(SpriteRS);
 		SetDepthStencilState(dsNoDepth, 0);
 		SetBlendState(MultiplicationBlending, float4(1.0f, 1.0f, 1.0f, 0.0f), 0xFFFFFFFF);
+	}
+
+	pass P8_ParticleAlpha
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsParticle()));
+		SetGeometryShader(CompileShader(gs_5_0, gsParticle()));
+		SetPixelShader(CompileShader(ps_5_0, psParticleAlpha()));
+		SetRasterizerState(SpriteRS);
+		SetDepthStencilState(dsNoDepth, 0);
+		SetBlendState(AlphaBlending, float4(1.0f, 1.0f, 1.0f, 0.0f), 0xFFFFFFFF);
 	}
 }
 

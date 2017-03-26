@@ -5,6 +5,7 @@ namespace
 	std::string g_particleRenderModeName[PARTICLE_RENDER_MODE_COUNT + 1] = {
 		"Additive",
 		"Multiplicative",
+		"Alpha",
 		"Unknown"
 	};
 }

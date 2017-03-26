@@ -1379,6 +1379,9 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		pass = 7;
 		clearColorSingle = 1;
 	}
+	else if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ALPHA) {
+		pass = 8;
+	}
 	float clearColor[4] = { clearColorSingle, clearColorSingle, clearColorSingle, 0.0f };
 	pContext->ClearRenderTargetView(m_pTransparentRTV, clearColor);
 	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, m_pDepthDSV);
