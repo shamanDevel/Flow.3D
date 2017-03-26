@@ -6,6 +6,7 @@
 
 #include <ConfigFile.h>
 #include <Vec.h>
+#include <D3D11.h>
 
 #include "LineRenderMode.h"
 #include "ParticleRenderMode.h"
@@ -38,6 +39,10 @@ struct ParticleRenderParams
 
 	bool  m_timeStripes;
 	float m_timeStripeLength;
+
+	ID3D11ShaderResourceView* m_pSliceTexture;
+	bool m_showSlice;
+	float m_slicePosition;
 
 	bool operator==(const ParticleRenderParams& rhs) const;
 	bool operator!=(const ParticleRenderParams& rhs) const;

@@ -27,6 +27,7 @@ using namespace tum3D;
 #include "TransferFunctionEditor/TransferFunctionEditor.h"
 
 #include "DXUT.h"
+#include <WICTextureLoader.h>
 
 #include "stb_image_write.h"
 
@@ -810,7 +811,6 @@ void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4
 	normalize(vecWorldY);
 }
 
-
 // ============================================================
 // GUI
 // ============================================================
@@ -1366,6 +1366,28 @@ void TW_CALL SetNumOMPThreads(const void *value, void *clientData)
 	omp_set_num_threads(g_threadCount);
 }
 
+void TW_CALL LoadSliceTexture(void *clientData)
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//release old texture
+		SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
+		//create new texture
+		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* tmp = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pSliceTexture))) {
+			std::cout << "Slice texture " << filename << " loaded" << std::endl;
+			g_particleRenderParams.m_showSlice = true;
+			g_redraw = true;
+		}
+		else {
+			std::cerr << "Failed to load slice texture" << std::endl;
+		}
+		SAFE_RELEASE(tmp);
+	}
+
+}
 
 void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 {
@@ -1572,6 +1594,8 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 	TwDefine("Main/ParticleTrace label='Particle Tracing'");
 
+	//Rendering
+
 	TwAddVarRW(g_pTwBarMain, "ParticleEnabled",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_linesEnabled,		"label='Enable' group=ParticleRender");
 	//TwAddVarRW(g_pTwBarMain, "LightDirView",	TW_TYPE_DIR3F,		&g_particleRenderParams.m_lightDirView,		"label='Light Dir (View Space)' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "LineRenderMode",	twLineRenderMode,	&g_particleRenderParams.m_lineRenderMode,	"label='Line Render Mode' group=ParticleRender");
@@ -1590,8 +1614,11 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripes",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_timeStripes,		"label='Time Stripes' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripeLength",TW_TYPE_FLOAT,		&g_particleRenderParams.m_timeStripeLength,	"label='Time Stripe Length' min=0.001 step=0.001 group=ParticleRender");
-
-	TwDefine("Main/ParticleRender label='Particle Rendering'");
+	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
+	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.01 group=ParticleRender");
+	TwDefine("Main/ParticleRender label='Rendering'");
 
 
 	// bounding boxes
@@ -2822,6 +2849,9 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 	cudaSafeCall(cudaDeviceSynchronize());
 	g_volume.SetPageLockBrickData(false);
 	cudaSafeCallNoSync(cudaDeviceReset());
+
+	//release slice texture
+	SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
 }
 
 

@@ -32,6 +32,10 @@ void ParticleRenderParams::Reset()
 
 	m_timeStripes = false;
 	m_timeStripeLength = 0.03f;
+
+	m_pSliceTexture = NULL;
+	m_showSlice = false;
+	m_slicePosition = 0;
 }
 
 void ParticleRenderParams::ApplyConfig(const ConfigFile& config)

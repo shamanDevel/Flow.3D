@@ -35,6 +35,7 @@
 #include "CompressVolume.h"
 
 #include "ScreenEffect.h"
+#include "QuadEffect.h"
 
 class RenderingManager
 {
@@ -131,6 +132,7 @@ private:
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);
 
+	void RenderSliceTexture();
 
 	void UpdateTimings();
 
@@ -173,6 +175,7 @@ private:
 	//TODO m_pDepthArray?
 
 	ScreenEffect*             m_pScreenEffect;
+	QuadEffect*               m_pQuadEffect;
 
 	// volume-dependent resources
 	std::vector<float*> m_dpChannelBuffer;

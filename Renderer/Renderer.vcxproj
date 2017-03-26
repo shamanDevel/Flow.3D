@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;DXUT/Core;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;DXUT/Core;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\include;DirectXTK/Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>
@@ -184,6 +184,7 @@ exit 1
     <ClCompile Include="Box.cpp" />
     <ClCompile Include="BoxEffect.cpp" />
     <ClCompile Include="BoxUtils.cpp" />
+    <ClCompile Include="DirectXTK\Src\WICTextureLoader.cpp" />
     <ClCompile Include="DXUT\Core\dxerr.cpp" />
     <ClCompile Include="DXUT\Core\DXUT.cpp" />
     <ClCompile Include="DXUT\Core\DXUTDevice11.cpp" />
@@ -204,6 +205,7 @@ exit 1
     <ClCompile Include="ParticleRenderParams.cpp" />
     <ClCompile Include="ProgressBarEffect.cpp" />
     <ClCompile Include="ProjectionParams.cpp" />
+    <ClCompile Include="QuadEffect.cpp" />
     <ClCompile Include="Range.cpp" />
     <ClCompile Include="RaycastMode.cpp" />
     <ClCompile Include="RaycastParams.cpp" />
@@ -266,6 +268,7 @@ exit 1
     <ClInclude Include="ClearCudaArray.h" />
     <ClInclude Include="cudaTum3D.h" />
     <ClInclude Include="cutil_math.h" />
+    <ClInclude Include="DirectXTK\Inc\WICTextureLoader.h" />
     <ClInclude Include="DXUT\Core\dxerr.h" />
     <ClInclude Include="DXUT\Core\DXUT.h" />
     <ClInclude Include="DXUT\Core\DXUTDevice11.h" />
@@ -293,6 +296,7 @@ exit 1
     <ClInclude Include="ParticleRenderParams.h" />
     <ClInclude Include="ProgressBarEffect.h" />
     <ClInclude Include="ProjectionParams.h" />
+    <ClInclude Include="QuadEffect.h" />
     <ClInclude Include="Range.h" />
     <ClInclude Include="Raycaster.h" />
     <ClInclude Include="RaycasterKernelDefines.h" />
@@ -373,6 +377,7 @@ exit 1
     <FxCompile Include="ProgressBar.fx">
       <FileType>Document</FileType>
     </FxCompile>
+    <FxCompile Include="Quad.fx" />
     <FxCompile Include="Screen.fx">
       <FileType>Document</FileType>
     </FxCompile>

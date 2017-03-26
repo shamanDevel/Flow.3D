@@ -31,7 +31,7 @@ RenderingManager::RenderingManager()
 	, m_pTfArray(nullptr)
 	, m_nextBrickToRender(0), m_nextPass(0)
 	, m_brickSlotsFilled(0)
-	, m_pScreenEffect(nullptr)
+	, m_pScreenEffect(nullptr), m_pQuadEffect(nullptr)
 {
 }
 
@@ -80,6 +80,13 @@ bool RenderingManager::Create(GPUResources* pCompressShared, CompressVolumeResou
 		return false;
 	}
 
+	m_pQuadEffect = new QuadEffect();
+	if (FAILED(hr = m_pQuadEffect->Create(m_pDevice)))
+	{
+		Release();
+		return false;
+	}
+
 	m_isCreated = true;
 
 	return true;
@@ -111,6 +118,10 @@ void RenderingManager::Release()
 	if (m_pScreenEffect) {
 		m_pScreenEffect->SafeRelease();
 		m_pScreenEffect = nullptr;
+	}
+	if (m_pQuadEffect) {
+		m_pQuadEffect->SafeRelease();
+		m_pQuadEffect = nullptr;
 	}
 }
 
@@ -952,6 +963,7 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 	{
 		RenderBalls(pBallBuffers[i], ballRadius);
 	}
+	RenderSliceTexture();
 
 	// if there's nothing to raycast, we're finished now
 	if(m_bricksToRender.empty())
@@ -1834,6 +1846,82 @@ void RenderingManager::RenderBricks(bool recordEvents)
 	}
 
 	UpdateBricksToLoad();
+}
+
+void RenderingManager::RenderSliceTexture()
+{
+	if (!m_particleRenderParams.m_showSlice
+		|| m_particleRenderParams.m_pSliceTexture == nullptr) {
+		return;
+	}
+
+	ID3D11DeviceContext* pContext = nullptr;
+	m_pDevice->GetImmediateContext(&pContext);
+
+	//build shader params
+	Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
+	tum3D::Vec3f normal(0, 0, 1);
+	tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
+	tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
+
+	// save viewports and render targets
+	uint oldViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+	D3D11_VIEWPORT oldViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+	pContext->RSGetViewports(&oldViewportCount, oldViewports);
+	ID3D11RenderTargetView* ppOldRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
+	ID3D11DepthStencilView* pOldDSV;
+	pContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, &pOldDSV);
+
+	// set our render target
+	//pContext->OMSetRenderTargets(1, &m_pTransparentRTV, m_pDepthDSV);
+	pContext->OMSetRenderTargets(1, &m_pOpaqueRTV, m_pDepthDSV);
+
+	// build viewport
+	D3D11_VIEWPORT viewport = {};
+	viewport.TopLeftX = float(0);
+	viewport.TopLeftY = float(0);
+	viewport.Width = float(m_projectionParams.GetImageWidth(m_range));
+	viewport.Height = float(m_projectionParams.m_imageHeight);
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	if (m_stereoParams.m_stereoEnabled)
+	{
+		Mat4f viewLeft = m_viewParams.BuildViewMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance);
+		Mat4f viewRight = m_viewParams.BuildViewMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance);
+		Mat4f projLeft = m_projectionParams.BuildProjectionMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance, m_range);
+		Mat4f projRight = m_projectionParams.BuildProjectionMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance, m_range);
+
+		viewport.Height /= 2.0f;
+		pContext->RSSetViewports(1, &viewport);
+		m_pQuadEffect->DrawTexture(m_particleRenderParams.m_pSliceTexture, center, normal, size, projLeft * viewLeft, pContext);
+		
+		viewport.TopLeftY += viewport.Height;
+		pContext->RSSetViewports(1, &viewport);
+		m_pQuadEffect->DrawTexture(m_particleRenderParams.m_pSliceTexture, center, normal, size, projRight * viewRight, pContext);
+	}
+	else
+	{
+		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+		Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
+
+		pContext->RSSetViewports(1, &viewport);
+		m_pQuadEffect->DrawTexture(m_particleRenderParams.m_pSliceTexture, center, normal, size, proj * view, pContext);
+	}
+
+	// restore viewports and render targets
+	pContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, pOldDSV);
+	pContext->RSSetViewports(oldViewportCount, oldViewports);
+	for (uint i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+	{
+		SAFE_RELEASE(ppOldRTVs[i]);
+	}
+	SAFE_RELEASE(pOldDSV);
+
+	// copy z buffer into cuda-compatible texture
+	pContext->CopyResource(m_pDepthTexCopy, m_pDepthTex);
+
+	pContext->Release();
 }
 
 void RenderingManager::UpdateTimings()

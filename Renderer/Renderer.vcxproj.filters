@@ -146,6 +146,12 @@
     <ClCompile Include="ParticleRenderMode.cpp">
       <Filter>Enums</Filter>
     </ClCompile>
+    <ClCompile Include="DirectXTK\Src\WICTextureLoader.cpp">
+      <Filter>DirectXTK</Filter>
+    </ClCompile>
+    <ClCompile Include="QuadEffect.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -189,6 +195,9 @@
     </Filter>
     <Filter Include="cudaCompress\util">
       <UniqueIdentifier>{bcc8ef94-7b44-4973-931f-b0d27ae48524}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="DirectXTK">
+      <UniqueIdentifier>{a0c422fd-afd1-4c36-a38a-02fdb5650ad9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -454,6 +463,12 @@
     <ClInclude Include="IntegratorParticleKernels.h">
       <Filter>ParticleTracing</Filter>
     </ClInclude>
+    <ClInclude Include="DirectXTK\Inc\WICTextureLoader.h">
+      <Filter>DirectXTK</Filter>
+    </ClInclude>
+    <ClInclude Include="QuadEffect.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -597,6 +612,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Screen.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Quad.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
