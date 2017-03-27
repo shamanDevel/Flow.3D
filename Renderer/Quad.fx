@@ -89,7 +89,7 @@ technique11 tQuad
 		SetGeometryShader(NULL);
 		SetPixelShader(CompileShader(ps_5_0, psQuad()));
 		SetRasterizerState(CullNone);
-		SetDepthStencilState(DepthDefault, 0);
+		SetDepthStencilState(DepthDisable, 0);
 		SetBlendState(BlendAlpha, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
 	}
 }

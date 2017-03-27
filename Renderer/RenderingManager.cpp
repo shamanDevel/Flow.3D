@@ -1298,7 +1298,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 			center, normal, size);
 		clipPlane.set(normal.x(), normal.y(), normal.z(), m_particleRenderParams.m_slicePosition);
 		tum3D::Vec3f cam = m_viewParams.GetCameraPosition();
-		if (cam.dot(normal) + m_particleRenderParams.m_slicePosition > 0) {
+		if (cam.dot(normal) + m_particleRenderParams.m_slicePosition < 0) {
 			//camera is at the wrong side, flip clip
 			clipPlane = -clipPlane;
 		}
