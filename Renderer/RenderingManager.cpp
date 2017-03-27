@@ -1145,6 +1145,7 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 	Vec4f brickBoxColor (0.0f, 0.5f, 1.0f, 1.0f);
 	Vec4f clipBoxColor  (1.0f, 0.0f, 0.0f, 1.0f);
 	Vec4f seedBoxColor  (0.0f, 0.6f, 0.0f, 1.0f);
+	Vec4f coordinateBoxColor(1.0f, 0.0f, 0.0f, 1.0f);
 
 	Vec3f lightPos = m_viewParams.GetCameraPosition();
 
@@ -1179,6 +1180,7 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 	bool renderClipBox = m_renderClipBox && m_raycastParams.m_raycastingEnabled;
 	bool renderSeedBox = m_renderSeedBox && m_particleRenderParams.m_linesEnabled;
 	bool renderBrickBoxes = m_renderBrickBoxes;
+	bool renderCoordinates = m_renderDomainBox;
 
 	Vec3f brickSize(m_pVolume->GetBrickSizeWorld(), m_pVolume->GetBrickSizeWorld(), m_pVolume->GetBrickSizeWorld());
 	float tubeRadiusLarge  = 0.004f;
@@ -1197,7 +1199,10 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 		if(renderDomainBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, tubeRadiusLarge,  blendBehind);
 		if(renderClipBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, clipBoxMin,           clipBoxMax,          clipBoxColor,   tubeRadiusMedium, blendBehind);
 		if(renderSeedBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, seedBoxMin,           seedBoxMax,          seedBoxColor,   tubeRadiusMedium, blendBehind);
-
+		if (renderCoordinates) {
+			m_box.RenderLines(viewLeft, projLeft, lightPos, -volumeHalfSizeWorld - 2 * tubeRadiusLarge, -volumeHalfSizeWorld + 2 * tubeRadiusLarge, coordinateBoxColor, tubeRadiusLarge, blendBehind);
+			m_box.RenderLines(viewLeft, projLeft, lightPos, -volumeHalfSizeWorld, -volumeHalfSizeWorld + Vec3f(volumeHalfSizeWorld.x() / 4, 0.0f, 0.0f), coordinateBoxColor, tubeRadiusLarge*1.5f, blendBehind);
+		}
 		if(renderBrickBoxes) m_box.RenderBrickLines(viewLeft, projLeft, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, brickBoxColor, brickSize, tubeRadiusSmall, blendBehind);
 
 		viewport.TopLeftY += viewport.Height;
@@ -1206,7 +1211,10 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 		if(renderDomainBox)	m_box.RenderLines(viewRight, projRight, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, tubeRadiusLarge,  blendBehind);
 		if(renderClipBox)	m_box.RenderLines(viewRight, projRight, lightPos, clipBoxMin,           clipBoxMax,          clipBoxColor,   tubeRadiusMedium, blendBehind);
 		if(renderSeedBox)	m_box.RenderLines(viewRight, projRight, lightPos, seedBoxMin,           seedBoxMax,          seedBoxColor,   tubeRadiusMedium, blendBehind);
-
+		if (renderCoordinates) {
+			m_box.RenderLines(viewRight, projRight, lightPos, -volumeHalfSizeWorld - 2 * tubeRadiusLarge, -volumeHalfSizeWorld + 2 * tubeRadiusLarge, coordinateBoxColor, tubeRadiusLarge, blendBehind);
+			m_box.RenderLines(viewRight, projRight, lightPos, -volumeHalfSizeWorld, -volumeHalfSizeWorld + Vec3f(volumeHalfSizeWorld.x() / 4, 0.0f, 0.0f), coordinateBoxColor, tubeRadiusLarge*1.5f, blendBehind);
+		}
 		if(renderBrickBoxes) m_box.RenderBrickLines(viewRight, projRight, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, brickBoxColor, brickSize, tubeRadiusSmall, blendBehind);
 	}
 	else
@@ -1219,7 +1227,10 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 		if(renderDomainBox)	m_box.RenderLines(view, proj, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, tubeRadiusLarge,  blendBehind);
 		if(renderClipBox)	m_box.RenderLines(view, proj, lightPos, clipBoxMin,           clipBoxMax,          clipBoxColor,   tubeRadiusMedium, blendBehind);
 		if(renderSeedBox)	m_box.RenderLines(view, proj, lightPos, seedBoxMin,           seedBoxMax,          seedBoxColor,   tubeRadiusMedium, blendBehind);
-
+		if (renderCoordinates) {
+			m_box.RenderLines(view, proj, lightPos, -volumeHalfSizeWorld - 2 * tubeRadiusLarge, -volumeHalfSizeWorld + 2 * tubeRadiusLarge, coordinateBoxColor, tubeRadiusLarge, blendBehind);
+			m_box.RenderLines(view, proj, lightPos, -volumeHalfSizeWorld, -volumeHalfSizeWorld + Vec3f(volumeHalfSizeWorld.x() / 4, 0.0f, 0.0f), coordinateBoxColor, tubeRadiusLarge*1.5f, blendBehind);
+		}
 		if(renderBrickBoxes) m_box.RenderBrickLines(view, proj, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, brickBoxColor, brickSize, tubeRadiusSmall, blendBehind);
 	}
 
