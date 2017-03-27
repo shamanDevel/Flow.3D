@@ -31,11 +31,10 @@ protected:
 	ID3DX11EffectTechnique*					m_pTechnique;
 
 public:
-	HRESULT CreateEffect(ID3D11Device* pDevice, bool bShowMessageBoxes = true);
-	void ReleaseEffect();
 
-	void DrawTexture(ID3D11ShaderResourceView* texture, const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size,
-		const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext);
+	void SetParameters(ID3D11ShaderResourceView* texture, const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size);
+
+	void DrawTexture(const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext);
 
 protected:
 	virtual HRESULT GetVariables();

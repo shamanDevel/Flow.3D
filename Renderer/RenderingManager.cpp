@@ -963,7 +963,9 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 	{
 		RenderBalls(pBallBuffers[i], ballRadius);
 	}
-	RenderSliceTexture();
+
+	//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
+	//RenderSliceTexture();
 
 	// if there's nothing to raycast, we're finished now
 	if(m_bricksToRender.empty())
@@ -1283,10 +1285,38 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 
 	m_lineEffect.m_ptexColors->SetResource(m_pRandomColorsSRV);
 
+	// common slice texture parameters
+	bool renderSlice = m_particleRenderParams.m_showSlice 
+		&& m_particleRenderParams.m_pSliceTexture != nullptr;
+	tum3D::Vec4f clipPlane;
+	if (renderSlice) {
+		Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
+		tum3D::Vec3f normal(0, 0, 1);
+		tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
+		tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
+		m_pQuadEffect->SetParameters(m_particleRenderParams.m_pSliceTexture,
+			center, normal, size);
+		clipPlane.set(normal.x(), normal.y(), normal.z(), m_particleRenderParams.m_slicePosition);
+		tum3D::Vec3f cam = m_viewParams.GetCameraPosition();
+		if (cam.dot(normal) + m_particleRenderParams.m_slicePosition > 0) {
+			//camera is at the wrong side, flip clip
+			clipPlane = -clipPlane;
+		}
+	}
+
 	//Check if particles should be rendered
 	if (m_particleRenderParams.m_lineRenderMode == LINE_RENDER_PARTICLES) {
 		if (!blendBehind) {
-			RenderParticles(pLineBuffers, pContext, viewport);
+			if (renderSlice) {
+				//render particles below, and then the slice
+				RenderParticles(pLineBuffers, pContext, viewport, &clipPlane, true);
+				//invert clip plane and render particles above
+				clipPlane = -clipPlane;
+				RenderParticles(pLineBuffers, pContext, viewport, &clipPlane, false);
+			}
+			else {
+				RenderParticles(pLineBuffers, pContext, viewport);
+			}
 		}
 		// copy z buffer into CUDA-compatible texture
 		pContext->CopyResource(m_pDepthTexCopy, m_pDepthTex);
@@ -1323,6 +1353,9 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
+		if (renderSlice) {
+			m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext);
+		}
 
 		viewport.TopLeftY += viewport.Height;
 		pContext->RSSetViewports(1, &viewport);
@@ -1331,6 +1364,9 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
+		if (renderSlice) {
+			m_pQuadEffect->DrawTexture(projRight * viewRight, pContext);
+		}
 	}
 	else
 	{
@@ -1343,6 +1379,9 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
+		if (renderSlice) {
+			m_pQuadEffect->DrawTexture(proj * view, pContext);
+		}
 	}
 
 	// restore viewports and render targets
@@ -1360,9 +1399,20 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	pContext->Release();
 }
 
-void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport)
+void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, 
+	ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport, 
+	const tum3D::Vec4f* clipPlane, bool renderSlice)
 {
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	//set clip plane
+	if (clipPlane == NULL) {
+		tum3D::Vec4f clip(0, 0, 0, 0);
+		m_lineEffect.m_pvParticleClipPlane->SetFloatVector(clip);
+	}
+	else {
+		m_lineEffect.m_pvParticleClipPlane->SetFloatVector(*clipPlane);
+	}
 
 	// save viewports and render targets
 	uint oldViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
@@ -1401,6 +1451,9 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
+		if (renderSlice) {
+			m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext);
+		}
 
 		viewport.TopLeftY += viewport.Height;
 		pContext->RSSetViewports(1, &viewport);
@@ -1409,6 +1462,9 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
+		if (renderSlice) {
+			m_pQuadEffect->DrawTexture(projRight * viewRight, pContext);
+		}
 	}
 	else
 	{
@@ -1421,6 +1477,9 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11De
 		m_lineEffect.m_pTechnique->GetPassByIndex(pass)->Apply(0, pContext);
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
+		if (renderSlice) {
+			m_pQuadEffect->DrawTexture(proj * view, pContext);
+		}
 	}
 
 	// set our final render target
@@ -1851,6 +1910,7 @@ void RenderingManager::RenderBricks(bool recordEvents)
 	UpdateBricksToLoad();
 }
 
+/*
 void RenderingManager::RenderSliceTexture()
 {
 	if (!m_particleRenderParams.m_showSlice
@@ -1926,6 +1986,7 @@ void RenderingManager::RenderSliceTexture()
 
 	pContext->Release();
 }
+*/
 
 void RenderingManager::UpdateTimings()
 {

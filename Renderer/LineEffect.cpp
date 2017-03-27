@@ -26,6 +26,7 @@ HRESULT LineEffect::GetVariables()
 	V_RETURN(GetScalarVariable("g_fParticleSize", m_pfParticleSizeVariable));
 	V_RETURN(GetScalarVariable("g_fScreenAspectRatio", m_pfScreenAspectRatioVariable));
 	V_RETURN( GetScalarVariable("g_fParticleTransparency", m_pfParticleTransparencyVariable) );
+	V_RETURN(GetVectorVariable("g_vParticleClipPlane", m_pvParticleClipPlane));
 
 	V_RETURN( GetScalarVariable("g_bTubeRadiusFromVelocity", m_pbTubeRadiusFromVelocityVariable) );
 	V_RETURN( GetScalarVariable("g_fReferenceVelocity", m_pfReferenceVelocityVariable) );

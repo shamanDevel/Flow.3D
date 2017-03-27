@@ -28,10 +28,8 @@ HRESULT QuadEffect::GetVariables()
 	return S_OK;
 }
 
-void QuadEffect::DrawTexture(ID3D11ShaderResourceView* texture, const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size,
-	const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext)
+void QuadEffect::SetParameters(ID3D11ShaderResourceView* texture, const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size)
 {
-	m_pmWorldViewProjVariable->SetMatrix(worldViewProjMatrix.data());
 	m_pvCenter->SetFloatVector(center);
 	m_pvSize->SetFloatVector(size);
 	m_pTexture->SetResource(texture);
@@ -49,6 +47,11 @@ void QuadEffect::DrawTexture(ID3D11ShaderResourceView* texture, const tum3D::Vec
 	bitangent = tum3D::crossProd(tangent, normal, bitangent);
 	m_pvTangent->SetFloatVector(tangent);
 	m_pvBitangent->SetFloatVector(bitangent);
+}
+
+void QuadEffect::DrawTexture(const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext)
+{
+	m_pmWorldViewProjVariable->SetMatrix(worldViewProjMatrix.data());
 
 	m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);

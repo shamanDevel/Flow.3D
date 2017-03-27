@@ -12,6 +12,7 @@ cbuffer PerFrame
 	float    g_fParticleSize;
 	float    g_fScreenAspectRatio;
 	float    g_fParticleTransparency;
+	float4   g_vParticleClipPlane;
 
 	bool     g_bTubeRadiusFromVelocity;
 	float    g_fReferenceVelocity;
@@ -491,6 +492,10 @@ void vsParticle(LineVertex input, out ParticleGSIn output)
 void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSIn> outStream)
 {
 	if (input[0].time < 0) return; //discard particle, it is invalid / out of bounds
+
+	//clipping
+	float clipDistance = dot(g_vParticleClipPlane.xyz, input[0].pos) + g_vParticleClipPlane.w;
+	if (clipDistance < 0) return;
 
 	ParticlePSIn o;
 	o.time = input[0].time;

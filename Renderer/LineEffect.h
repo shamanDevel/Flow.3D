@@ -26,6 +26,7 @@ public:
 	ID3DX11EffectScalarVariable*			m_pfParticleSizeVariable;
 	ID3DX11EffectScalarVariable*			m_pfScreenAspectRatioVariable;
 	ID3DX11EffectScalarVariable*			m_pfParticleTransparencyVariable;
+	ID3DX11EffectVectorVariable*			m_pvParticleClipPlane;
 
 	ID3DX11EffectScalarVariable*			m_pbTubeRadiusFromVelocityVariable;
 	ID3DX11EffectScalarVariable*			m_pfReferenceVelocityVariable;
