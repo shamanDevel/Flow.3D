@@ -1386,8 +1386,29 @@ void TW_CALL LoadSliceTexture(void *clientData)
 		}
 		SAFE_RELEASE(tmp);
 	}
-
 }
+void TW_CALL LoadColorTexture(void *clientData)
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//release old texture
+		SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
+		//create new texture
+		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* tmp = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pColorTexture))) {
+			std::cout << "Color texture " << filename << " loaded" << std::endl;
+			g_particleRenderParams.m_colorByTexture = true;
+			g_redraw = true;
+		}
+		else {
+			std::cerr << "Failed to load color texture" << std::endl;
+		}
+		SAFE_RELEASE(tmp);
+	}
+}
+
 
 void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 {
@@ -1618,6 +1639,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.01 group=ParticleRender");
+	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice, "label='Load Color Texture' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ColorByTexture",  TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_colorByTexture,   "label='Color by seed+texture' group=ParticleRender");
 	TwDefine("Main/ParticleRender label='Rendering'");
 
@@ -2853,6 +2875,7 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 
 	//release slice texture
 	SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
+	SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
 }
 
 

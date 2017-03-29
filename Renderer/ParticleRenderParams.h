@@ -43,6 +43,8 @@ struct ParticleRenderParams
 	ID3D11ShaderResourceView* m_pSliceTexture;
 	bool m_showSlice;
 	float m_slicePosition;
+
+	ID3D11ShaderResourceView* m_pColorTexture;
 	bool m_colorByTexture;
 
 	bool operator==(const ParticleRenderParams& rhs) const;

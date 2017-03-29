@@ -36,6 +36,7 @@ void ParticleRenderParams::Reset()
 	m_pSliceTexture = NULL;
 	m_showSlice = false;
 	m_slicePosition = 0;
+	m_pColorTexture = NULL;
 	m_colorByTexture = false;
 }
 

@@ -1308,8 +1308,16 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		m_pQuadEffect->SetParameters(m_particleRenderParams.m_pSliceTexture,
 			center, normal, size);
 		clipPlane.set(normal.x(), normal.y(), normal.z(), m_particleRenderParams.m_slicePosition);
-		tum3D::Vec3f cam = m_viewParams.GetCameraPosition();
-		if (cam.dot(normal) + m_particleRenderParams.m_slicePosition < 0) {
+		//test if we have to flip the clip plane if the camera is at the wrong side
+		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+		Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
+		Mat4f viewproj = proj * view;
+		Vec4f v1; v1 = viewproj.multVec(Vec4f(-1, -1, center.z(), 1), v1); v1 /= v1.w();
+		Vec4f v2; v2 = viewproj.multVec(Vec4f(+1, -1, center.z(), 1), v2); v2 /= v2.w();
+		Vec4f v3; v3 = viewproj.multVec(Vec4f(-1, +1, center.z(), 1), v3); v3 /= v3.w();
+		Vec2f dir1 = v2.xy() - v1.xy();
+		Vec2f dir2 = v3.xy() - v1.xy();
+		if (dir1.x()*dir2.y() - dir1.y()*dir2.x() > 0) {
 			//camera is at the wrong side, flip clip
 			clipPlane = -clipPlane;
 		}
@@ -1443,8 +1451,8 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 	else if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ALPHA) {
 		pass = 8;
 		//check if particles should be rendered by texture + seed
-		if (m_particleRenderParams.m_colorByTexture && m_particleRenderParams.m_pSliceTexture != nullptr) {
-			m_lineEffect.m_pseedColors->SetResource(m_particleRenderParams.m_pSliceTexture);
+		if (m_particleRenderParams.m_colorByTexture && m_particleRenderParams.m_pColorTexture != nullptr) {
+			m_lineEffect.m_pseedColors->SetResource(m_particleRenderParams.m_pColorTexture);
 			pass = 9;
 		}
 	}
