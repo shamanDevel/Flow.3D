@@ -1433,7 +1433,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 	ID3D11DepthStencilView* pOldDSV;
 	pContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, &pOldDSV);
 
-	// set transparent offscreen target
+	//specify path
 	int pass = 6;
 	float clearColorSingle = 0;
 	if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_MULTIPLICATIVE) {
@@ -1442,7 +1442,13 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 	}
 	else if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ALPHA) {
 		pass = 8;
+		//check if particles should be rendered by texture + seed
+		if (m_particleRenderParams.m_colorByTexture && m_particleRenderParams.m_pSliceTexture != nullptr) {
+			m_lineEffect.m_pseedColors->SetResource(m_particleRenderParams.m_pSliceTexture);
+			pass = 9;
+		}
 	}
+	// set transparent offscreen target
 	float clearColor[4] = { clearColorSingle, clearColorSingle, clearColorSingle, 0.0f };
 	pContext->ClearRenderTargetView(m_pTransparentRTV, clearColor);
 	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, m_pDepthDSV);

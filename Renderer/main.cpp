@@ -1618,6 +1618,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.01 group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "ColorByTexture",  TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_colorByTexture,   "label='Color by seed+texture' group=ParticleRender");
 	TwDefine("Main/ParticleRender label='Rendering'");
 
 

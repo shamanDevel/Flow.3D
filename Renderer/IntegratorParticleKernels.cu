@@ -99,6 +99,7 @@ __global__ void seedParticlesKernel(int particleEntry)
 	//set initial position
 	LineVertex* pVertices = c_lineInfo.pVertices + lineIndex * c_lineInfo.vertexStride + particleEntry;
 	pVertices->Position = c_lineInfo.pCheckpoints[lineIndex].Position;
+	pVertices->SeedPosition = pVertices->Position;
 	pVertices->Time = 0.001;
 }
 

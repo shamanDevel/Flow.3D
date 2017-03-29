@@ -42,6 +42,7 @@ struct LineVertex
 	float3   Normal; //TODO make scalar?
 	float3   Velocity;
 	uint     LineID;
+	float3   SeedPosition;
 	//float3x3 Jacobian;
 };
 

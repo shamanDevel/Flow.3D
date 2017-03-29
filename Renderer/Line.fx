@@ -37,6 +37,7 @@ cbuffer Balls
 }
 
 texture1D<float4> g_texColors;
+texture2D<float4> g_seedColors;
 
 
 RasterizerState CullFront
@@ -137,6 +138,13 @@ BlendState MultiplicationBlending
 	RenderTargetWriteMask[0] = 0x0F;
 };
 
+SamplerState SamplerLinear
+{
+	Filter = MIN_MAG_MIP_LINEAR;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
 // ]
 
 
@@ -147,6 +155,7 @@ struct LineVertex
 	float3   normal  : NORMAL;
 	float3   vel     : VELOCITY;
 	uint     lineID  : LINE_ID;
+	float3   seedPos : SEED_POSITION;
 	//float3x3 jac     : JACOBIAN;
 };
 
@@ -464,17 +473,19 @@ struct ParticleGSIn
 	float3 normal : NORMAL;
 	float3 vel    : VELOCITY;
 	float3 vort   : VORTICITY;
+	float3 seedPos    : SEED_POSITION;
 	nointerpolation uint lineID : LINE_ID;
 };
 
 struct ParticlePSIn
 {
 	float4 pos        : SV_Position;
-	float2 tex    : TEXTURE;
+	float2 tex        : TEXTURE;
 	float3 posWorld   : POS_WORLD;
 	float3 tubeCenter : TUBE_CENTER;
-	float  time : TIME;
+	float  time       : TIME;
 	float3 normal     : NORMAL;
+	float3 seedPos    : SEED_POSITION;
 	nointerpolation uint lineID : LINE_ID;
 };
 
@@ -486,6 +497,7 @@ void vsParticle(LineVertex input, out ParticleGSIn output)
 	output.vel = input.vel;
 	output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
 	output.lineID = input.lineID;
+	output.seedPos = input.seedPos;
 }
 
 [maxvertexcount(6)]
@@ -502,6 +514,7 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	o.tubeCenter = input[0].pos;
 	o.posWorld = o.tubeCenter;
 	o.normal = input[0].normal;
+	o.seedPos = input[0].seedPos;
 	o.lineID = input[0].lineID;
 	float4 pos = mul(g_mWorldViewProj, float4(input[0].pos, 1.0));
 
@@ -579,9 +592,18 @@ float4 psParticleMultiplicative(ParticlePSIn input) : SV_Target
 	return float4(color.rgb * (1 - (alpha * color.a)), color.a * alpha);
 }
 
-float4 psParticleAlpha(ParticlePSIn input) : SV_Target
+float4 psParticleAlpha(ParticlePSIn input, uniform bool colorFromTexture) : SV_Target
 {
-	float4 color = getColor(input.lineID, input.time);
+	float4 color;
+	if (colorFromTexture) {
+		//assume xy-plane is in the bounds [-1, 1], y-flipped
+		float2 texCoord = (input.seedPos.xy + float2(1,1)) / 2;
+		texCoord.y = 1 - texCoord.y;
+		color = g_seedColors.Sample(SamplerLinear, texCoord);
+	}
+	else {
+		color = getColor(input.lineID, input.time);
+	}
 
 	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
 	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
@@ -589,6 +611,7 @@ float4 psParticleAlpha(ParticlePSIn input) : SV_Target
 
 	return float4(color.rgb, color.a * alpha);
 }
+
 
 technique11 tLine
 {
@@ -676,7 +699,17 @@ technique11 tLine
 	{
 		SetVertexShader(CompileShader(vs_5_0, vsParticle()));
 		SetGeometryShader(CompileShader(gs_5_0, gsParticle()));
-		SetPixelShader(CompileShader(ps_5_0, psParticleAlpha()));
+		SetPixelShader(CompileShader(ps_5_0, psParticleAlpha(false)));
+		SetRasterizerState(SpriteRS);
+		SetDepthStencilState(dsNoDepth, 0);
+		SetBlendState(AlphaBlending, float4(1.0f, 1.0f, 1.0f, 0.0f), 0xFFFFFFFF);
+	}
+
+	pass P9_ParticleAlphaColorFromTexture
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsParticle()));
+		SetGeometryShader(CompileShader(gs_5_0, gsParticle()));
+		SetPixelShader(CompileShader(ps_5_0, psParticleAlpha(true)));
 		SetRasterizerState(SpriteRS);
 		SetDepthStencilState(dsNoDepth, 0);
 		SetBlendState(AlphaBlending, float4(1.0f, 1.0f, 1.0f, 0.0f), 0xFFFFFFFF);

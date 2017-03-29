@@ -41,6 +41,7 @@ public:
 	ID3DX11EffectScalarVariable*			m_pfTimeStripeLengthVariable;
 
 	ID3DX11EffectShaderResourceVariable*	m_ptexColors;
+	ID3DX11EffectShaderResourceVariable*    m_pseedColors;
 
 	ID3DX11EffectVectorVariable*			m_pvBoxMinVariable;
 	ID3DX11EffectVectorVariable*			m_pvBoxSizeVariable;
