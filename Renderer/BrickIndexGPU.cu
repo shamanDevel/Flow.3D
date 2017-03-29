@@ -4,6 +4,7 @@
 
 #include "cudaUtil.h"
 
+#include <iostream>
 
 __constant__ BrickIndexGPU c_brickIndex;
 BrickIndexGPU g_brickIndex;

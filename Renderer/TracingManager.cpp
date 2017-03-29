@@ -797,7 +797,7 @@ HRESULT TracingManager::CreateVolumeDependentResources()
 
 	// leave some wiggle room - arbitrarily chosen to be the size of a brick, or at least min(128 MB, 0.1 * totalMemory)
 	// with large bricks, CUDA tends to start paging otherwise...
-	size_t memBuffer = max(memPerTimeSlot, min(size_t(128) * 1024 * 1024, memTotal / 10));
+	size_t memBuffer = max(memPerTimeSlot, min(size_t(32) * 1024 * 1024, memTotal / 100));
 	size_t memAvailable = memFree - min(memBuffer, memFree);
 
 	float memAvailableMB = float(memAvailable) / (1024.0f * 1024.0f);
@@ -1436,7 +1436,8 @@ bool TracingManager::UploadWholeTimestep(int timestep, bool forcePurgeFinished)
 			// if there is no available slot, we're good for now
 			if (slotIndex == -1)
 			{
-				return true;
+				printf("TracingManager::UploadWholeTimestep: no available slot found!!\n");
+				break;
 			}
 
 			if (m_verbose)

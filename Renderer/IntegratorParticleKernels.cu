@@ -40,7 +40,7 @@ __global__ void integrateParticlesKernel()
 	}
 
 	if (c_volumeInfo.isOutsideOfDomain(vertex.Position)) {
-		//we are outside, invalidate particle.  (This should not happen)
+		//we are outside, invalidate particle.
 		c_lineInfo.pVertices[index].Time = -1;
 		return;
 	}
