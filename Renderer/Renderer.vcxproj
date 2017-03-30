@@ -196,6 +196,7 @@ exit 1
     <ClCompile Include="FlowGraph.cpp" />
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp" />
     <ClCompile Include="LineBuffers.cpp" />
+    <ClCompile Include="LineColorMode.cpp" />
     <ClCompile Include="LineEffect.cpp" />
     <ClCompile Include="LineMode.cpp" />
     <ClCompile Include="LineRenderMode.cpp" />
@@ -285,6 +286,7 @@ exit 1
     <ClInclude Include="IntegratorKernelsCPU.h" />
     <ClInclude Include="IntegratorParticleKernels.h" />
     <ClInclude Include="LineBuffers.h" />
+    <ClInclude Include="LineColorMode.h" />
     <ClInclude Include="LineEffect.h" />
     <ClInclude Include="IntegrationParamsGPU.h" />
     <ClInclude Include="LineInfoGPU.h" />

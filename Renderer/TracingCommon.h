@@ -27,6 +27,7 @@ struct BallVertex
 struct LineCheckpoint
 {
 	float3 Position;
+	float3 SeedPosition;
 	float  Time; // for stream lines: age. for path lines: actual time.
 	float3 Normal; //TODO make scalar?
 	float  DeltaT;

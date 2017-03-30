@@ -1279,7 +1279,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	m_lineEffect.m_pbTubeRadiusFromVelocityVariable->SetBool(m_particleRenderParams.m_tubeRadiusFromVelocity);
 	m_lineEffect.m_pfReferenceVelocityVariable->SetFloat(m_particleRenderParams.m_referenceVelocity);
 
-	m_lineEffect.m_pbColorByTimeVariable->SetBool(m_particleRenderParams.m_colorByTime);
+	m_lineEffect.m_piColorMode->SetInt(m_particleRenderParams.m_lineColorMode);
 	m_lineEffect.m_pvColor0Variable->SetFloatVector(m_particleRenderParams.m_color0);
 	m_lineEffect.m_pvColor1Variable->SetFloatVector(m_particleRenderParams.m_color1);
 	float timeMin = (m_particleTraceParams.m_lineMode == LINE_STREAM) ? 0.0f : m_pVolume->GetCurTime();
@@ -1295,6 +1295,9 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	m_lineEffect.m_pfScreenAspectRatioVariable->SetFloat(aspectRatio);
 
 	m_lineEffect.m_ptexColors->SetResource(m_pRandomColorsSRV);
+	if (m_particleRenderParams.m_pColorTexture != nullptr) {
+		m_lineEffect.m_pseedColors->SetResource(m_particleRenderParams.m_pColorTexture);
+	}
 
 	// common slice texture parameters
 	bool renderSlice = m_particleRenderParams.m_showSlice 
@@ -1450,11 +1453,6 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 	}
 	else if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ALPHA) {
 		pass = 8;
-		//check if particles should be rendered by texture + seed
-		if (m_particleRenderParams.m_colorByTexture && m_particleRenderParams.m_pColorTexture != nullptr) {
-			m_lineEffect.m_pseedColors->SetResource(m_particleRenderParams.m_pColorTexture);
-			pass = 9;
-		}
 	}
 	// set transparent offscreen target
 	float clearColor[4] = { clearColorSingle, clearColorSingle, clearColorSingle, 0.0f };

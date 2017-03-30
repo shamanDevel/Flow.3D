@@ -1399,7 +1399,7 @@ void TW_CALL LoadColorTexture(void *clientData)
 		ID3D11Resource* tmp = NULL;
 		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pColorTexture))) {
 			std::cout << "Color texture " << filename << " loaded" << std::endl;
-			g_particleRenderParams.m_colorByTexture = true;
+			g_particleRenderParams.m_lineColorMode = eLineColorMode::TEXTURE;
 			g_redraw = true;
 		}
 		else {
@@ -1451,6 +1451,12 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	for(uint i = 1; i < LINE_RENDER_MODE_COUNT; i++)
 		strLineRenderModes << "," << GetLineRenderModeName(eLineRenderMode(i));
 	TwType twLineRenderMode = TwDefineEnumFromString("EnumLineRenderMode", strLineRenderModes.str().c_str());
+
+	std::ostringstream strLineColorModes;
+	strLineColorModes << GetLineColorModeName(eLineColorMode(0));
+	for (uint i = 1; i < LINE_COLOR_MODE_COUNT; i++)
+		strLineColorModes << "," << GetLineColorModeName(eLineColorMode(i));
+	TwType twLineColorMode = TwDefineEnumFromString("EnumLineColorMode", strLineColorModes.str().c_str());
 
 	std::ostringstream strParticleRenderModes;
 	strParticleRenderModes << GetParticleRenderModeName(eParticleRenderMode(0));
@@ -1571,7 +1577,8 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 			}
 			if (LineModeGenerateAlwaysNewSeeds(g_particleTraceParams.m_lineMode)) {
 				//new seeds are always generated -> color-by-line does not make sense, switch to color by age
-				g_particleRenderParams.m_colorByTime = true;
+				if (g_particleRenderParams.m_lineColorMode == eLineColorMode::LINE_ID)
+					g_particleRenderParams.m_lineColorMode = eLineColorMode::AGE;
 			}
 		},
 		[](void* value, void* clientData) {
@@ -1629,9 +1636,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "ParticleRenderMode", twParticleRenderMode, &g_particleRenderParams.m_particleRenderMode, "label='Particle Render Mode' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ParticleTransparency", TW_TYPE_FLOAT, &g_particleRenderParams.m_particleTransparency, "label='Particle Transparency' group=ParticleRender min=0 max=1 step=0.01");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ColorByTime",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_colorByTime,		"label='Color by Age' group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "ColorMode",		twLineColorMode,	&g_particleRenderParams.m_lineColorMode,	"label='Color Mode' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "Color0",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color0,			"label='Color 0' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "Color1",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color1,			"label='Color 1' group=ParticleRender");
+	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice, "label='Load Color Texture' group=ParticleRender");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripes",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_timeStripes,		"label='Time Stripes' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripeLength",TW_TYPE_FLOAT,		&g_particleRenderParams.m_timeStripeLength,	"label='Time Stripe Length' min=0.001 step=0.001 group=ParticleRender");
@@ -1639,8 +1647,6 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.01 group=ParticleRender");
-	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice, "label='Load Color Texture' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ColorByTexture",  TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_colorByTexture,   "label='Color by seed+texture' group=ParticleRender");
 	TwDefine("Main/ParticleRender label='Rendering'");
 
 
