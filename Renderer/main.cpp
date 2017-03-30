@@ -2130,7 +2130,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	}
 
 	static ParticleTraceParams particleTraceParamsPrev;
-	bool particleTraceParamsChanged = g_particleTraceParams.hasChangesForRetracing(particleTraceParamsPrev);//(g_particleTraceParams != particleTraceParamsPrev);
+	bool particleTraceParamsChanged = g_particleTraceParams.hasChangesForRetracing(particleTraceParamsPrev);
+	//bool particleTraceParamsChanged = (g_particleTraceParams != particleTraceParamsPrev);
     bool seedBoxChanged = (g_particleTraceParams.m_seedBoxMin != particleTraceParamsPrev.m_seedBoxMin || g_particleTraceParams.m_seedBoxSize != particleTraceParamsPrev.m_seedBoxSize);
 	particleTraceParamsPrev = g_particleTraceParams;
 	g_retrace = g_retrace || particleTraceParamsChanged;

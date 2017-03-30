@@ -268,6 +268,11 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 
 void TracingManager::SetCheckpointTimeStep(float deltaT)
 {
+	if (!LineModeIsIterative(m_traceParams.m_lineMode)) {
+		//only update checkpoints if we trace particles
+		//otherwise, the current status of the lines would be overwritten
+		return;
+	}
 	for (size_t i = 0; i < m_checkpoints.size(); ++i) {
 		m_checkpoints[i].DeltaT = deltaT;
 	}
