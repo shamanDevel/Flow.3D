@@ -10,6 +10,7 @@
 
 #include "LineRenderMode.h"
 #include "ParticleRenderMode.h"
+#include "LineColorMode.h"
 
 struct ParticleRenderParams
 {
@@ -33,9 +34,11 @@ struct ParticleRenderParams
 	bool  m_tubeRadiusFromVelocity;
 	float m_referenceVelocity;
 
-	bool         m_colorByTime;
+	eLineColorMode m_lineColorMode;
+
 	tum3D::Vec4f m_color0;
 	tum3D::Vec4f m_color1;
+	ID3D11ShaderResourceView* m_pColorTexture;
 
 	bool  m_timeStripes;
 	float m_timeStripeLength;
@@ -43,9 +46,6 @@ struct ParticleRenderParams
 	ID3D11ShaderResourceView* m_pSliceTexture;
 	bool m_showSlice;
 	float m_slicePosition;
-
-	ID3D11ShaderResourceView* m_pColorTexture;
-	bool m_colorByTexture;
 
 	bool operator==(const ParticleRenderParams& rhs) const;
 	bool operator!=(const ParticleRenderParams& rhs) const;

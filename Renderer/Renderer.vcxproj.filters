@@ -152,6 +152,9 @@
     <ClCompile Include="QuadEffect.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
+    <ClCompile Include="LineColorMode.cpp">
+      <Filter>Enums</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -468,6 +471,9 @@
     </ClInclude>
     <ClInclude Include="QuadEffect.h">
       <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="LineColorMode.h">
+      <Filter>Enums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

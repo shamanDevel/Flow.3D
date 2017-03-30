@@ -26,9 +26,11 @@ void ParticleRenderParams::Reset()
 	m_tubeRadiusFromVelocity = true;
 	m_referenceVelocity = 1.5f;
 
-	m_colorByTime = false;
+	m_lineColorMode = eLineColorMode::LINE_ID;
+
 	m_color0 = Vec4f(0.0f, 0.251f, 1.0f, 1.0f);
 	m_color1 = Vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+	m_pColorTexture = NULL;
 
 	m_timeStripes = false;
 	m_timeStripeLength = 0.03f;
@@ -36,8 +38,6 @@ void ParticleRenderParams::Reset()
 	m_pSliceTexture = NULL;
 	m_showSlice = false;
 	m_slicePosition = 0;
-	m_pColorTexture = NULL;
-	m_colorByTexture = false;
 }
 
 void ParticleRenderParams::ApplyConfig(const ConfigFile& config)
@@ -82,9 +82,11 @@ void ParticleRenderParams::ApplyConfig(const ConfigFile& config)
 				{
 					entry.GetAsFloat(m_referenceVelocity);
 				}
-				else if(entryName == "ColorByTime")
+				else if(entryName == "ColorMode")
 				{
-					entry.GetAsBool(m_colorByTime);
+					std::string val;
+					entry.GetAsString(val);
+					m_lineColorMode = GetLineColorModeFromName(val);
 				}
 				else if(entryName == "Color0")
 				{
@@ -121,7 +123,7 @@ void ParticleRenderParams::WriteConfig(ConfigFile& config) const
 	section.AddEntry(ConfigEntry("TubeRadius", m_tubeRadius));
 	section.AddEntry(ConfigEntry("TubeRadiusFromVelocity", m_tubeRadiusFromVelocity));
 	section.AddEntry(ConfigEntry("ReferenceVelocity", m_referenceVelocity));
-	section.AddEntry(ConfigEntry("ColorByTime", m_colorByTime));
+	section.AddEntry(ConfigEntry("ColorMode", GetLineColorModeName(m_lineColorMode)));
 	section.AddEntry(ConfigEntry("Color0", m_color0));
 	section.AddEntry(ConfigEntry("Color1", m_color1));
 	section.AddEntry(ConfigEntry("TimeStripes", m_timeStripes));

@@ -31,7 +31,7 @@ public:
 	ID3DX11EffectScalarVariable*			m_pbTubeRadiusFromVelocityVariable;
 	ID3DX11EffectScalarVariable*			m_pfReferenceVelocityVariable;
 
-	ID3DX11EffectScalarVariable*			m_pbColorByTimeVariable;
+	ID3DX11EffectScalarVariable*			m_piColorMode;
 	ID3DX11EffectVectorVariable*			m_pvColor0Variable;
 	ID3DX11EffectVectorVariable*			m_pvColor1Variable;
 	ID3DX11EffectScalarVariable*			m_pfTimeMinVariable;

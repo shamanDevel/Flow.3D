@@ -40,6 +40,7 @@ __global__ void integrateStreamLinesDenseKernel()
 	// get initial position from checkpoints array
 	vertex.Position = c_lineInfo.pCheckpoints[lineIndex].Position;
 	vertex.Time     = c_lineInfo.pCheckpoints[lineIndex].Time;
+	vertex.SeedPosition = c_lineInfo.pCheckpoints[lineIndex].SeedPosition;
 
 	if(vertex.Time >= c_integrationParams.timeMax || c_volumeInfo.isOutsideOfDomain(vertex.Position))
 		return;

@@ -31,7 +31,7 @@ HRESULT LineEffect::GetVariables()
 	V_RETURN( GetScalarVariable("g_bTubeRadiusFromVelocity", m_pbTubeRadiusFromVelocityVariable) );
 	V_RETURN( GetScalarVariable("g_fReferenceVelocity", m_pfReferenceVelocityVariable) );
 
-	V_RETURN( GetScalarVariable("g_bColorByTime", m_pbColorByTimeVariable) );
+	V_RETURN( GetScalarVariable("g_iColorMode", m_piColorMode) );
 	V_RETURN( GetVectorVariable("g_vColor0", m_pvColor0Variable) );
 	V_RETURN( GetVectorVariable("g_vColor1", m_pvColor1Variable) );
 	V_RETURN( GetScalarVariable("g_fTimeMin", m_pfTimeMinVariable) );
