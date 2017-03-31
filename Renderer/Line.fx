@@ -556,7 +556,8 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	float2 xTransform = float2(1, 0);
 	float2 yTransform = float2(0, 1);
 	if (g_bTubeRadiusFromVelocity) {
-		float4 vel = mul(g_mWorldViewProj, float4(input[0].vel, 1.0));
+		float3 inVel = input[0].vel;
+		float4 vel = mul(g_mWorldViewProj, float4(inVel, 0.0));
 		float shear = 1 + min(sqrt(length(vel.xy) / g_fReferenceVelocity), 2.0);
 		float sizeZ = 1 + min(sqrt(abs(vel.z) / g_fReferenceVelocity), 2.0);
 		spriteSizeW = spriteSizeW * shear / sizeZ;
