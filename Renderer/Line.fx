@@ -562,9 +562,10 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 		inVel /= speed;
 
 		float4 velScreen = mul(g_mWorldViewRotation, float4(inVel, 0.0));
-		float shear = 1 + (speed / g_fReferenceVelocity);
+		float shear = 1 + (speed*10 / g_fReferenceVelocity);
 		float sx = shear * length(velScreen.xy);
 		float sy = 1 / sqrt(shear);
+		sx = max(sx, sy);
 		float alpha = atan2(velScreen.y, velScreen.x);
 		
 		float cosAlpha = cos(alpha);
