@@ -826,6 +826,12 @@ void TW_CALL Retrace(void *clientData)
 	g_retrace = true;
 }
 
+void TW_CALL SetBoundingBoxToDomainSize(void *clientData)
+{
+	g_particleTraceParams.m_seedBoxMin = -g_volume.GetVolumeHalfSizeWorld();
+	g_particleTraceParams.m_seedBoxSize = 2 * g_volume.GetVolumeHalfSizeWorld();
+}
+
 
 void TW_CALL SetTime(const void *value, void *clientData)
 {
@@ -1553,8 +1559,9 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarCB(g_pTwBarMain, "CPUThreads",		TW_TYPE_UINT32,		SetNumOMPThreads, GetNumOMPThreads, nullptr,"label='# CPU Threads' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "ShowSeedBox",		TW_TYPE_BOOLCPP,	&g_bRenderSeedBox,							"label='Show Seed Box (Green)' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "BrickSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetBrickSlotCountMax(),	"label='Max Brick Slot Count' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "TimeSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetTimeSlotCountMax(),	"label='Max Time Slot Count' group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "BrickSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetBrickSlotCountMax(),	"label='Max Brick Slot Count' group=ParticleTraceAdvanced");
+	TwAddVarRW(g_pTwBarMain, "TimeSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetTimeSlotCountMax(),	"label='Max Time Slot Count' group=ParticleTraceAdvanced");
+	TwAddButton(g_pTwBarMain,"SeedToDomain", SetBoundingBoxToDomainSize, NULL,                                  "label='Set Seed Box to Domain' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinX",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.x(),	"label='X' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinY",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.y(),	"label='Y' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinZ",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.z(),	"label='Z' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");

@@ -1427,6 +1427,9 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 {
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
+	//set rotation, needed to compute the correct transformation
+	m_lineEffect.m_pmWorldViewRotation->SetMatrix(m_viewParams.BuildRotationMatrix());
+
 	//set clip plane
 	if (clipPlane == NULL) {
 		tum3D::Vec4f clip(0, 0, 0, 0);

@@ -26,6 +26,7 @@ struct ViewParams
 	tum3D::Vec3f GetCameraPosition() const;
 
 	tum3D::Mat4f BuildViewMatrix(EStereoEye eye, float eyeDistance) const;
+	tum3D::Mat4f BuildRotationMatrix() const;
 
 	bool operator==(const ViewParams& rhs) const;
 	bool operator!=(const ViewParams& rhs) const;

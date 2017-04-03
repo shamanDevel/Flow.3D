@@ -17,6 +17,7 @@ HRESULT LineEffect::GetVariables()
 	//V_RETURN( GetMatrixVariable("g_mWorldView", m_pmWorldViewVariable) );
 	//V_RETURN( GetMatrixVariable("g_mProj", m_pmProjVariable) );
 	V_RETURN( GetMatrixVariable("g_mWorldViewProj", m_pmWorldViewProjVariable) );
+	V_RETURN( GetMatrixVariable("g_mWorldViewRotation", m_pmWorldViewRotation) );
 
 	V_RETURN( GetVectorVariable("g_vLightPos", m_pvLightPosVariable) );
 
