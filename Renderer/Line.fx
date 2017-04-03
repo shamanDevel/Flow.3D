@@ -558,16 +558,21 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	float2 yTransform = float2(0, 1);
 	if (g_bTubeRadiusFromVelocity) {
 		float3 inVel = input[0].vel;
-		float4 vel = mul(g_mWorldViewProj, float4(inVel, 0.0));
-		float shear = 1 + min(sqrt(length(vel.xy) / g_fReferenceVelocity), 2.0);
-		float sizeZ = 1 + min(sqrt(abs(vel.z) / g_fReferenceVelocity), 2.0);
-		spriteSizeW = spriteSizeW * shear / sizeZ;
-		spriteSizeH = spriteSizeH / shear / sizeZ;
-		float2 dir = normalize(vel.xy);
-		xTransform = float2(dir.x, -dir.y);
-		yTransform = float2(dir.y, dir.x);
-		//radius0 *= clamp(sqrt(g_fReferenceVelocity / length(input[0].vel)), 0.2, 3.0);
-		//radius1 *= clamp(sqrt(g_fReferenceVelocity / length(input[1].vel)), 0.2, 3.0);
+		float speed = length(inVel);
+		inVel /= speed;
+
+		float4 velScreen = mul(g_mWorldViewRotation, float4(inVel, 0.0));
+		float shear = 1 + (speed / g_fReferenceVelocity);
+		float sx = shear * length(velScreen.xy);
+		float sy = 1 / sqrt(shear);
+		float alpha = atan2(velScreen.y, velScreen.x);
+		
+		float cosAlpha = cos(alpha);
+		float sinAlpha = sin(alpha);
+
+		//scale in (sx, sy), then rotate with alpha
+		xTransform = float2(sx * cosAlpha, sy * -sinAlpha);
+		yTransform = float2(sx * sinAlpha, sy * cosAlpha);
 	}
 	float2 offset;
 
