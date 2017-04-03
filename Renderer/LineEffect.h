@@ -17,6 +17,7 @@ public:
 	//ID3DX11EffectMatrixVariable*			m_pmWorldViewVariable;
 	//ID3DX11EffectMatrixVariable*			m_pmProjVariable;
 	ID3DX11EffectMatrixVariable*			m_pmWorldViewProjVariable;
+	ID3DX11EffectMatrixVariable*            m_pmWorldViewRotation;
 
 	ID3DX11EffectVectorVariable*			m_pvLightPosVariable;
 

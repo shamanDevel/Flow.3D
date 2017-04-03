@@ -104,6 +104,12 @@ Mat4f ViewParams::BuildViewMatrix(EStereoEye eye, float eyeDistance) const
 	return view;
 }
 
+tum3D::Mat4f ViewParams::BuildRotationMatrix() const
+{
+	Mat4f rotationMat;
+	convertQuaternionToRotMat(m_rotationQuat, rotationMat);
+	return rotationMat;
+}
 
 bool ViewParams::operator==(const ViewParams& rhs) const
 {

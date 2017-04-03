@@ -3,6 +3,7 @@ cbuffer PerFrame
 	//float4x4 g_mWorldView;
 	//float4x4 g_mProj;
 	float4x4 g_mWorldViewProj;
+	float4x4 g_mWorldViewRotation;
 
 	float3   g_vLightPos;
 

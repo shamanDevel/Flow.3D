@@ -33,7 +33,7 @@ namespace
 
 
 TracingManager::TracingManager()
-	: m_brickSlotCountMax(64), m_timeSlotCountMax(8)
+	: m_brickSlotCountMax(64), m_timeSlotCountMax(2)
 	, m_roundsPerFrame(0), m_uploadsPerFrame(0)
 	, m_isCreated(false), m_pCompressShared(nullptr), m_pCompressVolume(nullptr), m_pDevice(nullptr)
 	, m_pBrickToSlot(nullptr), m_pSlotTimestepMin(nullptr), m_pSlotTimestepMax(nullptr), m_brickIndexUploadEvent(0)
