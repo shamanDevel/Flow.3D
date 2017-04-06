@@ -16,7 +16,7 @@ surface<void, cudaSurfaceType3D> g_surfFeatureArray;
 #include "Measures.cuh"
 
 template <eMeasure M>
-__global__ void genFeatureKernel(int3 featureBrickResolution, float gridSpacing)
+__global__ void genFeatureKernel(int3 featureBrickResolution, float3 gridSpacing)
 {
 	uint3 viTxc = make_uint3(uint(blockIdx.x * blockDim.x + threadIdx.x), uint(blockIdx.y * blockDim.y + threadIdx.y), uint(blockIdx.z * blockDim.z + threadIdx.z) );
 
@@ -33,7 +33,8 @@ __global__ void genFeatureKernel(int3 featureBrickResolution, float gridSpacing)
 	{
 		float3 vfTxc = make_float3( viTxc.x, viTxc.y, viTxc.z );
 		// ignore measureScale
-		float fMeasure = getMeasure<M,TEXTURE_FILTER_LINEAR,MEASURE_COMPUTE_ONTHEFLY>(g_texVolume1, vfTxc, gridSpacing, 1.0f);
+		//float fMeasure = getMeasure<M,TEXTURE_FILTER_LINEAR,MEASURE_COMPUTE_ONTHEFLY>(g_texVolume1, vfTxc, gridSpacing, 1.0f);
+		float fMeasure = 0; // 'no instance of overloaded function "getMeasure" matches the argument list' error
 		surf3Dwrite( fMeasure, g_surfFeatureArray, viTxc.x * sizeof(float), viTxc.y, viTxc.z);
 	}
 }
@@ -53,7 +54,7 @@ void Raycaster::FillMeasureBrick(const RaycastParams& params, const BrickSlot& b
 	dim3 blockCount((size.x() + blockSize.x - 1) / blockSize.x, (size.y() + blockSize.y - 1) / blockSize.y, (size.z() + blockSize.z - 1) / blockSize.z);
 
 #define GEN_FEATURE_KERNEL(measure)\
-		genFeatureKernel<measure><<< blockCount, blockSize >>>(make_int3(make_uint3(size)), m_gridSpacing);
+		genFeatureKernel<measure><<< blockCount, blockSize >>>(make_int3(make_uint3(size)), make_float3(m_gridSpacing));
 #define GEN_FEATURE_CASE(measure) case measure : GEN_FEATURE_KERNEL(measure); break
 
 	switch(params.m_measure1) 

@@ -33,7 +33,7 @@ inline float distanceToBrickBorder(float3 position, float3 brickPosMin, float3 b
 }
 
 
-inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float& world2texScale)
+inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float3& world2texScale)
 {
 	// find out which brick we're in
 	uint3 brickIndex = g_volumeInfo.getBrickIndex(worldPos);
@@ -51,8 +51,8 @@ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& brickBoxMax,
 	g_volumeInfo.getBrickBox(brickIndex, brickBoxMin, brickBoxMax);
 	g_volumeInfo.computeWorld2Tex(brickBoxMin, world2texOffset, world2texScale);
 	// brick slots are stacked in y direction (x direction is different time steps!)
-	world2texOffset.y += slotIndex.x * g_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale;
-	world2texOffset.z += slotIndex.y * g_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale;
+	world2texOffset.y += slotIndex.x * g_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.x;
+	world2texOffset.z += slotIndex.y * g_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.y;
 
 	return true;
 }

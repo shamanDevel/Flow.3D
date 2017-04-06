@@ -234,7 +234,7 @@ void Integrator::UpdateIntegrationParams(const ParticleTraceParams& params, floa
 	float brickSafeMarginWorld = brickSafeMarginVoxels * voxelSizeWorld;
 
 	float velocityMax = 3.4f; //TODO actually get this from the volume
-	float velocityMaxWorld = velocityMax * m_volumeInfo.GetPhysicalToWorldFactor();
+	float velocityMaxWorld = velocityMax * m_volumeInfo.GetPhysicalToWorldFactor().maximum();
 
 	// in upsampled volume, double everything that's relative to the grid spacing
 	if(params.m_upsampledVolumeHack)

@@ -16,7 +16,7 @@ __device__ inline void iso2Step(
 	float4& sum,
 	float& oldVal,
 	const float3& world2texOffset,
-	const float world2texScale,
+	const float3& world2texScale,
 	const float3& rayPosTx,
 	const float3& pos,
 	const float3& step,
@@ -74,7 +74,7 @@ __device__ inline void iso2Raycast(
 	float3 boxMin,
 	float3 boxMax,
 	float3 world2texOffset,
-	float world2texScale
+	float3 world2texScale
 )
 {
 	const float opacityThreshold = 0.999f;
@@ -157,7 +157,7 @@ __global__ void iso2Kernel(
 	float3 boxMin,
 	float3 boxMax,
 	float3 world2texOffset,
-	float world2texScale
+	float3 world2texScale
 )
 {
 	iso2Raycast<measureSource, F, C, false>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);
@@ -171,7 +171,7 @@ __global__ void iso2SiKernel(
 	float3 boxMin,
 	float3 boxMax,
 	float3 world2texOffset,
-	float world2texScale
+	float3 world2texScale
 )
 {
 	iso2Raycast<measureSource, F, C, true>(brickMinScreen, brickSizeScreen, renderTargetOffset, boxMin, boxMax, world2texOffset, world2texScale);

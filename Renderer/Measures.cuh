@@ -193,14 +193,14 @@ __device__ inline float getMeasureFromJac(eMeasure measure, const float3x3& jaco
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C>
 struct getMeasureFromVolume_Impl
 {
-    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h);
+    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h);
 	// no implementation - only specializations allowed
 };
 
 template <eMeasure M, eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<M, F, MEASURE_COMPUTE_PRECOMP_DISCARD>
 {
-    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		// precomputed measure volume: just read value
 		return sampleVolume<F, float1, float>(g_texFeatureVolume, pos);
@@ -210,7 +210,7 @@ struct getMeasureFromVolume_Impl<M, F, MEASURE_COMPUTE_PRECOMP_DISCARD>
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_VELOCITY, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromRaw<MEASURE_VELOCITY>(sampleVolume<F, float4, float4>(tex, pos));
 	}
@@ -219,7 +219,7 @@ struct getMeasureFromVolume_Impl<MEASURE_VELOCITY, F, MEASURE_COMPUTE_ONTHEFLY>
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_VELOCITY_Z, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromRaw<MEASURE_VELOCITY_Z>(sampleVolume<F, float4, float4>(tex, pos));
 	}
@@ -228,7 +228,7 @@ struct getMeasureFromVolume_Impl<MEASURE_VELOCITY_Z, F, MEASURE_COMPUTE_ONTHEFLY
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_TEMPERATURE, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromRaw<MEASURE_TEMPERATURE>(sampleVolume<F, float4, float4>(tex, pos));
 	}
@@ -237,7 +237,7 @@ struct getMeasureFromVolume_Impl<MEASURE_TEMPERATURE, F, MEASURE_COMPUTE_ONTHEFL
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromHeatCurrent<MEASURE_HEAT_CURRENT>(getHeatCurrent<F>(tex, pos, h));
 	}
@@ -246,7 +246,7 @@ struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT, F, MEASURE_COMPUTE_ONTHEF
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT_X, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromHeatCurrent<MEASURE_HEAT_CURRENT_X>(getHeatCurrent<F>(tex, pos, h));
 	}
@@ -255,7 +255,7 @@ struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT_X, F, MEASURE_COMPUTE_ONTH
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT_Y, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromHeatCurrent<MEASURE_HEAT_CURRENT_Y>(getHeatCurrent<F>(tex, pos, h));
 	}
@@ -264,7 +264,7 @@ struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT_Y, F, MEASURE_COMPUTE_ONTH
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT_Z, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+	__device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		return getMeasureFromHeatCurrent<MEASURE_HEAT_CURRENT_Z>(getHeatCurrent<F>(tex, pos, h));
 	}
@@ -273,7 +273,7 @@ struct getMeasureFromVolume_Impl<MEASURE_HEAT_CURRENT_Z, F, MEASURE_COMPUTE_ONTH
 template <eMeasure M, eTextureFilterMode F>
 struct getMeasureFromVolume_Impl<M, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		float3x3 jacobian = getJacobian<F>(tex, pos, h);
 		return getMeasureFromJac<M>(jacobian);
@@ -282,7 +282,7 @@ struct getMeasureFromVolume_Impl<M, F, MEASURE_COMPUTE_ONTHEFLY>
 
 
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C>
-__device__ inline float getMeasure(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h, float measureScale)
+__device__ inline float getMeasure(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h3, float measureScale)
 {
     return (measureScale * getMeasureFromVolume_Impl<M,F,C>::exec(tex, pos, h));
 }
@@ -293,14 +293,14 @@ __device__ inline float getMeasure(texture<float4, cudaTextureType3D, cudaReadMo
 template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
 struct getMeasureFromVolume_Impl2
 {
-    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h);
+    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h);
 	// no implementation - only specializations allowed
 };
 
 template <eMeasureSource source, eTextureFilterMode F>
 struct getMeasureFromVolume_Impl2<source, F, MEASURE_COMPUTE_PRECOMP_DISCARD>
 {
-    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		// precomputed measure volume: just read value
 		return sampleVolume<F, float1, float>(g_texFeatureVolume, pos);
@@ -310,7 +310,7 @@ struct getMeasureFromVolume_Impl2<source, F, MEASURE_COMPUTE_PRECOMP_DISCARD>
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_RAW, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		float4 vel4 = sampleVolume<F, float4, float4>(tex, pos);
 		return getMeasureFromRaw(measure, vel4);
@@ -320,7 +320,7 @@ struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_RAW, F, MEASURE_COMPUTE_ONTHEFL
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_HEAT_CURRENT, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-	__device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+	__device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		float3 heatCurrent = getHeatCurrent<F>(tex, pos, h);
 		return getMeasureFromHeatCurrent(measure, heatCurrent);
@@ -330,7 +330,7 @@ struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_HEAT_CURRENT, F, MEASURE_COMPUT
 template <eTextureFilterMode F>
 struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_JACOBIAN, F, MEASURE_COMPUTE_ONTHEFLY>
 {
-    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h)
+    __device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
 	{
 		float3x3 jacobian = getJacobian<F>(tex, pos, h);
 		return getMeasureFromJac(measure, jacobian);
@@ -339,7 +339,7 @@ struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_JACOBIAN, F, MEASURE_COMPUTE_ON
 
 
 template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
-__device__ inline float getMeasure(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h, float measureScale)
+__device__ inline float getMeasure(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h, float measureScale)
 {
 	return (measureScale * getMeasureFromVolume_Impl2<source, F, C>::exec(measure, tex, pos, h));
 }

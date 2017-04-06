@@ -10,7 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-
+#include <cuda_runtime.h>
 
 /********************************************************************
 
@@ -744,7 +744,7 @@ public:
 		
 	/// Get yx
 	const Vec2<T> yx() const { return Vec2<T>(y(), x()); }
-	
+
 	//@}
 
 	T area() const

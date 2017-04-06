@@ -40,8 +40,8 @@ struct advect_impl<ADVECT_EULER, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		pos += vel * deltaTime;
 		age += deltaTime;
@@ -57,8 +57,8 @@ struct advect_impl<ADVECT_HEUN, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		float3 velocity0 = vel;
 		float3 velocity1 = getVelocity(pos + velocity0 * deltaTime);
@@ -79,8 +79,8 @@ struct advect_impl<ADVECT_RK3, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		float3 velocity0 = vel;
 		float3 velocity1 = getVelocity(pos + velocity0 * 0.5f * deltaTime);
@@ -102,8 +102,8 @@ struct advect_impl<ADVECT_RK4, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		float3 velocity0 = vel;
 		float3 velocity1 = getVelocity(pos + velocity0 * 0.5f * deltaTime);
@@ -127,8 +127,8 @@ struct advect_impl<ADVECT_BS32, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		const float b21 = 1.0f / 2.0f;
 		const float b32 = 3.0f / 4.0f;
@@ -172,8 +172,8 @@ struct advect_impl<ADVECT_RKF34, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		//const float a2 = 2.0f / 7.0f;
 		//const float a3 = 7.0f / 15.0f;
@@ -231,8 +231,8 @@ struct advect_impl<ADVECT_RKF45, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		//const float a2 = 0.25f;
 		//const float a3 = 0.375f;
@@ -299,8 +299,8 @@ struct advect_impl<ADVECT_RKF54, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		//const float a2 = 0.25f;
 		//const float a3 = 0.375f;
@@ -368,8 +368,8 @@ struct advect_impl<ADVECT_RK547M, filterMode>
 {
 	__device__ static bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		const float b21 = 0.2f;
 		const float b31 = 3.0f / 40.0f;
@@ -444,8 +444,8 @@ struct advect_impl<ADVECT_RK547M, filterMode>
 template <eAdvectMode advectMode, eTextureFilterMode filterMode>
 __device__ inline bool advect(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
 	float3& pos, float& age, float3& vel, float& deltaTime,
-	const float3& world2texOffset, const float world2texScale,
-	const float velocityScale)
+	const float3& world2texOffset, const float3 world2texScale,
+	const float3 velocityScale)
 {
 	return advect_impl<advectMode, filterMode>::exec(
 		tex,

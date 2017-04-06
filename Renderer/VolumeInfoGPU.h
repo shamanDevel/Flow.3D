@@ -25,15 +25,15 @@ struct VolumeInfoGPU
 	uint3  volumeSizeVoxels;
 	float3 volumeHalfSizeWorld;
 
-	float gridSpacing;
+	float3 gridSpacing;
 	float timeSpacing;
 
 	uint  brickSizeVoxelsWithOverlap;
-	float brickSizeWorld;
-	float brickOverlapWorld;
+	float3 brickSizeWorld;
+	float3 brickOverlapWorld;
 	uint3 brickCount;
 
-	float velocityScale;
+	float3 velocityScale;
 
 
 	__host__ __device__ inline bool isInsideOfDomain(float3 posWorld) const
@@ -65,7 +65,7 @@ struct VolumeInfoGPU
 		boxMax = fmin(boxMax, volumeHalfSizeWorld); // clamp against global volume box
 	}
 
-	__host__ __device__ inline void computeWorld2Tex(float3 brickBoxMin, float3& world2texOffset, float& world2texScale) const
+	__host__ __device__ inline void computeWorld2Tex(float3 brickBoxMin, float3& world2texOffset, float3& world2texScale) const
 	{
 		world2texOffset = -brickBoxMin + brickOverlapWorld;
 		world2texScale  = brickSizeVoxelsWithOverlap / (brickSizeWorld + 2.0f * brickOverlapWorld);

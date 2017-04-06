@@ -37,7 +37,7 @@ __global__ void integrateSimpleParticlesKernel(
 	float3 brickBoxMin;
 	float3 brickBoxMax;
 	float3 world2texOffset;
-	float  world2texScale;
+	float3 world2texScale;
 	if(!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		return;
 	}

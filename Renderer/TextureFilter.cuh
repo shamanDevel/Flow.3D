@@ -944,21 +944,21 @@ struct sampleVolumeDerivativeZ_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 // "public" sampleVolumeDerivative functions:
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeDerivativeX(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+__device__ inline ResultType sampleVolumeDerivativeX(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 {
-	return sampleVolumeDerivativeX_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h);
+	return sampleVolumeDerivativeX_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h.x);
 }
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeDerivativeY(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+__device__ inline ResultType sampleVolumeDerivativeY(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 {
-	return sampleVolumeDerivativeY_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h);
+	return sampleVolumeDerivativeY_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h.y);
 }
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeDerivativeZ(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+__device__ inline ResultType sampleVolumeDerivativeZ(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 {
-	return sampleVolumeDerivativeZ_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h);
+	return sampleVolumeDerivativeZ_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h.z);
 }
 
 
@@ -968,7 +968,7 @@ namespace // sampleVolumeGradient implementations
 template <eTextureFilterMode F>
 struct sampleVolumeGradient_impl
 {
-	__device__ static inline float3x3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+	__device__ static inline float3x3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 	{
 		// default implementation: just get derivatives in x, y, z
 		// note: result is "transposed" by convention (i.e. first index is component, second index is derivative direction) - fix this some time?
@@ -999,7 +999,7 @@ struct sampleVolumeGradient_impl
 template <>
 struct sampleVolumeGradient_impl<TEXTURE_FILTER_CATROM>
 {
-	__device__ static inline float3x3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+	__device__ static inline float3x3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 	{
 		// in CatRom case, do the 64 fetches only once and combine with different weights
 		// note: result is "transposed" by convention (i.e. first index is component, second index is derivative direction) - fix this some time?
@@ -1070,7 +1070,7 @@ struct sampleVolumeGradient_impl<TEXTURE_FILTER_CATROM>
 template <eTextureFilterMode F>
 struct sampleScalarGradient_impl
 {
-	__device__ static inline float3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+	__device__ static inline float3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 	{
 		// default implementation: just get derivatives in x, y, z
 		float3 grad;
@@ -1096,13 +1096,13 @@ struct sampleScalarGradient_impl
 // "public" sampleVolumeGradient function:
 
 template <eTextureFilterMode F>
-__device__ inline float3x3 sampleVolumeGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+__device__ inline float3x3 sampleVolumeGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 {
 	return sampleVolumeGradient_impl<F>::exec(tex, coord, h);
 }
 
 template <eTextureFilterMode F>
-__device__ inline float3 sampleScalarGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float h)
+__device__ inline float3 sampleScalarGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
 {
 	return sampleScalarGradient_impl<F>::exec(tex, coord, h);
 }

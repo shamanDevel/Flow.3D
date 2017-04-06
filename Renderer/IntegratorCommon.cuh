@@ -62,7 +62,7 @@ __device__ inline bool isAdvectModeAdaptive(eAdvectMode advectMode)
 }
 
 
-__device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float& world2texScale)
+__device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float3& world2texScale)
 {
 	// find out which brick we're in
 	uint3 brickIndex = c_volumeInfo.getBrickIndex(worldPos);
@@ -80,8 +80,8 @@ __device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& b
 	c_volumeInfo.getBrickBox(brickIndex, brickBoxMin, brickBoxMax);
 	c_volumeInfo.computeWorld2Tex(brickBoxMin, world2texOffset, world2texScale);
 	// brick slots are stacked in y direction (x direction is different time steps!)
-	world2texOffset.y += slotIndex.x * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale;
-	world2texOffset.z += slotIndex.y * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale;
+	world2texOffset.y += slotIndex.x * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.x;
+	world2texOffset.z += slotIndex.y * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.y;
 
 	return true;
 }
@@ -89,7 +89,7 @@ __device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& b
 
 __device__ inline bool findBrickTime(
 	float3 worldPos, float time,
-	float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float& world2texScale,
+	float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float3& world2texScale,
 	float& brickTimeMin, float& brickTimeMax, float& time2texOffset, float& time2texScale)
 {
 	// find out which brick we're in
@@ -118,8 +118,8 @@ __device__ inline bool findBrickTime(
 	c_volumeInfo.getBrickBox(brickIndex, brickBoxMin, brickBoxMax);
 	c_volumeInfo.computeWorld2Tex(brickBoxMin, world2texOffset, world2texScale);
 	// brick slots are stacked in y direction (x direction is different time steps!)
-	world2texOffset.y += slotIndex.x * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale;
-	world2texOffset.z += slotIndex.y * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale;
+	world2texOffset.y += slotIndex.x * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.x;
+	world2texOffset.z += slotIndex.y * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.y;
 	// get brick time interval and time2tex transform
 	c_volumeInfo.getBrickTime(timestepMin, timestepMax, brickTimeMin, brickTimeMax);
 	c_volumeInfo.computeTime2Tex(brickTimeMin, time2texOffset, time2texScale);

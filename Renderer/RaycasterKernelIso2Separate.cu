@@ -21,7 +21,7 @@ __global__ void iso2separateKernel(
 	float3 boxMin,
 	float3 boxMax,
 	float3 world2texOffset,
-	float world2texScale
+	float3 world2texScale
 )
 {
 	const float opacityThreshold = 0.999f;

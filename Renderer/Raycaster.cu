@@ -221,9 +221,9 @@ bool Raycaster::RenderBrick(
 
 	// kernel params
 	Vec2i imageSize = screenMax - screenMin + 1;
-	float brickSizeWorldWithOverlap = m_brickSizeWorld + 2.0f * m_brickOverlapWorld;
+	Vec3f brickSizeWorldWithOverlap = m_brickSizeWorld + 2.0f * m_brickOverlapWorld;
 	Vec3f world2texOffset = -boxMin + m_brickOverlapWorld;
-	float world2texScale = float(brickSlots[0]->GetSize()) / brickSizeWorldWithOverlap;
+	Vec3f world2texScale = float(brickSlots[0]->GetSize()) / brickSizeWorldWithOverlap;
 
 	//// for analytic fields, clear world2texOffset/Scale so coords stay in world space
 	//if(params.m_textureFilterMode >= TEXTURE_ANALYTIC_DOUBLEGYRE)
@@ -232,14 +232,14 @@ bool Raycaster::RenderBrick(
 	//	world2texScale = 1.0f;
 	//}
 
-	float voxelSizeWorld = m_brickSizeWorld / float(brickSlots[0]->GetSize());
+	Vec3f voxelSizeWorld = m_brickSizeWorld / float(brickSlots[0]->GetSize());
 
-	float stepSize = voxelSizeWorld / params.m_sampleRate;
+	float stepSize = voxelSizeWorld.maximum() / params.m_sampleRate;
 	float transferOffset = -params.m_transferFunctionRangeMin;
 	float transferScale = 1.0f / (params.m_transferFunctionRangeMax - params.m_transferFunctionRangeMin);
 
 	RaycastParamsGPU raycastParamsGPU;
-	raycastParamsGPU.gridSpacing = m_gridSpacing;
+	raycastParamsGPU.gridSpacing = make_float3(m_gridSpacing);
 	raycastParamsGPU.view = make_float3x4(view);
 	raycastParamsGPU.viewInv = make_float3x4(viewInv);
 	raycastParamsGPU.stepSizeWorld = stepSize;
@@ -274,7 +274,7 @@ bool Raycaster::RenderBrick(
 		blockSize, gridSize,
 		make_int2(screenMin), make_int2(imageSize), make_int2(renderTargetOffset),
 		make_float3(boxMinClipped), make_float3(boxMaxClipped),
-		make_float3(world2texOffset), world2texScale);
+		make_float3(world2texOffset), make_float3(world2texScale));
 	switch(params.m_raycastMode)
 	{
 		case RAYCAST_MODE_DVR :											raycasterKernelDvr							(kernelParams); break;

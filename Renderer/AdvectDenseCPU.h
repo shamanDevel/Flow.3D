@@ -59,8 +59,8 @@ struct advectDense_impl<ADVECT_RK547M, filterMode>
 	static inline bool exec(const TextureCPU<float4>& tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
 		float3* pOutputCoeffs,
-		const float3& world2texOffset, const float world2texScale,
-		const float velocityScale)
+		const float3& world2texOffset, const float3 world2texScale,
+		const float3 velocityScale)
 	{
 		const float b21 = 0.2f;
 		const float b31 = 3.0f / 40.0f;
@@ -148,8 +148,8 @@ template <eAdvectMode advectMode, eTextureFilterMode filterMode>
 inline bool advectDense(const TextureCPU<float4>& tex,
 	float3& pos, float& age, float3& vel, float& deltaTime,
 	float3* pOutputCoeffs,
-	const float3& world2texOffset, const float world2texScale,
-	const float velocityScale)
+	const float3& world2texOffset, const float3 world2texScale,
+	const float3 velocityScale)
 {
 	return advectDense_impl<advectMode, filterMode>::exec(
 		tex,

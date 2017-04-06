@@ -49,7 +49,7 @@ __global__ void integrateParticlesKernel()
 	float3 brickBoxMin;
 	float3 brickBoxMax;
 	float3 world2texOffset;
-	float  world2texScale;
+	float3 world2texScale;
 	if (!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		//no brick found, this should not happen
 		c_lineInfo.pVertices[index].Time = -1;

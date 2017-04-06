@@ -42,7 +42,7 @@ __device__ inline float3x3 getSpinTensor(const float3x3 &J)
 
 // get jacobian from velocity texture
 template <eTextureFilterMode F>
-__device__ inline float3x3 getJacobian(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& texCoord, float h)
+__device__ inline float3x3 getJacobian(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& texCoord, const float3& h)
 {
 	return sampleVolumeGradient<F>(tex, texCoord, h);
 }

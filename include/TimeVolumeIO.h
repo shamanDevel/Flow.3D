@@ -196,8 +196,8 @@ public:
 	const Vec3i& GetVolumeSize() const { return m_info.GetVolumeSize(); }
 	int32 GetChannelCount() const { return m_info.GetChannelCount(); }
 
-	float GetGridSpacing() const { return m_info.GetGridSpacing(); }
-	void SetGridSpacing(float value) { m_info.m_fGridSpacing = value; }
+	tum3D::Vec3f GetGridSpacing() const { return m_info.GetGridSpacing(); }
+	void SetGridSpacing(const tum3D::Vec3f& value) { m_info.m_fGridSpacing = value; }
 	float GetTimeSpacing() const { return m_info.GetTimeSpacing(); }
 	void SetTimeSpacing(float value) { m_info.m_fTimeSpacing = value; }
 
@@ -216,8 +216,8 @@ public:
 	Vec3i GetBrickSpatialIndex(uint linearIndex) const { return m_info.GetBrickSpatialIndex(linearIndex); }
 
 	tum3D::Vec3f GetVolumeHalfSizeWorld() const { return m_info.GetVolumeHalfSizeWorld(); }
-	float GetBrickSizeWorld() const { return m_info.GetBrickSizeWorld(); }
-	float GetBrickOverlapWorld() const { return m_info.GetBrickOverlapWorld(); }
+	tum3D::Vec3f GetBrickSizeWorld() const { return m_info.GetBrickSizeWorld(); }
+	tum3D::Vec3f GetBrickOverlapWorld() const { return m_info.GetBrickOverlapWorld(); }
 	bool GetBrickBoxWorld(const tum3D::Vec3i& spatialIndex, tum3D::Vec3f& boxMin, tum3D::Vec3f& boxMax) const { return m_info.GetBrickBoxWorld(spatialIndex, boxMin, boxMax); }
 
 	const Brick& GetBrick(uint timestep, uint linearIndex) const { return m_vTimesteps[timestep].bricks[linearIndex]; }

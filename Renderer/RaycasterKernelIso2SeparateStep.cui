@@ -5,7 +5,7 @@ __device__ inline void iso2separateStep(
 	bool& bWasInsideCoarse,
 	bool& bWasInsideFine,
 	const float3& world2texOffset,
-	float world2texScale,
+	float3 world2texScale,
 	const float3& rayPosTx,
 	const float3& pos,
 	const float3& step,

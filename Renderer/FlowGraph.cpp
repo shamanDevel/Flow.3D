@@ -190,7 +190,7 @@ void FlowGraph::Build(GPUResources* pCompressShared, CompressVolumeResources* pC
 
 		Vec3f brickBoxMin, brickBoxMax;
 		m_pVolume->GetBrickBoxWorld(brickIndex, brickBoxMin, brickBoxMax);
-		float brickSize = m_pVolume->GetBrickSizeWorld();
+		Vec3f brickSize = m_pVolume->GetBrickSizeWorld();
 
 		// get brick
 		TimeVolumeIO::Brick* pBrick = m_bricks[linearBrickIndex];
@@ -221,7 +221,7 @@ void FlowGraph::Build(GPUResources* pCompressShared, CompressVolumeResources* pC
 		for(uint i = 0; i < particleCountPerBrick; i++)
 		{
 			particles[i] = seeds[i];
-			particles[i].Position = make_float3(brickBoxMin) + particles[i].Position * brickSize;
+			particles[i].Position = make_float3(brickBoxMin) + particles[i].Position * make_float3(brickSize);
 		}
 		cudaSafeCall(cudaMemcpy(dpParticles, particles.data(), particles.size() * sizeof(SimpleParticleVertex), cudaMemcpyHostToDevice));
 

@@ -27,7 +27,7 @@ struct ProjectionParamsGPU
 
 struct RaycastParamsGPU
 {
-	float gridSpacing;
+	float3 gridSpacing;
 
 	float3x4 view;
 	float3x4 viewInv;
@@ -68,7 +68,7 @@ struct RaycasterKernelParams
 		float3 boxMin,
 		float3 boxMax,
 		float3 world2texOffset,
-		float world2texScale)
+		float3 world2texScale)
 	: measure1(measure1), measure2(measure2), measureComputeMode(measureComputeMode),
 	  filterMode(filterMode),
 	  colorMode(colorMode),
@@ -92,7 +92,7 @@ struct RaycasterKernelParams
 	float3 boxMin;
 	float3 boxMax;
 	float3 world2texOffset;
-	float world2texScale;
+	float3 world2texScale;
 };
 
 

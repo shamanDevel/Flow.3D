@@ -49,7 +49,7 @@ __global__ void integratePathLinesKernel()
 	float3 brickBoxMin;
 	float3 brickBoxMax;
 	float3 world2texOffset;
-	float  world2texScale;
+	float3 world2texScale;
 	float brickTimeMin;
 	float brickTimeMax;
 	float time2texOffset;

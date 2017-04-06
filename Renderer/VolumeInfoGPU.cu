@@ -19,15 +19,15 @@ void VolumeInfoGPU::Fill(const TimeVolumeInfo& info)
 	volumeSizeVoxels    = make_uint3(make_int3(info.GetVolumeSize()));
 	volumeHalfSizeWorld = make_float3(info.GetVolumeHalfSizeWorld());
 
-	gridSpacing = info.GetGridSpacing();
+	gridSpacing = make_float3(info.GetGridSpacing());
 	timeSpacing = info.GetTimeSpacing();
 
 	brickSizeVoxelsWithOverlap = info.GetBrickSizeWithOverlap();
-	brickSizeWorld             = info.GetBrickSizeWorld();
-	brickOverlapWorld          = info.GetBrickOverlapWorld();
+	brickSizeWorld             = make_float3(info.GetBrickSizeWorld());
+	brickOverlapWorld          = make_float3(info.GetBrickOverlapWorld());
 	brickCount                 = make_uint3(make_int3(info.GetBrickCount()));
 
-	velocityScale = info.GetPhysicalToWorldFactor();
+	velocityScale = make_float3(info.GetPhysicalToWorldFactor());
 }
 
 void VolumeInfoGPU::Upload(bool cpuTracing) const

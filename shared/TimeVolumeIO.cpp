@@ -260,7 +260,14 @@ void TimeVolumeIO::ReadSettings(FILE* indexFile)
 
 		else if (!strcmp(name, "gridspacing"))
 		{
-			E_ASSERT("Invalid setting \"gridspacing\"", sscanf_s(value, "%f", &m_info.m_fGridSpacing) == 1);
+			float val;
+			E_ASSERT("Invalid setting \"gridspacing\"", sscanf_s(value, "%f", &val) == 1);
+			m_info.m_fGridSpacing = Vec3f(val, val, val);
+			haveGridSpacing = true;
+		}
+		else if (!strcmp(name, "gridspacing3"))
+		{
+			E_ASSERT("Invalid setting \"gridspacing\"", sscanf_s(value, "[%f, %f, %f]", &m_info.m_fGridSpacing[0], &m_info.m_fGridSpacing[1], &m_info.m_fGridSpacing[2]) == 3);
 			haveGridSpacing = true;
 		}
 
@@ -414,7 +421,7 @@ void TimeVolumeIO::ReadSettings(FILE* indexFile)
 	// legacy: if there was no grid/time spacing setting, default to values for isotropic turbulence data set
 	if(!haveGridSpacing)
 	{
-		m_info.m_fGridSpacing = (2.0f * PI) / 1024.0f;
+		m_info.m_fGridSpacing = tum3D::Vec3f((2.0f * PI) / 1024.0f);
 	}
 	if(!haveTimeSpacing)
 	{

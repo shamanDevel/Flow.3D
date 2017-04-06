@@ -48,20 +48,22 @@ Vec3f TimeVolumeInfo::GetVolumeHalfSizeWorld() const
 {
 	Vec3f result;
 	castVec(GetVolumeSize(), result);
-	result /= result.maximum();
+	//result /= result.maximum();
+	result *= GetGridSpacing();
 	return result;
 }
 
-float TimeVolumeInfo::GetBrickSizeWorld() const
+Vec3f TimeVolumeInfo::GetBrickSizeWorld() const
 {
 	Vec3f volumeSize;
 	castVec(GetVolumeSize(), volumeSize);
 	float result = float(GetBrickSizeWithoutOverlap());
-	result /= volumeSize.maximum() * 0.5f;
-	return result;
+	//result /= volumeSize.maximum() * 0.5f;
+	result *= 2.0f;
+	return GetGridSpacing() * result;
 }
 
-float TimeVolumeInfo::GetBrickOverlapWorld() const
+Vec3f TimeVolumeInfo::GetBrickOverlapWorld() const
 {
 	return GetBrickSizeWorld() * (float(GetBrickOverlap()) / float(GetBrickSizeWithoutOverlap()));
 }
@@ -70,7 +72,7 @@ bool TimeVolumeInfo::GetBrickBoxWorld(const tum3D::Vec3i& spatialIndex, tum3D::V
 {
 	Vec3f brickIndexFloat; castVec(spatialIndex, brickIndexFloat);
 	Vec3f volumeHalfSizeWorld = GetVolumeHalfSizeWorld();
-	float brickSizeWorld = GetBrickSizeWorld();
+	Vec3f brickSizeWorld = GetBrickSizeWorld();
 	boxMin = -volumeHalfSizeWorld + brickIndexFloat * brickSizeWorld;
 	boxMax = boxMin + brickSizeWorld;
 	minimum(boxMax, volumeHalfSizeWorld); // clamp against global volume box
@@ -81,7 +83,7 @@ bool TimeVolumeInfo::GetBrickBoxWorld(const tum3D::Vec3i& spatialIndex, tum3D::V
 
 Vec3i TimeVolumeInfo::GetContainingBrickSpatialIndex(const Vec3f& posWorld) const
 {
-	float brickSize = GetBrickSizeWorld();
+	Vec3f brickSize = GetBrickSizeWorld();
 	const Vec3f& volumeHalfSizeWorld = GetVolumeHalfSizeWorld();
 	return Vec3i((posWorld + volumeHalfSizeWorld) / brickSize);
 }

@@ -31,7 +31,7 @@ public:
 	const tum3D::Vec3i& GetVolumeSize() const { return m_volumeSize; }
 	int32 GetChannelCount() const { return m_iChannels; }
 	int32 GetTimestepCount() const { return m_iTimestepCount; }
-	float GetGridSpacing() const { return m_fGridSpacing; }
+	tum3D::Vec3f GetGridSpacing() const { return m_fGridSpacing; }
 	float GetTimeSpacing() const { return m_fTimeSpacing; }
 	bool IsPeriodic() const { return m_periodic; }
 
@@ -49,13 +49,13 @@ public:
 	tum3D::Vec3i GetBrickSpatialIndex(uint linearIndex) const;
 
 	tum3D::Vec3f GetVolumeHalfSizeWorld() const;
-	float GetBrickSizeWorld() const;
-	float GetBrickOverlapWorld() const;
+	tum3D::Vec3f GetBrickSizeWorld() const;
+	tum3D::Vec3f GetBrickOverlapWorld() const;
 	bool GetBrickBoxWorld(const tum3D::Vec3i& spatialIndex, tum3D::Vec3f& boxMin, tum3D::Vec3f& boxMax) const;
 
 	tum3D::Vec3i GetContainingBrickSpatialIndex(const tum3D::Vec3f& posWorld) const;
 
-	float GetPhysicalToWorldFactor() const { return 2.0f / (float(GetVolumeSize().maximum()) * GetGridSpacing()); }
+	tum3D::Vec3f GetPhysicalToWorldFactor() const { return 2.0f / (float(GetVolumeSize().maximum()) * GetGridSpacing()); }
 	float GetVoxelToWorldFactor()    const { return 2.0f / float(GetVolumeSize().maximum()); }
 
 	bool IsCompressed() const { return m_compression != COMPRESSION_NONE; }
@@ -69,7 +69,7 @@ private:
 	tum3D::Vec3i	m_volumeSize;
 	int32			m_iChannels;
 	int32			m_iTimestepCount;
-	float			m_fGridSpacing;
+	tum3D::Vec3f	m_fGridSpacing;
 	float			m_fTimeSpacing;
 	bool			m_periodic;
 

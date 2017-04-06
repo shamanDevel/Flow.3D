@@ -1182,7 +1182,7 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 	bool renderBrickBoxes = m_renderBrickBoxes;
 	bool renderCoordinates = m_renderDomainBox;
 
-	Vec3f brickSize(m_pVolume->GetBrickSizeWorld(), m_pVolume->GetBrickSizeWorld(), m_pVolume->GetBrickSizeWorld());
+	Vec3f brickSize = m_pVolume->GetBrickSizeWorld();
 	float tubeRadiusLarge  = 0.004f;
 	float tubeRadiusMedium = 0.003f;
 	float tubeRadiusSmall  = 0.002f;
@@ -1584,7 +1584,7 @@ void RenderingManager::RenderBalls(const BallBuffers* pBallBuffers, float radius
 	m_lineEffect.m_pvColor1Variable->SetFloatVector(m_particleRenderParams.m_color1);
 
 	Vec3f boxMin = -m_pVolume->GetVolumeHalfSizeWorld();
-	float sizePhys = (float)m_pVolume->GetVolumeSize().maximum() * m_pVolume->GetGridSpacing();
+	tum3D::Vec3f sizePhys = (float)m_pVolume->GetVolumeSize().maximum() * m_pVolume->GetGridSpacing();
 	m_lineEffect.m_pvBoxMinVariable->SetFloatVector(boxMin);
 	m_lineEffect.m_pvBoxSizeVariable->SetFloatVector(Vec3f(2.0f / sizePhys));
 

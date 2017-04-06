@@ -33,11 +33,11 @@ public:
 	bool IsCreated() { return m_isCreated; }
 
 	// size of one brick (without overlaps) in world space. cubic brick and isotropic volume -> this is a scalar
-	void SetBrickSizeWorld(float brickSizeWorld) { m_brickSizeWorld = brickSizeWorld; }
+	void SetBrickSizeWorld(tum3D::Vec3f brickSizeWorld) { m_brickSizeWorld = brickSizeWorld; }
 	// amount of brick overlap (left and right each) in world space, i.e. bricksize with overlap = bricksize + 2*overlap
-	void SetBrickOverlapWorld(float brickOverlapWorld) { m_brickOverlapWorld = brickOverlapWorld; }
+	void SetBrickOverlapWorld(tum3D::Vec3f brickOverlapWorld) { m_brickOverlapWorld = brickOverlapWorld; }
 	// distance between two grid points
-	void SetGridSpacing(float gridSpacing) { m_gridSpacing = gridSpacing; }
+	void SetGridSpacing(tum3D::Vec3f gridSpacing) { m_gridSpacing = gridSpacing; }
 
 	void SetParams(const ProjectionParams& projParams, const StereoParams& stereoParams, const Range1D& range);
 
@@ -68,9 +68,9 @@ private:
 
 	bool					m_isCreated;
 
-	float					m_brickSizeWorld;
-	float					m_brickOverlapWorld;
-	float					m_gridSpacing;
+	tum3D::Vec3f			m_brickSizeWorld;
+	tum3D::Vec3f			m_brickOverlapWorld;
+	tum3D::Vec3f			m_gridSpacing;
 
 	ProjectionParams		m_projParams;
 	StereoParams			m_stereoParams;
