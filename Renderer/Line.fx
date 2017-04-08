@@ -157,7 +157,7 @@ struct LineVertex
 	float3   vel     : VELOCITY;
 	uint     lineID  : LINE_ID;
 	float3   seedPos : SEED_POSITION;
-	//float3x3 jac     : JACOBIAN;
+	float3x3 jac     : JACOBIAN;
 };
 
 struct BallVertex

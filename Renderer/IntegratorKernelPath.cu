@@ -13,6 +13,7 @@
 #include "Coords.cuh"
 #include "IntegratorCommon.cuh"
 #include "TextureFilterTime.cuh"
+#include "Jacobian.cuh"
 
 extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
@@ -130,7 +131,7 @@ __global__ void integratePathLinesKernel()
 			// (if we didn't, the new deltaTime is larger than the backup anyway)
 			deltaTime = fmax(deltaTime, deltaTimeBak);
 
-			//vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position));
+			vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
 
 			// re-orthogonalize normal wrt. tangent == velocity direction
 			float3 binormal = cross(vertex.Velocity, vertex.Normal);

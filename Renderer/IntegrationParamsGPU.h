@@ -29,6 +29,8 @@ struct IntegrationParamsGPU
 
 	float outputPosDiffSquared;
 	float outputTimeDiff;
+
+	float3 gridSpacing;
 };
 
 
