@@ -1320,7 +1320,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		Vec4f v3; v3 = viewproj.multVec(Vec4f(-1, +1, center.z(), 1), v3); v3 /= v3.w();
 		Vec2f dir1 = v2.xy() - v1.xy();
 		Vec2f dir2 = v3.xy() - v1.xy();
-		if (dir1.x()*dir2.y() - dir1.y()*dir2.x() > 0) {
+		if (dir1.x()*dir2.y() - dir1.y()*dir2.x() < 0) {
 			//camera is at the wrong side, flip clip
 			clipPlane = -clipPlane;
 		}
