@@ -1610,6 +1610,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddButton(g_pTwBarMain,"SeedToDomain", SetBoundingBoxToDomainSize, NULL,                                  "label='Set Seed Box to Domain' group=ParticleTrace");
 	TwAddButton(g_pTwBarMain, "LoadSeedTexture", LoadSeedTexture, pDevice, "label='Load Seed Texture' group=ParticleTrace");
+	TwAddButton(g_pTwBarMain, "SeedTextureInfo", NULL, NULL, "label='Press P to pick the color under the mouse' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinX",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.x(),	"label='X' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinY",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.y(),	"label='Y' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinZ",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.z(),	"label='Z' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
