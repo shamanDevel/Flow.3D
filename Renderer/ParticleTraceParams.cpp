@@ -5,6 +5,11 @@
 
 using namespace tum3D;
 
+SeedTexture::SeedTexture()
+	: m_width(0), m_height(0), m_picked(0), m_colors(NULL)
+{
+
+}
 
 ParticleTraceParams::ParticleTraceParams()
 {
@@ -268,6 +273,11 @@ bool ParticleTraceParams::hasChangesForRetracing(const ParticleTraceParams & old
 			return true; //of course
 		}
 		//particles per second skipped
+		if (m_seedTexture.m_colors != old.m_seedTexture.m_colors
+			|| m_seedTexture.m_height != old.m_seedTexture.m_height
+			|| m_seedTexture.m_width != old.m_seedTexture.m_width) {
+			return true;
+		}
 		//no relevant change
 		return false;
 	}

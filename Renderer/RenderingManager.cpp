@@ -1376,7 +1376,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 		if (renderSlice) {
-			m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext);
+			m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext, true);
 		}
 
 		viewport.TopLeftY += viewport.Height;
@@ -1387,7 +1387,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 		if (renderSlice) {
-			m_pQuadEffect->DrawTexture(projRight * viewRight, pContext);
+			m_pQuadEffect->DrawTexture(projRight * viewRight, pContext, true);
 		}
 	}
 	else
@@ -1402,7 +1402,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 		if (renderSlice) {
-			m_pQuadEffect->DrawTexture(proj * view, pContext);
+			m_pQuadEffect->DrawTexture(proj * view, pContext, true);
 		}
 	}
 
@@ -1478,7 +1478,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 		if (renderSlice) {
-			m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext);
+			m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext, false);
 		}
 
 		viewport.TopLeftY += viewport.Height;
@@ -1489,7 +1489,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 		if (renderSlice) {
-			m_pQuadEffect->DrawTexture(projRight * viewRight, pContext);
+			m_pQuadEffect->DrawTexture(projRight * viewRight, pContext, false);
 		}
 	}
 	else
@@ -1504,7 +1504,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 
 		pContext->DrawIndexed(pLineBuffers->m_indexCountTotal, 0, 0);
 		if (renderSlice) {
-			m_pQuadEffect->DrawTexture(proj * view, pContext);
+			m_pQuadEffect->DrawTexture(proj * view, pContext, false);
 		}
 	}
 

@@ -92,4 +92,13 @@ technique11 tQuad
 		SetDepthStencilState(DepthDisable, 0);
 		SetBlendState(BlendAlpha, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
 	}
+	pass P1
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsQuad()));
+		SetGeometryShader(NULL);
+		SetPixelShader(CompileShader(ps_5_0, psQuad()));
+		SetRasterizerState(CullNone);
+		SetDepthStencilState(DepthDefault, 0);
+		SetBlendState(BlendAlpha, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+	}
 }

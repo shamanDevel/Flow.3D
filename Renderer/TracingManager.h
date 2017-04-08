@@ -325,7 +325,8 @@ private:
 	std::mt19937 m_engine;
 	std::uniform_real_distribution<float> m_rng;
 	std::vector<LineCheckpoint> m_checkpoints;
-
+	//number of attempts to sample in the seed texture
+	int m_numRejections;
 
 	// timing
 	MultiTimerGPU m_timerUploadDecompress;

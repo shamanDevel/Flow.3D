@@ -49,11 +49,11 @@ void QuadEffect::SetParameters(ID3D11ShaderResourceView* texture, const tum3D::V
 	m_pvBitangent->SetFloatVector(bitangent);
 }
 
-void QuadEffect::DrawTexture(const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext)
+void QuadEffect::DrawTexture(const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext, bool withDepth)
 {
 	m_pmWorldViewProjVariable->SetMatrix(worldViewProjMatrix.data());
 
-	m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
+	m_pTechnique->GetPassByIndex(withDepth ? 1 : 0)->Apply(0, pContext);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	pContext->Draw(4, 0);
 }

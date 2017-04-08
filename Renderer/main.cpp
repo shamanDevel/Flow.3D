@@ -6,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 #include <omp.h>
 
@@ -78,6 +79,7 @@ Vec4f            g_rotationY = Vec4f(0, 0, 0, 1);
 ProjectionParams g_projParams;
 StereoParams     g_stereoParams;
 ViewParams       g_viewParams;
+Vec2f            g_mouseScreenPosition;
 
 FilterParams         g_filterParams;
 RaycastParams        g_raycastParams;
@@ -1415,6 +1417,50 @@ void TW_CALL LoadColorTexture(void *clientData)
 	}
 }
 
+void TW_CALL LoadSeedTexture(void *clientData)
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//create new texture
+		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* res = NULL;
+		//ID3D11ShaderResourceView* srv = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFileEx(pd3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
+			std::cout << "Seed texture " << filename << " loaded" << std::endl;
+			//delete old data
+			delete[] g_particleTraceParams.m_seedTexture.m_colors;
+			g_particleTraceParams.m_seedTexture.m_colors = NULL;
+			//Copy to cpu memory
+			ID3D11Texture2D* tex = NULL;
+			res->QueryInterface(&tex);
+			D3D11_TEXTURE2D_DESC desc;
+			tex->GetDesc(&desc);
+			g_particleTraceParams.m_seedTexture.m_width = desc.Width;
+			g_particleTraceParams.m_seedTexture.m_height = desc.Height;
+			g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ID3D11DeviceContext* context = NULL;
+			pd3dDevice->GetImmediateContext(&context);
+			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
+				for (int y = 0; y < desc.Width; ++y) {
+					memcpy(&g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
+				}
+				context->Unmap(tex, 0);
+			}
+			SAFE_RELEASE(context);
+			SAFE_RELEASE(tex);
+			//reset color
+			g_particleTraceParams.m_seedTexture.m_picked = 0;
+			std::cout << "Seed texture copied to cpu memory" << std::endl;
+		}
+		else {
+			std::cerr << "Failed to load seed texture" << std::endl;
+		}
+		//SAFE_RELEASE(srv);
+		SAFE_RELEASE(res);
+	}
+}
 
 void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 {
@@ -1561,7 +1607,9 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "ShowSeedBox",		TW_TYPE_BOOLCPP,	&g_bRenderSeedBox,							"label='Show Seed Box (Green)' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "BrickSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetBrickSlotCountMax(),	"label='Max Brick Slot Count' group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "TimeSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetTimeSlotCountMax(),	"label='Max Time Slot Count' group=ParticleTraceAdvanced");
+	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddButton(g_pTwBarMain,"SeedToDomain", SetBoundingBoxToDomainSize, NULL,                                  "label='Set Seed Box to Domain' group=ParticleTrace");
+	TwAddButton(g_pTwBarMain, "LoadSeedTexture", LoadSeedTexture, pDevice, "label='Load Seed Texture' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinX",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.x(),	"label='X' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinY",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.y(),	"label='Y' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxMinZ",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.z(),	"label='Z' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
@@ -1570,6 +1618,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeY",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.y(),	"label='Y' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
 	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeZ",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.z(),	"label='Z' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
 	TwDefine("Main/SeedBoxSize label='Seed Box Size' group=ParticleTrace opened=false");
+	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectMode",		twAdvectMode,		&g_particleTraceParams.m_advectMode,		"label='Advection' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "DenseOutput",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enableDenseOutput,	"label='Dense Output' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "TraceInterpol",	twFilterMode,		&g_particleTraceParams.m_filterMode,		"label='Interpolation' group=ParticleTrace");
@@ -2933,6 +2982,54 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 				LoadRenderingParams("quicksave.cfg");
 				break;
 			}
+			case 'P' : 
+			{
+				std::cout << "Pick seed, mouse position = (" << g_mouseScreenPosition.x() << ", " << g_mouseScreenPosition.y() << ")" << std::endl;
+				//create ray through the mouse
+				Mat4f viewProjMat = g_projParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, g_cudaDevices[g_primaryCudaDeviceIndex].range)
+					* g_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+				Mat4f invViewProjMat;
+				tum3D::invert4x4(viewProjMat, invViewProjMat);
+				Vec4f start4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.01f, 1.0f);
+				Vec3f start = start4.xyz() / start4.w();
+				Vec4f end4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.99f, 1.0f);
+				Vec3f end = end4.xyz() / end4.w();
+				std::cout << "Ray, start=" << start << ", end=" << end << std::endl;
+				//cut ray with the xy-plane
+				Vec3f dir = end - start;
+				normalize(dir);
+				Vec3f n = Vec3f(0, 0, 1); //normal of the plane
+				float d = (-start).dot(n) / (dir.dot(n));
+				if (d < 0) break; //we are behind the plane
+				Vec3f intersection = start + d * dir;
+				std::cout << "Intersection: " << intersection << std::endl;
+				//Test if seed texture is loaded
+				if (g_particleTraceParams.m_seedTexture.m_colors == NULL) {
+					//no texture, just adjust seed box
+					g_particleTraceParams.m_seedBoxMin = intersection - Vec3f(0.05f);
+					g_particleTraceParams.m_seedBoxSize = Vec3f(0.1f);
+				}
+				else {
+					//a seed texture was found
+					//check if intersection is in the volume
+					if (intersection > -g_volume.GetVolumeHalfSizeWorld()
+						&& intersection < g_volume.GetVolumeHalfSizeWorld()) {
+						//inside, convert to texture coordinates
+						Vec3f localIntersection = (intersection + g_volume.GetVolumeHalfSizeWorld()) / (2 * g_volume.GetVolumeHalfSizeWorld());
+						int texX = (int)(localIntersection.x() * g_particleTraceParams.m_seedTexture.m_width);
+						int texY = (int)(localIntersection.y() * g_particleTraceParams.m_seedTexture.m_height);
+						texY = g_particleTraceParams.m_seedTexture.m_height - texY - 1;
+						unsigned int color = g_particleTraceParams.m_seedTexture.m_colors[texX + texY * g_particleTraceParams.m_seedTexture.m_height];
+						printf("Pick color at position (%d, %d): 0x%08x\n", texX, texY, color);
+						g_particleTraceParams.m_seedTexture.m_picked = color;
+					} else {
+						std::cout << "Outside the bounds" << std::endl;
+						g_particleTraceParams.m_seedTexture.m_picked = 0; //disable seed from texture
+					}
+				}
+
+				break;
+			}
 			default : return;
 		}
 	}
@@ -2952,6 +3049,8 @@ void OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddleButtonDow
 	static bool bMiddleButtonDownPrev = bMiddleButtonDown;
 	static int xPosPrev = xPos;
 	static int yPosPrev = yPos;
+
+	g_mouseScreenPosition = Vec2f((xPos / (float)g_windowSize.x()) * 2 - 1, -((yPos / (float)g_windowSize.y()) * 2 - 1));
 
 	if(!bHandledByGUI && !g_imageSequence.Running) {
 		int xPosDelta = xPos - xPosPrev;

@@ -6,11 +6,24 @@
 
 #include <ConfigFile.h>
 #include <Vec.h>
+#include <vector>
 
 #include "AdvectMode.h"
 #include "LineMode.h"
 #include "TextureFilterMode.h"
 
+struct SeedTexture
+{
+	int m_width;
+	int m_height;
+	unsigned int* m_colors;
+	//The picked color
+	// 0: seed from seed box
+	// >0: seed at positions where m_colors[pos] == m_picked
+	unsigned int m_picked;
+
+	SeedTexture();
+};
 
 struct ParticleTraceParams
 {
@@ -74,6 +87,9 @@ struct ParticleTraceParams
 
 	//Particles per second and per seed
 	float m_particlesPerSecond;
+
+	//seed from texture
+	SeedTexture m_seedTexture;
 
 	//Checks if the changes when comparing with 'old' are enough to completely retrace everything.
 	//This is only important for particle modes. For line modes, this delegates to operator!=

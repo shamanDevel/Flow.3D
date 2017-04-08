@@ -47,6 +47,7 @@ TracingManager::TracingManager()
 	, m_progress(0.0f)
 	, m_verbose(false)
 	, m_engine(std::chrono::system_clock::now().time_since_epoch().count())
+	, m_numRejections(20)
 {
 	m_brickIndexGPU.Init();
 	m_brickRequestsGPU.Init();
@@ -250,9 +251,34 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 	
 	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
 	{
-		m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
-		if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
-			printf("WARNING: seed %i is outside of domain!\n", i);
+		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked == 0) {
+			//seed directly from the seed box
+			m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
+		}
+		else {
+			//sample texture until a point with the same color is found
+			m_checkpoints[i].Position = make_float3(Vec3f(-10000, -10000, -10000)); //somewhere outside, so that the point is deleted if no sample could be found
+			for (int j = 0; j < m_numRejections; ++j) {
+				float3 pos = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
+				Vec3f posAsVec = Vec3f(&pos.x);
+				Vec3f posInVolume = (posAsVec + m_pVolume->GetVolumeHalfSizeWorld()) / (2 * m_pVolume->GetVolumeHalfSizeWorld());
+				int texX = (int)(posInVolume.x() * m_traceParams.m_seedTexture.m_width);
+				int texY = (int)(posInVolume.y() * m_traceParams.m_seedTexture.m_height);
+				texY = m_traceParams.m_seedTexture.m_height - texY - 1;
+				if (texX < 0 || texY < 0 || texX >= m_traceParams.m_seedTexture.m_width || texY >= m_traceParams.m_seedTexture.m_height) {
+					continue;
+				}
+				unsigned int color = m_traceParams.m_seedTexture.m_colors[texX + texY * m_traceParams.m_seedTexture.m_height];
+				if (color == m_traceParams.m_seedTexture.m_picked) {
+					//we found it
+					m_checkpoints[i].Position = pos;
+					break;
+				}
+			}
+		}
+
+		/*if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
+			printf("WARNING: seed %i is outside of domain!\n", i);*/
 		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
 		m_checkpoints[i].Time = spawnTime;
 		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
