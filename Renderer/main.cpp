@@ -1696,7 +1696,9 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "ColorMode",		twLineColorMode,	&g_particleRenderParams.m_lineColorMode,	"label='Color Mode' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "Color0",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color0,			"label='Color 0' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "Color1",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color1,			"label='Color 1' group=ParticleRender");
-	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice, "label='Load Color Texture' group=ParticleRender");
+	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice,                                    "label='Load Color Texture' group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "RenderMeasure",   twMeasureMode,      &g_particleRenderParams.m_measure,          "label='Measure' group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "RenderMeasureScale", TW_TYPE_FLOAT,	&g_particleRenderParams.m_measureScale,		"label='Measure Scale' step=0.01 precision=6 group=ParticleRender");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripes",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_timeStripes,		"label='Time Stripes' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripeLength",TW_TYPE_FLOAT,		&g_particleRenderParams.m_timeStripeLength,	"label='Time Stripe Length' min=0.001 step=0.001 group=ParticleRender");
@@ -1902,6 +1904,7 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 	if(FAILED(hr = g_tfEdt.onCreateDevice( pd3dDevice ))) {
 		return hr;
 	}
+	g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV();
 	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(), cudaGraphicsRegisterFlagsNone));
 
 	//TracingBenchmark bench;
@@ -2384,7 +2387,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		bool linesOnly = s_isTracing || s_isFiltering || !g_raycastParams.m_raycastingEnabled;
 
 		cudaArray* pTfArray = nullptr;
-		bool needTF = g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode);
+		bool needTF = (g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode));
 		if(needTF)
 		{
 			cudaSafeCall(cudaGraphicsMapResources(1, &g_pTfEdtSRVCuda));
@@ -2868,7 +2871,9 @@ NoVolumeLoaded:
 	// GUI
 	if(g_bRenderUI)
 	{
-		g_tfEdt.setVisible(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode));
+		g_tfEdt.setVisible(
+			(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
+			|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE));
 
 		// switch to dark text for bright backgrounds
 		if(Luminance(g_backgroundColor.xyz()) > 0.7f) {

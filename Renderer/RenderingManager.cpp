@@ -1299,6 +1299,12 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		m_lineEffect.m_pseedColors->SetResource(m_particleRenderParams.m_pColorTexture);
 	}
 
+	m_lineEffect.m_piMeasureMode->SetInt((int)m_particleRenderParams.m_measure);
+	m_lineEffect.m_pfMeasureScale->SetFloat(m_particleRenderParams.m_measureScale);
+	if (m_particleRenderParams.m_pTransferFunction != nullptr) {
+		m_lineEffect.m_ptransferFunction->SetResource(m_particleRenderParams.m_pTransferFunction);
+	}
+
 	// common slice texture parameters
 	bool renderSlice = m_particleRenderParams.m_showSlice 
 		&& m_particleRenderParams.m_pSliceTexture != nullptr;

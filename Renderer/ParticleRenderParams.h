@@ -11,6 +11,7 @@
 #include "LineRenderMode.h"
 #include "ParticleRenderMode.h"
 #include "LineColorMode.h"
+#include "Measure.h"
 
 struct ParticleRenderParams
 {
@@ -39,6 +40,9 @@ struct ParticleRenderParams
 	tum3D::Vec4f m_color0;
 	tum3D::Vec4f m_color1;
 	ID3D11ShaderResourceView* m_pColorTexture;
+	eMeasure m_measure;
+	float m_measureScale;
+	ID3D11ShaderResourceView* m_pTransferFunction;
 
 	bool  m_timeStripes;
 	float m_timeStripeLength;

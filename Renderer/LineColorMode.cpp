@@ -7,6 +7,7 @@ namespace
 		"Line ID",
 		"Age",
 		"Texture",
+		"Measure",
 		"Unknown"
 	};
 }

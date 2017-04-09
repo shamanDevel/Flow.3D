@@ -12,6 +12,7 @@ enum eLineColorMode
 	LINE_ID = 0,
 	AGE,
 	TEXTURE,
+	MEASURE,
 	LINE_COLOR_MODE_COUNT
 };
 std::string GetLineColorModeName(eLineColorMode renderMode);

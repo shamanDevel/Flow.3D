@@ -26,6 +26,9 @@ cbuffer PerFrame
 
 	bool     g_bTimeStripes;
 	float    g_fTimeStripeLength;
+
+	int      g_iMeasureMode;
+	float    g_fMeasureScale;
 }
 
 cbuffer Balls
@@ -39,7 +42,7 @@ cbuffer Balls
 
 texture1D<float4> g_texColors;
 texture2D<float4> g_seedColors;
-
+texture1D<float4> g_transferFunction;
 
 RasterizerState CullFront
 {
@@ -167,7 +170,52 @@ struct BallVertex
 };
 
 
-float4 getColor(uint lineID, float time, float3 seedPos)
+float3 getVorticity(float3x3 jacobian)
+{
+	return float3(jacobian[2][1] - jacobian[1][2], jacobian[0][2] - jacobian[2][0], jacobian[1][0] - jacobian[0][1]);
+}
+
+float getMeasure(float3 vel, float3x3 jac)
+{
+	//TODO
+	switch (g_iMeasureMode)
+	{
+	case 0: //MEASURE_VELOCITY
+		return g_fMeasureScale * length(vel.xyz);
+	case 1: //MEASURE_VELOCITY_Z
+		return 0.5 + (g_fMeasureScale * vel.z); //displace by 0.5 so that z=0 is in the middle
+	case 3: //MEASURE_VORTICITY
+		return g_fMeasureScale * length(getVorticity(jac));
+	case 4: //MEASURE_LAMBDA2
+
+		break;
+	case 5: //MEASURE_QHUNT
+
+		break;
+	case 6: //MEASURE_DELTACHONG
+
+		break;
+	case 7: //MEASURE_ENSTROPHY_PRODUCTION
+
+		break;
+	case 8: //MEASURE_STRAIN_PRODUCTION
+
+		break;
+	case 9: //MEASURE_SQUARE_ROTATION
+
+		break;
+	case 10: //MEASURE_SQUARE_RATE_OF_STRAIN
+
+		break;
+	case 11: //MEASURE_TRACE_JJT
+
+		break;
+	}
+	return 0.0;
+}
+
+
+float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 jac)
 {
 	float4 color;
 	if(g_iColorMode == 1) {
@@ -178,48 +226,47 @@ float4 getColor(uint lineID, float time, float3 seedPos)
 		//color by line id
 		color = g_texColors.Load(int2(lineID % 1024, 0));
 	}
-	else {
+	else if (g_iColorMode == 2) {
 		//color by texture
 		//assume xy-plane is in the bounds [-1, 1], y-flipped
 		float2 texCoord = (seedPos.xy + float2(1, 1)) / 2;
 		texCoord.y = 1 - texCoord.y;
-		color = g_seedColors.Sample(SamplerLinear, texCoord);
+		color = g_seedColors.SampleLevel(SamplerLinear, texCoord, 0);
 	}
-
-	if(g_bTimeStripes) {
-		float segment = floor(time / g_fTimeStripeLength);
-		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
-		color.rgb *= 1.0 + 0.1 * evenOdd;
-		color.rgb += 0.25 * evenOdd;
+	else if (g_iColorMode == 3) {
+		//color by measure
+		float value = getMeasure(vel, jac);
+		color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
 	}
 
 	return color;
-}
-
-float3 getVorticity(float3x3 jacobian)
-{
-	return float3(jacobian[2][1] - jacobian[1][2], jacobian[0][2] - jacobian[2][0], jacobian[1][0] - jacobian[0][1]);
 }
 
 struct LinePSIn
 {
 	float4 pos  : SV_Position;
 	float  time : TIME;
-	float3 seedPos : SEED_POS;
+	float4 vcolor : BASE_COLOR;
 	nointerpolation uint lineID : LINE_ID;
 };
 
 void vsLine(LineVertex input, out LinePSIn output)
 {
-	output.seedPos = input.seedPos;
-	output.lineID = input.lineID;
 	output.time = input.time;
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac);
 	output.pos = mul(g_mWorldViewProj, float4(input.pos, 1.0));
 }
 
 float4 psLine(LinePSIn input) : SV_Target
 {
-	return getColor(input.lineID, input.time, input.seedPos);
+	float4 color = input.vcolor;
+	if (g_bTimeStripes) {
+		float segment = floor(input.time / g_fTimeStripeLength);
+		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
+		color.rgb *= 1.0 + 0.1 * evenOdd;
+		color.rgb += 0.25 * evenOdd;
+	}
+	return color;
 }
 
 
@@ -229,6 +276,7 @@ struct RibbonGSIn
 	float3 pos  : POSITION;
 	float  time : TIME;
 	float3 vel  : VELOCITY;
+	float3x3 jac : JACOBIAN;
 	float3 vort : VORTICITY;
 	float3 seedPos : SEED_POS;
 	nointerpolation uint lineID : LINE_ID;
@@ -239,7 +287,9 @@ void vsRibbon(LineVertex input, out RibbonGSIn output)
 	output.pos  = input.pos;
 	output.time = input.time;
 	output.vel  = input.vel;
-	output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
+	//output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
+	output.vort = getVorticity(input.jac);
+	output.jac = input.jac;
 	output.seedPos = input.seedPos;
 	output.lineID = input.lineID;
 }
@@ -250,8 +300,7 @@ struct RibbonPSIn
 	float3 posWorld   : POS_WORLD;
 	float3 normal : NORMAL;
 	float  time   : TIME;
-	float3 seedPos : SEED_POS;
-	nointerpolation uint lineID : LINE_ID;
+	float4 vcolor : BASE_COLOR;
 };
 
 [maxvertexcount(4)]
@@ -272,8 +321,7 @@ void gsExtrudeRibbon(in line RibbonGSIn input[2], inout TriangleStream<RibbonPSI
 
 
 	RibbonPSIn output;
-	output.seedPos = input[0].seedPos;
-	output.lineID = input[0].lineID;
+	output.vcolor = getColor(input[0].lineID, input[0].time, input[0].seedPos, input[0].vel, input[0].jac);
 
 	output.normal = normalize(cross(input[0].vel, displace0));
 	output.time = input[0].time;
@@ -297,7 +345,13 @@ void gsExtrudeRibbon(in line RibbonGSIn input[2], inout TriangleStream<RibbonPSI
 float4 psRibbon(float4 pos : SV_Position, RibbonPSIn input) : SV_Target
 {
 	float3 lightDir = normalize(g_vLightPos - input.posWorld);
-	float4 color = getColor(input.lineID, input.time, input.seedPos);
+	float4 color = input.vcolor;
+	if (g_bTimeStripes) {
+		float segment = floor(input.time / g_fTimeStripeLength);
+		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
+		color.rgb *= 1.0 + 0.1 * evenOdd;
+		color.rgb += 0.25 * evenOdd;
+	}
 	float diffuse = abs(dot(lightDir, normalize(input.normal)));
 	return float4(diffuse * color.rgb, color.a);
 }
@@ -310,7 +364,7 @@ struct TubeGSIn
 	float  time   : TIME;
 	float3 normal : NORMAL;
 	float3 vel    : VELOCITY;
-	float3 vort   : VORTICITY;
+	float3x3 jac  : JACOBIAN;
 	nointerpolation uint lineID : LINE_ID;
 	float3 seedPos : SEED_POS;
 };
@@ -321,7 +375,7 @@ void vsTube(LineVertex input, out TubeGSIn output)
 	output.time   = input.time;
 	output.normal = input.normal;
 	output.vel    = input.vel;
-	output.vort   = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
+	output.jac    = input.jac;
 	output.lineID = input.lineID;
 	output.seedPos = input.seedPos;
 }
@@ -333,8 +387,7 @@ struct TubePSIn
 	float3 tubeCenter : TUBE_CENTER;
 	float  time       : TIME;
 	float3 normal     : NORMAL;
-	nointerpolation uint lineID : LINE_ID;
-	float3 seedPos : SEED_POS;
+	float4 vcolor     : BASE_COLOR;
 };
 
 #define TUBE_SEGMENT_COUNT 16
@@ -360,8 +413,7 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 	}
 
 	TubePSIn output;
-	output.lineID = input[0].lineID;
-	output.seedPos = input[0].seedPos;
+	output.vcolor = getColor(input[0].lineID, input[0].time, input[0].seedPos, input[0].vel, input[0].jac);
 
 	output.tubeCenter = input[1].pos;
 	output.normal = normal1;
@@ -417,7 +469,13 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 float4 psTube(TubePSIn input) : SV_Target
 {
 	float3 lightDir = normalize(g_vLightPos - input.posWorld);
-	float4 color = getColor(input.lineID, input.time, input.seedPos);
+	float4 color = input.vcolor;
+	if (g_bTimeStripes) {
+		float segment = floor(input.time / g_fTimeStripeLength);
+		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
+		color.rgb *= 1.0 + 0.1 * evenOdd;
+		color.rgb += 0.25 * evenOdd;
+	}
 	float diffuse = saturate(dot(lightDir, normalize(input.normal)));
 	return float4(diffuse * color.rgb, color.a);
 }
@@ -502,7 +560,7 @@ struct ParticleGSIn
 	float  time : TIME;
 	float3 normal : NORMAL;
 	float3 vel    : VELOCITY;
-	float3 vort   : VORTICITY;
+	float3x3 jac  : JACOBIAN;
 	float3 seedPos    : SEED_POSITION;
 	nointerpolation uint lineID : LINE_ID;
 };
@@ -515,8 +573,7 @@ struct ParticlePSIn
 	float3 tubeCenter : TUBE_CENTER;
 	float  time       : TIME;
 	float3 normal     : NORMAL;
-	float3 seedPos    : SEED_POSITION;
-	nointerpolation uint lineID : LINE_ID;
+	float4 vcolor     : BASE_COLOR;
 };
 
 void vsParticle(LineVertex input, out ParticleGSIn output)
@@ -525,7 +582,7 @@ void vsParticle(LineVertex input, out ParticleGSIn output)
 	output.time = input.time;
 	output.normal = input.normal;
 	output.vel = input.vel;
-	output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
+	output.jac = input.jac;
 	output.lineID = input.lineID;
 	output.seedPos = input.seedPos;
 }
@@ -544,8 +601,7 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	o.tubeCenter = input[0].pos;
 	o.posWorld = o.tubeCenter;
 	o.normal = input[0].normal;
-	o.seedPos = input[0].seedPos;
-	o.lineID = input[0].lineID;
+	o.vcolor = getColor(input[0].lineID, input[0].time, input[0].seedPos, input[0].vel, input[0].jac);
 	float4 pos = mul(g_mWorldViewProj, float4(input[0].pos, 1.0));
 
 	float size = sqrt(1 - saturate((o.time - g_fTimeMin) / (g_fTimeMax - g_fTimeMin)))
@@ -608,7 +664,13 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 
 float4 psParticleAdditive(ParticlePSIn input) : SV_Target
 {
-	float4 color = getColor(input.lineID, input.time, input.seedPos);
+	float4 color = input.vcolor;
+	if (g_bTimeStripes) {
+		float segment = floor(input.time / g_fTimeStripeLength);
+		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
+		color.rgb *= 1.0 + 0.1 * evenOdd;
+		color.rgb += 0.25 * evenOdd;
+	}
 
 	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
 	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
@@ -619,7 +681,13 @@ float4 psParticleAdditive(ParticlePSIn input) : SV_Target
 
 float4 psParticleMultiplicative(ParticlePSIn input) : SV_Target
 {
-	float4 color = getColor(input.lineID, input.time, input.seedPos);
+	float4 color = input.vcolor;
+	if (g_bTimeStripes) {
+		float segment = floor(input.time / g_fTimeStripeLength);
+		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
+		color.rgb *= 1.0 + 0.1 * evenOdd;
+		color.rgb += 0.25 * evenOdd;
+	}
 
 	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
 	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);
@@ -631,8 +699,13 @@ float4 psParticleMultiplicative(ParticlePSIn input) : SV_Target
 
 float4 psParticleAlpha(ParticlePSIn input, uniform bool colorFromTexture) : SV_Target
 {
-	float4 color;
-	color = getColor(input.lineID, input.time, input.seedPos);
+	float4 color = input.vcolor;
+	if (g_bTimeStripes) {
+		float segment = floor(input.time / g_fTimeStripeLength);
+		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
+		color.rgb *= 1.0 + 0.1 * evenOdd;
+		color.rgb += 0.25 * evenOdd;
+	}
 
 	float dist = length(input.tex.xy - float2 (0.5f, 0.5f)) * 2;
 	float alpha = g_fParticleTransparency; //smoothstep(0, 0.3, 1 - dist);

@@ -41,8 +41,12 @@ HRESULT LineEffect::GetVariables()
 	V_RETURN( GetScalarVariable("g_bTimeStripes", m_pbTimeStripesVariable) );
 	V_RETURN( GetScalarVariable("g_fTimeStripeLength", m_pfTimeStripeLengthVariable) );
 
+	V_RETURN( GetScalarVariable("g_iMeasureMode", m_piMeasureMode) );
+	V_RETURN( GetScalarVariable("g_fMeasureScale", m_pfMeasureScale) );
+
 	V_RETURN( GetShaderResourceVariable("g_texColors", m_ptexColors) );
 	V_RETURN( GetShaderResourceVariable("g_seedColors", m_pseedColors) );
+	V_RETURN( GetShaderResourceVariable("g_transferFunction", m_ptransferFunction) );
 
 	V_RETURN( GetVectorVariable("g_vBoxMin", m_pvBoxMinVariable) );
 	V_RETURN( GetVectorVariable("g_vBoxSize", m_pvBoxSizeVariable) );

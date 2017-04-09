@@ -31,6 +31,9 @@ void ParticleRenderParams::Reset()
 	m_color0 = Vec4f(0.0f, 0.251f, 1.0f, 1.0f);
 	m_color1 = Vec4f(1.0f, 0.0f, 0.0f, 1.0f);
 	m_pColorTexture = NULL;
+	m_measure = eMeasure::MEASURE_VELOCITY;
+	m_measureScale = 1.0;
+	m_pTransferFunction = NULL;
 
 	m_timeStripes = false;
 	m_timeStripeLength = 0.03f;
