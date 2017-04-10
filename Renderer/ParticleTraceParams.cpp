@@ -278,6 +278,14 @@ bool ParticleTraceParams::hasChangesForRetracing(const ParticleTraceParams & old
 			|| m_seedTexture.m_width != old.m_seedTexture.m_width) {
 			return true;
 		}
+		//if in stream mode, retrace on seed box changes
+		if (m_lineMode == eLineMode::LINE_PARTICLE_STREAM) {
+			if (m_seedBoxMin != old.m_seedBoxMin
+				|| m_seedBoxSize != old.m_seedBoxSize
+				|| memcmp(&m_seedTexture, &old.m_seedTexture, sizeof(SeedTexture)) != 0) {
+				return true;
+			}
+		}
 		//no relevant change
 		return false;
 	}
