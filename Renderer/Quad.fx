@@ -5,6 +5,7 @@ cbuffer PerFrame
 	float3 g_vTangent;
 	float3 g_vBitangent;
 	float2 g_vSize;
+	float g_fAlpha;
 }
 
 Texture2D g_tex;
@@ -77,7 +78,8 @@ void vsQuad(uint index : SV_VertexID, out float4 outPos : SV_Position, out float
 float4 psQuad(float4 pos : SV_Position, float2 texCoord : TEXCOORD) : SV_Target
 {
 	//return float4(1, 0, 0, 1);
-	return g_tex.Sample(SamplerLinear, texCoord);
+	float4 col = g_tex.Sample(SamplerLinear, texCoord);
+	return float4(col.rgb, col.a * g_fAlpha);
 }
 
 

@@ -41,6 +41,7 @@ void ParticleRenderParams::Reset()
 	m_pSliceTexture = NULL;
 	m_showSlice = false;
 	m_slicePosition = 0;
+	m_sliceAlpha = 0.5f;
 }
 
 void ParticleRenderParams::ApplyConfig(const ConfigFile& config)

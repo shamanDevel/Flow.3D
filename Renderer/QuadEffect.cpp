@@ -20,6 +20,7 @@ HRESULT QuadEffect::GetVariables()
 	V_RETURN(GetVectorVariable("g_vTangent", m_pvTangent));
 	V_RETURN(GetVectorVariable("g_vBitangent", m_pvBitangent));
 	V_RETURN(GetVectorVariable("g_vSize", m_pvSize));
+	V_RETURN(GetScalarVariable("g_fAlpha", m_pfAlpha));
 
 	V_RETURN( GetShaderResourceVariable("g_tex", m_pTexture) );
 
@@ -28,11 +29,13 @@ HRESULT QuadEffect::GetVariables()
 	return S_OK;
 }
 
-void QuadEffect::SetParameters(ID3D11ShaderResourceView* texture, const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size)
+void QuadEffect::SetParameters(ID3D11ShaderResourceView* texture, 
+	const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size, float alpha)
 {
 	m_pvCenter->SetFloatVector(center);
 	m_pvSize->SetFloatVector(size);
 	m_pTexture->SetResource(texture);
+	m_pfAlpha->SetFloat(alpha);
 
 	tum3D::Vec3f tangent(1, 0, 0);
 	float d = tangent.dot(normal);

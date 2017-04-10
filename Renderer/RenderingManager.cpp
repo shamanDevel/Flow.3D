@@ -1316,7 +1316,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
 		tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
 		m_pQuadEffect->SetParameters(m_particleRenderParams.m_pSliceTexture,
-			center, normal, size);
+			center, normal, size, m_particleRenderParams.m_sliceAlpha);
 		clipPlane.set(normal.x(), normal.y(), normal.z(), m_particleRenderParams.m_slicePosition);
 		//test if we have to flip the clip plane if the camera is at the wrong side
 		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);

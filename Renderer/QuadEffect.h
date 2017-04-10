@@ -24,6 +24,7 @@ protected:
 	ID3DX11EffectVectorVariable*			m_pvBitangent;
 	ID3DX11EffectVectorVariable*			m_pvCenter;
 	ID3DX11EffectVectorVariable*			m_pvSize;
+	ID3DX11EffectScalarVariable*			m_pfAlpha;
 
 	ID3DX11EffectShaderResourceVariable*	m_pTexture;
 
@@ -32,7 +33,8 @@ protected:
 
 public:
 
-	void SetParameters(ID3D11ShaderResourceView* texture, const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size);
+	void SetParameters(ID3D11ShaderResourceView* texture, 
+		const tum3D::Vec3f& center, const tum3D::Vec3f& normal, const tum3D::Vec2f& size, float alpha);
 
 	void DrawTexture(const tum3D::Mat4f& worldViewProjMatrix, ID3D11DeviceContext* pContext, bool withDepth);
 
