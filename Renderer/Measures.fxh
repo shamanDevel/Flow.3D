@@ -60,6 +60,21 @@ float FrobeniusNorm3x3(float3x3 A)
 	return sqrt(TraceAAT(A));
 }
 
+float3 getHeatCurrent(float3 vel, float4 heat)
+{
+	float3 j;
+
+	float ra = 7e5;
+	float pr = 0.7;
+	float kappa = 1 / sqrt(ra*pr);
+
+	j.x = vel.x * heat.w - kappa * heat.x;
+	j.y = vel.y * heat.w - kappa * heat.y;
+	j.z = vel.z * heat.w - kappa * heat.z;
+
+	return j;
+}
+
 // Measures
 
 float getLambda2(float3x3 J)
@@ -189,7 +204,7 @@ float getSquareRateOfStrain(float3x3 J)
 
 // Switch for the measure
 
-float getMeasure(int measure, float3 vel, float3x3 jac)
+float getMeasure(int measure, float3 vel, float3x3 jac, float4 heat)
 {
 	//TODO
 	switch (measure)
@@ -198,6 +213,8 @@ float getMeasure(int measure, float3 vel, float3x3 jac)
 		return length(vel.xyz);
 	case 1: //MEASURE_VELOCITY_Z
 		return vel.z;
+	case 2: //MEASURE_TEMPERATURE
+		return heat.w;
 	case 3: //MEASURE_VORTICITY
 		return length(getVorticity(jac));
 	case 4: //MEASURE_LAMBDA2
@@ -216,6 +233,17 @@ float getMeasure(int measure, float3 vel, float3x3 jac)
 		return getSquareRateOfStrain(jac);
 	case 11: //MEASURE_TRACE_JJT
 		return TraceAAT(jac);
+	case 12: //MEASURE_PVA
+		//not implemented yet
+		break;
+	case 13: //MEASURE_HEAT_CURRENT
+		return length(getHeatCurrent(vel, heat));
+	case 14: //MEASURE_HEAT_CURRENT_X
+		return getHeatCurrent(vel, heat).x;
+	case 15: //MEASURE_HEAT_CURRENT_Y
+		return getHeatCurrent(vel, heat).y;
+	case 16: //MEASURE_HEAT_CURRENT_Z
+		return getHeatCurrent(vel, heat).z;
 	}
 	return 0.0;
 }
