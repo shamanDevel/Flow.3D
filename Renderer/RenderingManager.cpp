@@ -1305,6 +1305,8 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	if (m_particleRenderParams.m_pTransferFunction != nullptr) {
 		m_lineEffect.m_ptransferFunction->SetResource(m_particleRenderParams.m_pTransferFunction);
 	}
+	Vec2f tfRange(m_particleRenderParams.m_transferFunctionRangeMin, m_particleRenderParams.m_transferFunctionRangeMax);
+	m_lineEffect.m_pvTfRange->SetFloatVector(tfRange);
 
 	// common slice texture parameters
 	bool renderSlice = m_particleRenderParams.m_showSlice 

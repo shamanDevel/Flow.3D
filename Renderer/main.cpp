@@ -2182,7 +2182,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale();
 	g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin();
 	g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax();
-
+	g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin();
+	g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax();
 
 	static FilterParams filterParamsPrev;
 	bool filterParamsChanged = (g_filterParams != filterParamsPrev);

@@ -44,6 +44,7 @@ HRESULT LineEffect::GetVariables()
 
 	V_RETURN( GetScalarVariable("g_iMeasureMode", m_piMeasureMode) );
 	V_RETURN( GetScalarVariable("g_fMeasureScale", m_pfMeasureScale) );
+	V_RETURN( GetVectorVariable("g_vTfRange", m_pvTfRange) );
 
 	V_RETURN( GetShaderResourceVariable("g_texColors", m_ptexColors) );
 	V_RETURN( GetShaderResourceVariable("g_seedColors", m_pseedColors) );

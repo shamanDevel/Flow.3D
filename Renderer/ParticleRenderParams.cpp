@@ -33,6 +33,9 @@ void ParticleRenderParams::Reset()
 	m_pColorTexture = NULL;
 	m_measure = eMeasure::MEASURE_VELOCITY;
 	m_measureScale = 1.0;
+
+	m_transferFunctionRangeMin = 0.0f;
+	m_transferFunctionRangeMax = 1.0f;
 	m_pTransferFunction = NULL;
 
 	m_timeStripes = false;

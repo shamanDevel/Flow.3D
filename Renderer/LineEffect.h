@@ -44,6 +44,7 @@ public:
 
 	ID3DX11EffectScalarVariable*			m_piMeasureMode;
 	ID3DX11EffectScalarVariable*			m_pfMeasureScale;
+	ID3DX11EffectVectorVariable*			m_pvTfRange;
 
 	ID3DX11EffectShaderResourceVariable*	m_ptexColors;
 	ID3DX11EffectShaderResourceVariable*    m_pseedColors;

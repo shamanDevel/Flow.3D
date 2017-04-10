@@ -42,6 +42,9 @@ struct ParticleRenderParams
 	ID3D11ShaderResourceView* m_pColorTexture;
 	eMeasure m_measure;
 	float m_measureScale;
+
+	float m_transferFunctionRangeMin;
+	float m_transferFunctionRangeMax;
 	ID3D11ShaderResourceView* m_pTransferFunction;
 
 	bool  m_timeStripes;

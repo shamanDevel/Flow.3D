@@ -30,6 +30,7 @@ cbuffer PerFrame
 
 	int      g_iMeasureMode;
 	float    g_fMeasureScale;
+	float2   g_vTfRange; //min, max
 }
 
 cbuffer Balls
@@ -198,6 +199,7 @@ float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 ja
 	else if (g_iColorMode == 3) {
 		//color by measure
 		float value = getMeasure(g_iMeasureMode, vel, jac, heat) * g_fMeasureScale;
+		value = (value - g_vTfRange.x) / (g_vTfRange.y - g_vTfRange.x);
 		color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
 	}
 
