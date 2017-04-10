@@ -376,6 +376,9 @@ exit 1
       <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DisableOptimizations>
       <FileType>Document</FileType>
     </FxCompile>
+    <FxCompile Include="Measures.fxh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </FxCompile>
     <FxCompile Include="ProgressBar.fx">
       <FileType>Document</FileType>
     </FxCompile>

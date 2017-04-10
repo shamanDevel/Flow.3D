@@ -623,5 +623,8 @@
     <FxCompile Include="Quad.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Measures.fxh">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

@@ -171,50 +171,10 @@ struct BallVertex
 };
 
 
-float3 getVorticity(float3x3 jacobian)
-{
-	return float3(jacobian[2][1] - jacobian[1][2], jacobian[0][2] - jacobian[2][0], jacobian[1][0] - jacobian[0][1]);
-}
-
-float getMeasure(float3 vel, float3x3 jac)
-{
-	//TODO
-	switch (g_iMeasureMode)
-	{
-	case 0: //MEASURE_VELOCITY
-		return g_fMeasureScale * length(vel.xyz);
-	case 1: //MEASURE_VELOCITY_Z
-		return 0.5 + (g_fMeasureScale * vel.z); //displace by 0.5 so that z=0 is in the middle
-	case 3: //MEASURE_VORTICITY
-		return g_fMeasureScale * length(getVorticity(jac));
-	case 4: //MEASURE_LAMBDA2
-
-		break;
-	case 5: //MEASURE_QHUNT
-
-		break;
-	case 6: //MEASURE_DELTACHONG
-
-		break;
-	case 7: //MEASURE_ENSTROPHY_PRODUCTION
-
-		break;
-	case 8: //MEASURE_STRAIN_PRODUCTION
-
-		break;
-	case 9: //MEASURE_SQUARE_ROTATION
-
-		break;
-	case 10: //MEASURE_SQUARE_RATE_OF_STRAIN
-
-		break;
-	case 11: //MEASURE_TRACE_JJT
-
-		break;
-	}
-	return 0.0;
-}
-
+float3 getVorticity(float3x3 jacobian);
+float getMeasure(float3 vel, float3x3 jac);
+//Implementation of the above two functions
+#include "Measures.fxh"
 
 float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 jac)
 {
@@ -236,7 +196,7 @@ float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 ja
 	}
 	else if (g_iColorMode == 3) {
 		//color by measure
-		float value = getMeasure(vel, jac);
+		float value = getMeasure(g_iMeasureMode, vel, jac) * g_fMeasureScale;
 		color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
 	}
 
