@@ -37,6 +37,7 @@ public:
 	ID3DX11EffectVectorVariable*			m_pvColor1Variable;
 	ID3DX11EffectScalarVariable*			m_pfTimeMinVariable;
 	ID3DX11EffectScalarVariable*			m_pfTimeMaxVariable;
+	ID3DX11EffectVectorVariable*			m_pvHalfSizeWorldVariable;
 
 	ID3DX11EffectScalarVariable*			m_pbTimeStripesVariable;
 	ID3DX11EffectScalarVariable*			m_pfTimeStripeLengthVariable;

@@ -1278,6 +1278,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	m_lineEffect.m_pfTubeRadiusVariable->SetFloat(0.01f * m_particleRenderParams.m_tubeRadius);
 	m_lineEffect.m_pbTubeRadiusFromVelocityVariable->SetBool(m_particleRenderParams.m_tubeRadiusFromVelocity);
 	m_lineEffect.m_pfReferenceVelocityVariable->SetFloat(m_particleRenderParams.m_referenceVelocity);
+	m_lineEffect.m_pvHalfSizeWorldVariable->SetFloatVector(m_pVolume->GetVolumeHalfSizeWorld());
 
 	m_lineEffect.m_piColorMode->SetInt(m_particleRenderParams.m_lineColorMode);
 	m_lineEffect.m_pvColor0Variable->SetFloatVector(m_particleRenderParams.m_color0);

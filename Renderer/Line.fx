@@ -23,6 +23,7 @@ cbuffer PerFrame
 	float4   g_vColor1;
 	float    g_fTimeMin;
 	float    g_fTimeMax;
+	float3   g_vHalfSizeWorld;
 
 	bool     g_bTimeStripes;
 	float    g_fTimeStripeLength;
@@ -228,8 +229,8 @@ float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 ja
 	}
 	else if (g_iColorMode == 2) {
 		//color by texture
-		//assume xy-plane is in the bounds [-1, 1], y-flipped
-		float2 texCoord = (seedPos.xy + float2(1, 1)) / 2;
+		//assume xy-plane is in the bounds [-g_vHalfSizeWorld.x, -g_vHalfSizeWorld.y], y-flipped
+		float2 texCoord = (seedPos.xy + g_vHalfSizeWorld.xy) / (2*g_vHalfSizeWorld.xy);
 		texCoord.y = 1 - texCoord.y;
 		color = g_seedColors.SampleLevel(SamplerLinear, texCoord, 0);
 	}

@@ -37,6 +37,7 @@ HRESULT LineEffect::GetVariables()
 	V_RETURN( GetVectorVariable("g_vColor1", m_pvColor1Variable) );
 	V_RETURN( GetScalarVariable("g_fTimeMin", m_pfTimeMinVariable) );
 	V_RETURN( GetScalarVariable("g_fTimeMax", m_pfTimeMaxVariable) );
+	V_RETURN( GetVectorVariable("g_vHalfSizeWorld", m_pvHalfSizeWorldVariable) );
 
 	V_RETURN( GetScalarVariable("g_bTimeStripes", m_pbTimeStripesVariable) );
 	V_RETURN( GetScalarVariable("g_fTimeStripeLength", m_pfTimeStripeLengthVariable) );
