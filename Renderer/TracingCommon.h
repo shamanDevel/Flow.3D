@@ -45,6 +45,7 @@ struct LineVertex
 	uint     LineID;
 	float3   SeedPosition;
 	float3x3 Jacobian;
+	float4   heat; //xyz: temperature gradient, w: temperature
 };
 
 struct LineInfo

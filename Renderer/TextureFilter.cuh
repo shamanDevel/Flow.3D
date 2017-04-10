@@ -459,7 +459,7 @@ __device__ inline Type interpolateLagrange16(float t, const Type v[16])
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_LAGRANGE16, TexType, ResultType>
 {
-	__device__ static float3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static ResultType exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x, y, z) - 0.5f;

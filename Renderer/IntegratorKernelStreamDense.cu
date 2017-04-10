@@ -57,7 +57,8 @@ __global__ void integrateStreamLinesDenseKernel()
 	}
 
 	// get velocity at initial position
-	vertex.Velocity = c_volumeInfo.velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
+	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+	vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
 	vertex.LineID = lineIndex;
 
@@ -71,6 +72,9 @@ __global__ void integrateStreamLinesDenseKernel()
 		vertex.Normal = cross(tangent, make_float3(1.0f, 0.0f, 0.0f));
 		if(length(vertex.Normal) < 0.01f) vertex.Normal = cross(tangent, make_float3(0.0f, 1.0f, 0.0f));
 		vertex.Normal = normalize(vertex.Normal);
+		vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+		float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+		vertex.heat = make_float4(gradT, vel4.w);
 
 		// write out initial vertex
 		*pVertices++ = vertex;
@@ -122,12 +126,16 @@ __global__ void integrateStreamLinesDenseKernel()
 			// (if we didn't, the new deltaTime is larger than the backup anyway)
 			deltaTime = fmax(deltaTime, deltaTimeBak);
 
-			vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-
 			float3 posDiff = vertex.Position - lastOutPos;
 			float timeDiff = vertex.Time     - lastOutTime;
 			float posDiffSqr = dot(posDiff, posDiff);
 			if((posDiffSqr >= c_integrationParams.outputPosDiffSquared) || (timeDiff >= c_integrationParams.outputTimeDiff)) {
+				//get jacobian and heat for measures
+				vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+				vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+				float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+				vertex.heat = make_float4(gradT, vel4.w);
+				
 				// write out interpolated positions
 				uint intervalCount = max(1, uint(sqrt(posDiffSqr / c_integrationParams.outputPosDiffSquared)));
 				intervalCount = min(intervalCount, c_lineInfo.lineLengthMax - lineLength);

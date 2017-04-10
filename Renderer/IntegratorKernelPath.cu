@@ -68,7 +68,8 @@ __global__ void integratePathLinesKernel()
 	const float timestepInc = (float)c_volumeInfo.brickSizeVoxelsWithOverlap;
 
 	// get velocity at initial position
-	vertex.Velocity = c_volumeInfo.velocityScale * sampleVolumeTime<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position), time2tex(vertex.Time), timestepInc);
+	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+	vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
 	vertex.LineID = lineIndex;
 
@@ -81,6 +82,9 @@ __global__ void integratePathLinesKernel()
 		vertex.Normal = cross(tangent, make_float3(1.0f, 0.0f, 0.0f));
 		if(length(vertex.Normal) < 0.01f) vertex.Normal = cross(tangent, make_float3(0.0f, 1.0f, 0.0f));
 		vertex.Normal = normalize(vertex.Normal);
+		vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+		float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+		vertex.heat = make_float4(gradT, vel4.w);
 
 		// write out initial vertex
 		*pVertices++ = vertex;
@@ -131,8 +135,6 @@ __global__ void integratePathLinesKernel()
 			// (if we didn't, the new deltaTime is larger than the backup anyway)
 			deltaTime = fmax(deltaTime, deltaTimeBak);
 
-			vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-
 			// re-orthogonalize normal wrt. tangent == velocity direction
 			float3 binormal = cross(vertex.Velocity, vertex.Normal);
 			vertex.Normal = normalize(cross(binormal, vertex.Velocity));
@@ -140,6 +142,12 @@ __global__ void integratePathLinesKernel()
 			float3 posDiff = vertex.Position - lastOutPos;
 			float timeDiff = vertex.Time     - lastOutTime;
 			if((dot(posDiff, posDiff) >= c_integrationParams.outputPosDiffSquared) || (timeDiff >= c_integrationParams.outputTimeDiff)) {
+				//get jacobian and heat for measures
+				vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+				vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+				float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+				vertex.heat = make_float4(gradT, vel4.w);
+				
 				// write out (intermediate) result
 				*pVertices++ = vertex;
 				++lineLength;

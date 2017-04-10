@@ -162,6 +162,7 @@ struct LineVertex
 	uint     lineID  : LINE_ID;
 	float3   seedPos : SEED_POSITION;
 	float3x3 jac     : JACOBIAN;
+	float4   heat    : HEAT; //xyz: temperature gradient, w: temperature
 };
 
 struct BallVertex

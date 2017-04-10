@@ -58,7 +58,8 @@ __global__ void integrateParticlesKernel()
 	}
 
 	// get velocity at initial position
-	vertex.Velocity = c_volumeInfo.velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
+	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+	vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
 	int lineIndex = index / c_lineInfo.lineLengthMax;
 	float deltaTime = c_lineInfo.pCheckpoints[lineIndex].DeltaT;
@@ -85,7 +86,10 @@ __global__ void integrateParticlesKernel()
 		}
 	}
 
+	//get jacobian and heat for measures
 	vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+	float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
+	vertex.heat = make_float4(gradT, vel4.w);
 
 	//write vertex back
 	c_lineInfo.pVertices[index] = vertex;
