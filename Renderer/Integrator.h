@@ -48,6 +48,9 @@ public:
 	//seed: the seeding position in the line or -1 if nothing should be seeded
 	void IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params, int seed);
 
+	//Triggers an additional seeding kernel without advection
+	void IntegrateParticlesExtraSeed(const LineInfo& lineInfo, const ParticleTraceParams& params, int seed);
+
 	// returns total number of indices
 	uint BuildLineIndexBuffer(const uint* dpLineVertexCounts, uint lineVertexStride, uint* dpIndices, uint lineCount);
 	uint BuildLineIndexBufferCPU(const uint* pLineVertexCounts, uint lineVertexStride, uint* pIndices, uint lineCount);

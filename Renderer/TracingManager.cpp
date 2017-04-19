@@ -48,6 +48,7 @@ TracingManager::TracingManager()
 	, m_verbose(false)
 	, m_engine(std::chrono::system_clock::now().time_since_epoch().count())
 	, m_numRejections(20)
+	, m_seedManyParticles(false)
 {
 	m_brickIndexGPU.Init();
 	m_brickRequestsGPU.Init();
@@ -512,7 +513,7 @@ bool TracingManager::TraceParticlesIteratively()
 	std::chrono::duration<double> time_passed 
 		= std::chrono::duration_cast<std::chrono::duration<double >> (tp - m_particlesLastTime);
 	double timeBetweenSeeds = 1.0 / m_traceParams.m_particlesPerSecond;
-	if (timeBetweenSeeds < time_passed.count()) {
+	if (timeBetweenSeeds < time_passed.count() || m_seedManyParticles) {
 		if (LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
 			//generate new seeds
 			float spawnTime = GetLineSpawnTime();
@@ -530,6 +531,17 @@ bool TracingManager::TraceParticlesIteratively()
 	m_timerIntegrate.StartNextTimer();
 	//cudaSafeCall(cudaDeviceSynchronize());
 	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_traceParams, seed);
+	if (m_seedManyParticles && LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
+		//only for line mode 'PARTICLES (new seeds)' it makes sense to seed more particles
+		static const int particlesToSeed = 20;
+		float spawnTime = GetLineSpawnTime();
+		for (int i = 0; i < particlesToSeed; ++i) {
+			CreateInitialCheckpoints(spawnTime);
+			seed = m_particlesSeedPosition;
+			m_particlesSeedPosition = (m_particlesSeedPosition + 1) % m_traceParams.m_lineLengthMax;
+			m_integrator.IntegrateParticlesExtraSeed(lineInfo, m_traceParams, seed);
+		}
+	}
 	//cudaSafeCall(cudaDeviceSynchronize());
 	m_timerIntegrate.StopCurrentTimer();
 	m_timerIntegrateCPU.Stop();
@@ -543,6 +555,8 @@ bool TracingManager::TraceParticlesIteratively()
 
 	// unmap d3d buffer again
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));
+
+	m_seedManyParticles = false;
 
 	//never return true, it never ends
 	return false;

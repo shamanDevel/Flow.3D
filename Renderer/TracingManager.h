@@ -71,6 +71,9 @@ public:
 	bool IsTracing() const;
 	float GetTracingProgress() const;
 
+	//Called by a button in the ui: many particles should be seeded now
+	void SeedManyParticles() { m_seedManyParticles = true; }
+
 	const std::vector<const TimeVolumeIO::Brick*>& GetBricksToLoad() const { return m_bricksToLoad; }
 
 	void BuildIndexBuffer();
@@ -317,7 +320,7 @@ private:
 	bool                      m_particlesNeedsUploadTimestep;
 	std::chrono::steady_clock::time_point m_particlesLastTime;
 	int                       m_particlesSeedPosition;
-
+	bool                      m_seedManyParticles;
 
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
 

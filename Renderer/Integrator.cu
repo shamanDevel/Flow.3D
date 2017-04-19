@@ -216,6 +216,15 @@ void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo&
 	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
 }
 
+void Integrator::IntegrateParticlesExtraSeed(const LineInfo& lineInfo, const ParticleTraceParams& params, int seed)
+{
+	if (params.m_cpuTracing) {
+		return;
+	}
+	UpdateLineInfo(params, lineInfo);
+	integratorKernelSeedParticles(lineInfo, seed);
+}
+
 
 void Integrator::UpdateIntegrationParams(const ParticleTraceParams& params, float timeMax, bool force)
 {
