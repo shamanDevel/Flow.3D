@@ -509,7 +509,8 @@ void TimeVolumeIO::WriteHeaders(FILE* indexFile)
 void TimeVolumeIO::WriteSettings(FILE* indexFile)
 {
 	fprintf(indexFile, "%s\t=\t[%d, %d, %d]\n", "volumesize", m_info.m_volumeSize[0], m_info.m_volumeSize[1], m_info.m_volumeSize[2]); 
-	fprintf(indexFile, "%s\t=\t%.32f\n", "gridspacing", m_info.m_fGridSpacing);
+	//fprintf(indexFile, "%s\t=\t%.32f\n", "gridspacing", m_info.m_fGridSpacing);
+	fprintf(indexFile, "%s\t=\t[%.10f, %.10f, %.10f]\n", "gridspacing3", m_info.m_fGridSpacing[0], m_info.m_fGridSpacing[1], m_info.m_fGridSpacing[2]);
 	fprintf(indexFile, "%s\t=\t%.32f\n", "timespacing", m_info.m_fTimeSpacing);
 	fprintf(indexFile, "%s\t=\t%s\n", "periodic", m_info.m_periodic ? "true" : "false");
 	fprintf(indexFile, "%s\t=\t%d\n", "bricksize", m_info.m_iBrickSize);

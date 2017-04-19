@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 	Vec3i volumeSize;
 	int channels = 0;
 	bool periodic;
-	float gridSpacing;
+	tum3D::Vec3f gridSpacing;
 	float timeSpacing;
 	int32 brickSize;
 	int32 overlap;
@@ -115,7 +115,13 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<int32> volumeSizeYArg("y", "volumesizey", "Y dimension of the volume", true, 1024, "Integer", cmd);
 		TCLAP::ValueArg<int32> volumeSizeZArg("z", "volumesizez", "Z dimension of the volume", true, 1024, "Integer", cmd);
 		TCLAP::SwitchArg periodicArg("", "periodic", "Use periodic boundary, i.e. wrap (default is clamp)", cmd);
-		TCLAP::ValueArg<float> gridSpacingArg("g", "gridspacing", "Distance between grid points", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> gridSpacingArg("g", "gridspacing", "Distance between grid points (for cubic cells)", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> gridSpacingXArg("", "gridspacingX", "Distance between grid points in x-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> gridSpacingYArg("", "gridspacingY", "Distance between grid points in y-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> gridSpacingZArg("", "gridspacingZ", "Distance between grid points in z-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> domainSizeXArg("", "domainX", "The domain size in x-direction", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> domainSizeYArg("", "domainY", "The domain size in y-direction", false, 1.0f, "Float", cmd);
+		TCLAP::ValueArg<float> domainSizeZArg("", "domainZ", "The domain size in z-direction", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> timeSpacingArg("t", "timespacing", "Distance between time steps", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 256, "Integer", cmd);
 		TCLAP::ValueArg<int32> overlapArg("v", "overlap", "Brick overlap (size of halo)", false, 4, "Integer", cmd);
@@ -148,7 +154,47 @@ int main(int argc, char* argv[])
 		volumeSize[1] = volumeSizeYArg.getValue();
 		volumeSize[2] = volumeSizeZArg.getValue();
 		periodic = periodicArg.getValue();
-		gridSpacing = gridSpacingArg.isSet() ? gridSpacingArg.getValue() : 2.0f / float(volumeSize.maximum());
+
+		if (gridSpacingArg.isSet()) {
+			if (gridSpacingXArg.isSet() || gridSpacingYArg.isSet() || gridSpacingZArg.isSet()
+				|| domainSizeXArg.isSet() || domainSizeYArg.isSet() || domainSizeZArg.isSet()) {
+				cout << "If you use -gridspacing, you must not use the arguments for non-cubic cells like -gridspacingX or specify the domain boundary like -domainX" << endl;
+				return -1;
+			}
+			float spacing = gridSpacingArg.getValue();
+			gridSpacing = tum3D::Vec3f(spacing);
+		}
+		else if (gridSpacingXArg.isSet() || gridSpacingYArg.isSet() || gridSpacingZArg.isSet()) {
+			if (!(gridSpacingXArg.isSet() && gridSpacingYArg.isSet() && gridSpacingZArg.isSet())) {
+				cout << "If you specify the grid spacing for non-cubic cells, you must use all three gridSpacing[XYZ] arguments" << endl;
+				return -1;
+			}
+			if (domainSizeXArg.isSet() || domainSizeYArg.isSet() || domainSizeZArg.isSet()) {
+				cout << "If you use -gridSpacing[XYZ] then you must not use the arguments to specify the domain size" << endl;
+				return -1;
+			}
+			gridSpacing = tum3D::Vec3f(
+				gridSpacingXArg.getValue(),
+				gridSpacingYArg.getValue(),
+				gridSpacingZArg.getValue()
+			);
+		}
+		else if (domainSizeXArg.isSet() || domainSizeYArg.isSet() || domainSizeZArg.isSet()) {
+			if (!(domainSizeXArg.isSet() && domainSizeYArg.isSet() && domainSizeZArg.isSet())) {
+				cout << "If you specify the domain size, you must use all three domainSize[XYZ] arguments" << endl;
+				return -1;
+			}
+			gridSpacing = tum3D::Vec3f(
+				domainSizeXArg.getValue() / float(volumeSize.x()),
+				domainSizeYArg.getValue() / float(volumeSize.y()),
+				domainSizeZArg.getValue() / float(volumeSize.z())
+			);
+		}
+		else {
+			//cubic cells with default spacing
+			gridSpacing = tum3D::Vec3f(2.0f / float(volumeSize.maximum()));
+		}
+
 		timeSpacing = timeSpacingArg.getValue();
 		brickSize = brickSizeArg.getValue();
 		overlap = overlapArg.getValue();
