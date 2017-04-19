@@ -15,7 +15,7 @@ void ParticleRenderParams::Reset()
 {
 	m_linesEnabled = true;
 
-	m_lineRenderMode = LINE_RENDER_TUBE;
+	m_lineRenderMode = LINE_RENDER_PARTICLES;
 	m_ribbonWidth = 0.8f;
 	m_tubeRadius = 0.4f;
 

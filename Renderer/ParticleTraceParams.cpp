@@ -26,11 +26,11 @@ void ParticleTraceParams::Reset()
 
 	m_filterMode    = TEXTURE_FILTER_CATROM;
 
-	m_lineMode      = LINE_STREAM;
+	m_lineMode      = LINE_STREAM; //LINE_PARTICLE_STREAM;
 
-	m_lineCount     = 256;
+	m_lineCount     = 1024;
 	m_lineLengthMax = 1024;
-	m_lineAgeMax    = 5.0f;
+	m_lineAgeMax    = 512;
 
 	m_advectDeltaT         = 0.005f;
 	m_advectErrorTolerance = 0.01f;

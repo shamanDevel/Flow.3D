@@ -149,7 +149,7 @@ ProgressBarEffect		g_progressBarEffect;
 
 Vec4f		g_backgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-bool		g_showPreview = false;
+bool		g_showPreview = true;
 
 bool		g_bRenderDomainBox = true;
 bool		g_bRenderBrickBoxes = false;
@@ -567,6 +567,7 @@ bool OpenVolumeFile(const std::string& filename, ID3D11Device* pDevice)
 
 	g_volume.SetCurTime(0.0f);
 	g_redraw = true;
+	g_retrace = true;
 
 	g_raycastParams.m_clipBoxMin = -g_volume.GetVolumeHalfSizeWorld();
 	g_raycastParams.m_clipBoxMax =  g_volume.GetVolumeHalfSizeWorld();
@@ -1290,7 +1291,7 @@ void StartBatchTracing()
 	CloseVolumeFile();
 
 	// semi-HACK: disable rendering preview
-	g_showPreview = false;
+	//g_showPreview = false;
 
 	// create outpath if it doesn't exist yet
 	system((string("mkdir \"") + tum3d::GetPath(g_batchTrace.OutPath) + "\"").c_str());
