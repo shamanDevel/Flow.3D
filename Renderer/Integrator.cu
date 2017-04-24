@@ -188,7 +188,7 @@ void Integrator::InitIntegrateParticles(const LineInfo& lineInfo, const Particle
 }
 
 void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, 
-	const ParticleTraceParams& params, int seed)
+	const ParticleTraceParams& params, int seed, double tpf)
 {
 	if (params.m_cpuTracing) {
 		return;
@@ -211,7 +211,7 @@ void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo&
 	}
 
 	// launch advection kernel
-	integratorKernelParticles(lineInfo, params.m_advectMode, params.m_filterMode);
+	integratorKernelParticles(lineInfo, params.m_advectMode, params.m_filterMode, tpf);
 
 	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
 }

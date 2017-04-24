@@ -26,7 +26,7 @@ extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void integrateParticlesKernel()
+__global__ void integrateParticlesKernel(double tpf)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -62,7 +62,7 @@ __global__ void integrateParticlesKernel()
 	vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
 	int lineIndex = index / c_lineInfo.lineLengthMax;
-	float deltaTime = c_lineInfo.pCheckpoints[lineIndex].DeltaT;
+	float deltaTime = c_lineInfo.pCheckpoints[lineIndex].DeltaT * tpf;
 
 	uint step = 0;
 
@@ -155,15 +155,15 @@ __global__ void initParticlesKernel()
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelParticles(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode)
+void integratorKernelParticles(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode, double tpf)
 {
 	uint blockSize = 128;
 	uint blockCount = (lineInfo.lineCount * lineInfo.lineVertexStride + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) integrateParticlesKernel <advect, filter> <<<blockCount, blockSize>>> ()
+#define INTEGRATE(advect, filter) integrateParticlesKernel <advect, filter> <<<blockCount, blockSize>>> (tpf)
 
 	ADVECT_SWITCH;
-	cudaCheckMsg("integrateStreamLinesKernel execution failed");
+	cudaCheckMsg("integrateParticlesKernel execution failed");
 
 #undef INTEGRATE
 }

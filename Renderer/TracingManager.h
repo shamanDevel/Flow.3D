@@ -321,6 +321,7 @@ private:
 	std::chrono::steady_clock::time_point m_particlesLastTime;
 	int                       m_particlesSeedPosition;
 	bool                      m_seedManyParticles;
+	std::chrono::steady_clock::time_point m_particlesLastFrame;
 
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
 

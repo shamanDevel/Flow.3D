@@ -38,7 +38,7 @@ void ParticleTraceParams::Reset()
 	m_advectDeltaTMin      = 0.00001f;
 	m_advectDeltaTMax      = 0.01f; // TODO make dependent on max velocity etc? in iso, this corresponds to <= ~5 voxels
 
-	m_advectStepsPerRound  = 64;
+	m_advectStepsPerRound  = 16;
 	m_purgeTimeoutInRounds = 4;
 
 	m_heuristicBonusFactor   = 2.5f;

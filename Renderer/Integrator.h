@@ -46,7 +46,7 @@ public:
 	//the checkpoints contains the seed.
 	//It can be used interchangeable to IntegrateLines
 	//seed: the seeding position in the line or -1 if nothing should be seeded
-	void IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params, int seed);
+	void IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params, int seed, double tpf);
 
 	//Triggers an additional seeding kernel without advection
 	void IntegrateParticlesExtraSeed(const LineInfo& lineInfo, const ParticleTraceParams& params, int seed);

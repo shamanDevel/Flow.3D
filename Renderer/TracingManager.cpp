@@ -526,11 +526,16 @@ bool TracingManager::TraceParticlesIteratively()
 		m_particlesLastTime = tp;
 	}
 
+	//compute time per frame and update delta time
+	double tpf = std::chrono::duration_cast<std::chrono::duration<double>> (tp - m_particlesLastFrame).count();
+	m_particlesLastFrame = tp;
+	printf("TPF: %f\n", tpf);
+
 	// integrate
 	m_timerIntegrateCPU.Start();
 	m_timerIntegrate.StartNextTimer();
 	//cudaSafeCall(cudaDeviceSynchronize());
-	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_traceParams, seed);
+	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_traceParams, seed, tpf * 100);
 	if (m_seedManyParticles && LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
 		//only for line mode 'PARTICLES (new seeds)' it makes sense to seed more particles
 		static const int particlesToSeed = 20;
@@ -585,6 +590,7 @@ void TracingManager::StartTracingParticlesIteratively()
 	//init timings
 	m_particlesSeedPosition = 0;
 	m_particlesLastTime = std::chrono::steady_clock::now();
+	m_particlesLastFrame = std::chrono::steady_clock::now();
 
 	//write index buffer
 	BuildParticlesIndexBuffer();
