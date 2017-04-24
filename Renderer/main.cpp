@@ -73,8 +73,9 @@ using namespace tum3D;
 
 Vec2i            g_windowSize(0, 0);
 float            g_renderBufferSizeFactor = 2.0f;
-Vec4f            g_rotationX = Vec4f(0, 0, 0, 1);
-Vec4f            g_rotationY = Vec4f(0, 0, 0, 1);
+Vec4f            g_rotationX = Vec4f(1, 0, 0, 0);
+Vec4f            g_rotationY = Vec4f(1, 0, 0, 0);
+Vec4f            g_rotation = Vec4f(1, 0, 0, 0);
 
 ProjectionParams g_projParams;
 StereoParams     g_stereoParams;
@@ -937,6 +938,9 @@ void TW_CALL SelectOutputLA3DFile(void *clientData)
 void TW_CALL ResetView(void *clientData)
 {
 	g_viewParams.Reset();
+	g_rotationX = Vec4f(1, 0, 0, 0);
+	g_rotationY = Vec4f(1, 0, 0, 0);
+	g_rotation = Vec4f(1, 0, 0, 0);
 }
 
 
@@ -3079,7 +3083,7 @@ void OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddleButtonDow
 		if(bLeftButtonDown && bLeftButtonDownPrev) {
 			// rotate
 			Vec4f rotationX;
-			tum3D::rotationQuaternion(-xDelta * PI, Vec3f(0.0f, 1.0f, 0.0f), rotationX);
+			tum3D::rotationQuaternion(xDelta * PI, Vec3f(0.0f, 1.0f, 0.0f), rotationX);
 			Vec4f rotationY;
 			tum3D::rotationQuaternion(yDelta * PI, Vec3f(1.0f, 0.0f, 0.0f), rotationY);
 
@@ -3089,7 +3093,17 @@ void OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddleButtonDow
 			tum3D::multQuaternion(rotationY, g_rotationY, temp); g_rotationY = temp;
 
 			//combine and set to view params
-			tum3D::multQuaternion(g_rotationY, g_rotationX, g_viewParams.m_rotationQuat);
+			tum3D::multQuaternion(g_rotationY, g_rotationX, temp);
+			tum3D::multQuaternion(temp, g_rotation, g_viewParams.m_rotationQuat);
+			//tum3D::multQuaternion(g_rotationY, g_rotationX, g_viewParams.m_rotationQuat);
+		}
+		if (!bLeftButtonDown && bLeftButtonDownPrev) {
+			//mouse released, so store the current rotation and reset the partial rotation
+			//This is needed so that the trackball starts with a new projection
+			g_rotation = g_viewParams.m_rotationQuat;
+			g_rotationX = Vec4f(1, 0, 0, 0);
+			g_rotationY = Vec4f(1, 0, 0, 0);
+			printf("push rotation\n");
 		}
 		if(bMiddleButtonDown && bMiddleButtonDownPrev) {
 			if(bShiftDown) {
