@@ -240,11 +240,8 @@ struct RibbonGSIn
 	float3 pos  : POSITION;
 	float  time : TIME;
 	float3 vel  : VELOCITY;
-	float3x3 jac : JACOBIAN;
 	float3 vort : VORTICITY;
-	float3 seedPos : SEED_POS;
-	float4 heat : HEAT;
-	nointerpolation uint lineID : LINE_ID;
+	float4 vcolor : BASE_COLOR;
 };
 
 void vsRibbon(LineVertex input, out RibbonGSIn output)
@@ -254,10 +251,7 @@ void vsRibbon(LineVertex input, out RibbonGSIn output)
 	output.vel  = input.vel;
 	//output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
 	output.vort = getVorticity(input.jac);
-	output.jac = input.jac;
-	output.seedPos = input.seedPos;
-	output.lineID = input.lineID;
-	output.heat = input.heat;
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat);
 }
 
 struct RibbonPSIn
@@ -287,8 +281,7 @@ void gsExtrudeRibbon(in line RibbonGSIn input[2], inout TriangleStream<RibbonPSI
 
 
 	RibbonPSIn output;
-	output.vcolor = getColor(input[0].lineID, input[0].time, input[0].seedPos, input[0].vel, input[0].jac, input[0].heat);
-
+	output.vcolor = input[0].vcolor;
 	output.normal = normalize(cross(input[0].vel, displace0));
 	output.time = input[0].time;
 	output.posWorld = input[0].pos - displace0;
@@ -298,6 +291,7 @@ void gsExtrudeRibbon(in line RibbonGSIn input[2], inout TriangleStream<RibbonPSI
 	output.pos = mul(g_mWorldViewProj, float4(output.posWorld, 1.0));
 	stream.Append(output);
 
+	output.vcolor = input[1].vcolor;
 	output.normal = normalize(cross(input[1].vel, displace1));
 	output.time = input[1].time;
 	output.posWorld = input[1].pos - displace1;
@@ -330,10 +324,7 @@ struct TubeGSIn
 	float  time   : TIME;
 	float3 normal : NORMAL;
 	float3 vel    : VELOCITY;
-	float3x3 jac  : JACOBIAN;
-	nointerpolation uint lineID : LINE_ID;
-	float3 seedPos : SEED_POS;
-	float4 heat   : HEAT;
+	float4 vcolor     : BASE_COLOR;
 };
 
 void vsTube(LineVertex input, out TubeGSIn output)
@@ -342,10 +333,7 @@ void vsTube(LineVertex input, out TubeGSIn output)
 	output.time   = input.time;
 	output.normal = input.normal;
 	output.vel    = input.vel;
-	output.jac    = input.jac;
-	output.lineID = input.lineID;
-	output.seedPos = input.seedPos;
-	output.heat   = input.heat;
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat);
 }
 
 struct TubePSIn
@@ -381,8 +369,8 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 	}
 
 	TubePSIn output;
-	output.vcolor = getColor(input[0].lineID, input[0].time, input[0].seedPos, input[0].vel, input[0].jac, input[0].heat);
 
+	output.vcolor = input[1].vcolor;
 	output.tubeCenter = input[1].pos;
 	output.normal = normal1;
 	output.posWorld = output.tubeCenter + radius1 * output.normal;
@@ -390,6 +378,7 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 	output.time = input[1].time;
 	stream.Append(output);
 
+	output.vcolor = input[0].vcolor;
 	output.tubeCenter = input[0].pos;
 	output.normal = normal0;
 	output.posWorld = output.tubeCenter + radius0 * output.normal;
@@ -404,6 +393,7 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 		float s,c;
 		sincos(angle, s, c);
 
+		output.vcolor = input[1].vcolor;
 		output.tubeCenter = input[1].pos;
 		output.normal = c * normal1 + s * binormal1;
 		output.posWorld = output.tubeCenter + radius1 * output.normal;
@@ -411,6 +401,7 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 		output.time = input[1].time;
 		stream.Append(output);
 
+		output.vcolor = input[0].vcolor;
 		output.tubeCenter = input[0].pos;
 		output.normal = c * normal0 + s * binormal0;
 		output.posWorld = output.tubeCenter + radius0 * output.normal;
