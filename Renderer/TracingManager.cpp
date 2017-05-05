@@ -1377,9 +1377,9 @@ bool TracingManager::UpdateBrickSlot(uint& uploadBudget, uint brickSlotIndex, ui
 					{
 						uint indexSrc = x + brickSize.x() * (y + brickSize.y() * z);
 						uint indexDst = (offset.x()+x) + atlasSize.x() * ((offset.y()+y) + atlasSize.y() * (offset.z()+z));
-						// HACK: hardcoded for 3 channels...
-						assert(channelCount == 3);
-						g_volume.data[indexDst] = make_float4(m_pChannelBufferCPU[0][indexSrc], m_pChannelBufferCPU[1][indexSrc], m_pChannelBufferCPU[2][indexSrc], 0.0f);
+						// HACK: hardcoded for 4 channels...
+						assert(channelCount == 4);
+						g_volume.data[indexDst] = make_float4(m_pChannelBufferCPU[0][indexSrc], m_pChannelBufferCPU[1][indexSrc], m_pChannelBufferCPU[2][indexSrc], m_pChannelBufferCPU[3][indexSrc]);
 					}
 				}
 			}
@@ -1571,6 +1571,15 @@ void TracingManager::TraceRound()
 		// copy vertices into d3d buffer
 		cudaSafeCall(cudaMemcpy(dpVB, m_lineVerticesCPU.data(), m_lineVerticesCPU.size() * sizeof(LineVertex), cudaMemcpyHostToDevice));
 	}
+
+#if 0
+	//TEST!!
+	m_lineVerticesCPU.resize(m_traceParams.m_lineCount * m_traceParams.m_lineLengthMax);
+	cudaSafeCall(cudaMemcpy(m_lineVerticesCPU.data(), dpVB, m_lineVerticesCPU.size() * sizeof(LineVertex), cudaMemcpyDeviceToHost));
+	for (const auto& v : m_lineVerticesCPU) {
+		printf("vertex (%f, %f, %f) : t=%f\n", v.Position.x, v.Position.y, v.Position.z, v.Heat);
+	}
+#endif
 
 	// unmap d3d buffer again
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));

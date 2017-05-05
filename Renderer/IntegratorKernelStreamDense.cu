@@ -74,7 +74,8 @@ __global__ void integrateStreamLinesDenseKernel()
 		vertex.Normal = normalize(vertex.Normal);
 		vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
 		float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-		vertex.heat = make_float4(gradT, vel4.w);
+		vertex.Heat = vel4.w;
+		vertex.HeatCurrent = gradT;
 
 		// write out initial vertex
 		*pVertices++ = vertex;
@@ -134,7 +135,8 @@ __global__ void integrateStreamLinesDenseKernel()
 				vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
 				vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
 				float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-				vertex.heat = make_float4(gradT, vel4.w);
+				vertex.Heat = vel4.w;
+				vertex.HeatCurrent = gradT;
 				
 				// write out interpolated positions
 				uint intervalCount = max(1, uint(sqrt(posDiffSqr / c_integrationParams.outputPosDiffSquared)));

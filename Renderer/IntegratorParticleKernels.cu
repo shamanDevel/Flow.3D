@@ -116,7 +116,8 @@ __global__ void integrateParticlesKernel(double tpf)
 	//get jacobian and heat for measures
 	vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
 	float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-	vertex.heat = make_float4(gradT, vel4.w);
+	vertex.Heat = vel4.w;
+	vertex.HeatCurrent = gradT;
 
 	//write vertex back
 	c_lineInfo.pVertices[index] = vertex;

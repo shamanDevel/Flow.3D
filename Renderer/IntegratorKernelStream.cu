@@ -73,11 +73,13 @@ __global__ void integrateStreamLinesKernel()
 		vertex.Normal = normalize(vertex.Normal);
 		vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
 		float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-		vertex.heat = make_float4(gradT, vel4.w);
+		vertex.Heat = vel4.w;
+		vertex.HeatCurrent = gradT;
 
 		// write out initial vertex
 		*pVertices++ = vertex;
 		++lineLength;
+		//printf("line=%d, index=0: pos=(%f, %f, %f), temp=%f\n", lineIndex, vertex.Position.x, vertex.Position.y, vertex.Position.z, vertex.Heat);
 	} else {
 		// existing line - get old normal
 		vertex.Normal = c_lineInfo.pCheckpoints[lineIndex].Normal;
@@ -130,11 +132,13 @@ __global__ void integrateStreamLinesKernel()
 				vertex.Jacobian = getJacobian<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
 				vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
 				float3 gradT = sampleScalarGradient<filterMode>(g_texVolume1, w2t(vertex.Position), c_integrationParams.gridSpacing);
-				vertex.heat = make_float4(gradT, vel4.w);
+				vertex.Heat = vel4.w;
+				vertex.HeatCurrent = gradT;
 
 				// write out (intermediate) result
 				*pVertices++ = vertex;
 				++lineLength;
+				//printf("line=%d, index=%d: pos=(%f, %f, %f), temp=%f\n", lineIndex, lineLength, vertex.Position.x, vertex.Position.y, vertex.Position.z, vertex.Heat);
 
 				lastOutPos  = vertex.Position;
 				lastOutTime = vertex.Time;

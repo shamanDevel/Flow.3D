@@ -161,9 +161,10 @@ struct LineVertex
 	float3   normal  : NORMAL;
 	float3   vel     : VELOCITY;
 	uint     lineID  : LINE_ID;
+	float    heat    : HEAT;
+	float3   heatCurrent : HEAT_CURRENT;
 	float3   seedPos : SEED_POSITION;
 	float3x3 jac     : JACOBIAN;
-	float4   heat    : HEAT; //xyz: temperature gradient, w: temperature
 };
 
 struct BallVertex
@@ -178,7 +179,7 @@ float getMeasure(float3 vel, float3x3 jac, float4 heat);
 //Implementation of the above two functions
 #include "Measures.fxh"
 
-float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 jac, float4 heat)
+float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 jac, float heat, float3 heatCurrent)
 {
 	float4 color;
 	if(g_iColorMode == 1) {
@@ -198,9 +199,11 @@ float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 ja
 	}
 	else if (g_iColorMode == 3) {
 		//color by measure
-		float value = getMeasure(g_iMeasureMode, vel, jac, heat) * g_fMeasureScale;
+		float value = getMeasure(g_iMeasureMode, vel, jac, float4(heatCurrent, heat)) * g_fMeasureScale;
+		//float value = heat.w;
 		value = (value - g_vTfRange.x) / (g_vTfRange.y - g_vTfRange.x);
 		color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
+		//color = float4(heat.w, heat.w, heat.w, 1);
 	}
 
 	return color;
@@ -217,7 +220,7 @@ struct LinePSIn
 void vsLine(LineVertex input, out LinePSIn output)
 {
 	output.time = input.time;
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat);
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
 	output.pos = mul(g_mWorldViewProj, float4(input.pos, 1.0));
 }
 
@@ -251,7 +254,7 @@ void vsRibbon(LineVertex input, out RibbonGSIn output)
 	output.vel  = input.vel;
 	//output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
 	output.vort = getVorticity(input.jac);
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat);
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
 }
 
 struct RibbonPSIn
@@ -333,7 +336,7 @@ void vsTube(LineVertex input, out TubeGSIn output)
 	output.time   = input.time;
 	output.normal = input.normal;
 	output.vel    = input.vel;
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat);
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
 }
 
 struct TubePSIn
@@ -519,10 +522,7 @@ struct ParticleGSIn
 	float  time : TIME;
 	float3 normal : NORMAL;
 	float3 vel    : VELOCITY;
-	float3x3 jac  : JACOBIAN;
-	float3 seedPos    : SEED_POSITION;
-	nointerpolation uint lineID : LINE_ID;
-	float4 heat : HEAT;
+	float4 vcolor     : BASE_COLOR;
 };
 
 struct ParticlePSIn
@@ -542,10 +542,7 @@ void vsParticle(LineVertex input, out ParticleGSIn output)
 	output.time = input.time;
 	output.normal = input.normal;
 	output.vel = input.vel;
-	output.jac = input.jac;
-	output.lineID = input.lineID;
-	output.seedPos = input.seedPos;
-	output.heat = input.heat;
+	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
 }
 
 [maxvertexcount(6)]
@@ -562,7 +559,7 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	o.tubeCenter = input[0].pos;
 	o.posWorld = o.tubeCenter;
 	o.normal = input[0].normal;
-	o.vcolor = getColor(input[0].lineID, input[0].time, input[0].seedPos, input[0].vel, input[0].jac, input[0].heat);
+	o.vcolor = input[0].vcolor;
 	float4 pos = mul(g_mWorldViewProj, float4(input[0].pos, 1.0));
 
 	float size = sqrt(1 - saturate((o.time - g_fTimeMin) / (g_fTimeMax - g_fTimeMin)))

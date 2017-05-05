@@ -43,9 +43,10 @@ struct LineVertex
 	float3   Normal; //TODO make scalar?
 	float3   Velocity;
 	uint     LineID;
+	float    Heat;
+	float3   HeatCurrent;
 	float3   SeedPosition;
 	float3x3 Jacobian;
-	float4   heat; //xyz: temperature gradient, w: temperature
 };
 
 struct LineInfo

@@ -1250,6 +1250,87 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 }
 
 
+void DebugRenderLines(ID3D11Device* device, ID3D11DeviceContext* context, const LineBuffers* pLineBuffers)
+{
+	if (pLineBuffers->m_indexCountTotal == 0) {
+		printf("no vertices to draw\n");
+		return;
+	}
+
+	//Create staging buffers
+	HRESULT hr;
+	D3D11_BUFFER_DESC bufDesc = {};
+
+	ID3D11Buffer* vbCopy = NULL;
+	ID3D11Buffer* ibCopy = NULL;
+
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS; //D3D11_BIND_VERTEX_BUFFER;
+	bufDesc.ByteWidth = pLineBuffers->m_lineCount * pLineBuffers->m_lineLengthMax * sizeof(LineVertex);
+	bufDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	bufDesc.Usage = D3D11_USAGE_DEFAULT;
+	if (FAILED(hr = device->CreateBuffer(&bufDesc, nullptr, &vbCopy)))
+	{
+		printf("unable to create vertex buffer for copying data to the cpu\n");
+		SAFE_RELEASE(vbCopy);
+		SAFE_RELEASE(ibCopy);
+		return;
+	}
+
+	bufDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS; //D3D11_BIND_INDEX_BUFFER;
+	bufDesc.ByteWidth = pLineBuffers->m_lineCount * (pLineBuffers->m_lineLengthMax - 1) * 2 * sizeof(uint);
+	bufDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	bufDesc.Usage = D3D11_USAGE_DEFAULT;
+	if (FAILED(hr = device->CreateBuffer(&bufDesc, nullptr, &ibCopy)))
+	{
+		printf("unable to create vertex buffer for copying data to the cpu\n");
+		SAFE_RELEASE(vbCopy);
+		SAFE_RELEASE(ibCopy);
+		return;
+	}
+
+	context->CopyResource(vbCopy, pLineBuffers->m_pVB);
+	context->CopyResource(ibCopy, pLineBuffers->m_pIB);
+
+	//copy to cpu
+	D3D11_MAPPED_SUBRESOURCE ms;
+	hr = context->Map(vbCopy, 0, D3D11_MAP_READ, 0, &ms);
+	std::vector<LineVertex> vertexBuffer;
+	std::vector<uint> indexBuffer;
+	bool mapped = true;
+	if (FAILED(hr)) {
+		printf("unable to map vertex buffer\n");
+		mapped = false;
+	}
+	else {
+		vertexBuffer.resize(pLineBuffers->m_lineCount * pLineBuffers->m_lineLengthMax);
+		memcpy(&vertexBuffer[0], ms.pData, sizeof(LineVertex) * vertexBuffer.size());
+		context->Unmap(vbCopy, 0);
+	}
+	hr = context->Map(ibCopy, 0, D3D11_MAP_READ, 0, &ms);
+	if (FAILED(hr)) {
+		printf("unable to map index buffer\n");
+		mapped = false;
+	}
+	else {
+		indexBuffer.resize(pLineBuffers->m_indexCountTotal);
+		memcpy(&indexBuffer[0], ms.pData, sizeof(uint) * indexBuffer.size());
+		context->Unmap(ibCopy, 0);
+	}
+
+	//print vertices
+	if (mapped) {
+		for (uint i = 0; i < pLineBuffers->m_indexCountTotal; ++i) {
+			uint j = indexBuffer[i];
+			const LineVertex& v = vertexBuffer[j];
+			printf("%d->%d: pos=(%f, %f, %f), temp=%f\n", i, j, v.Position.x, v.Position.y, v.Position.z, v.Heat);
+		}
+	}
+
+	//release staging resource
+	SAFE_RELEASE(vbCopy);
+	SAFE_RELEASE(ibCopy);
+}
+
 void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableColor, bool blendBehind)
 {
 	ID3D11DeviceContext* pContext = nullptr;
@@ -1263,6 +1344,9 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	viewport.Height   = float(m_projectionParams.m_imageHeight);
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
+
+	// Debug
+	//DebugRenderLines(m_pDevice, pContext, pLineBuffers);
 
 	// IA
 	pContext->IASetInputLayout(m_lineEffect.m_pInputLayout);

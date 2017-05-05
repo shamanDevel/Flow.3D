@@ -1874,11 +1874,15 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 {
 	//wprintf(L"Device: %s\n", DXUTGetDeviceStats());
 
+#if 0
+	//According to http://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__D3D11__DEPRECATED.html,
+	//this is no longer required
 	cudaError error = cudaD3D11SetDirect3DDevice(pd3dDevice);
 	if(cudaSuccess != error) {
 		printf("cudaD3D11SetDirect3DDevice returned error %u: %s\n", uint(error), cudaGetErrorString(error));
 		return E_FAIL;
 	}
+#endif
 
 	if(!InitCudaDevices()) {
 		printf("InitCudaDevices returned false");
