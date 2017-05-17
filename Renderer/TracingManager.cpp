@@ -280,7 +280,7 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 
 		/*if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
 			printf("WARNING: seed %i is outside of domain!\n", i);*/
-		m_checkpoints[i].SeedPosition = make_float3(0.5, 0.2, 0.1);//m_checkpoints[i].Position;
+		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
 		m_checkpoints[i].Time = spawnTime;
 		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
 		m_checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;

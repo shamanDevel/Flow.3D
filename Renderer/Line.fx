@@ -179,27 +179,28 @@ float getMeasure(float3 vel, float3x3 jac, float4 heat);
 //Implementation of the above two functions
 #include "Measures.fxh"
 
-float4 getColor(uint lineID, float time, float3 seedPos, float3 vel, float3x3 jac, float heat, float3 heatCurrent)
+float4 getColor(LineVertex input)
 {
 	float4 color;
 	if(g_iColorMode == 1) {
 		//color by age
-		float timeFactor = saturate((time - g_fTimeMin) / (g_fTimeMax - g_fTimeMin));
+		float timeFactor = saturate((input.time - g_fTimeMin) / (g_fTimeMax - g_fTimeMin));
 		color = (1.0 - timeFactor) * g_vColor0 + timeFactor * g_vColor1;
 	} else if (g_iColorMode == 0) {
 		//color by line id
-		color = g_texColors.Load(int2(lineID % 1024, 0));
+		color = g_texColors.Load(int2(input.lineID % 1024, 0));
 	}
 	else if (g_iColorMode == 2) {
 		//color by texture
 		//assume xy-plane is in the bounds [-g_vHalfSizeWorld.x, -g_vHalfSizeWorld.y], y-flipped
-		float2 texCoord = (seedPos.xy + g_vHalfSizeWorld.xy) / (2*g_vHalfSizeWorld.xy);
+		float2 sp = input.seedPos.xy;
+		float2 texCoord = (sp.xy + g_vHalfSizeWorld.xy) / (2*g_vHalfSizeWorld.xy);
 		texCoord.y = 1 - texCoord.y;
 		color = g_seedColors.SampleLevel(SamplerLinear, texCoord, 0);
 	}
 	else if (g_iColorMode == 3) {
 		//color by measure
-		float value = getMeasure(g_iMeasureMode, vel, jac, float4(heatCurrent, heat)) * g_fMeasureScale;
+		float value = getMeasure(g_iMeasureMode, input.vel, input.jac, float4(input.heatCurrent, input.heat)) * g_fMeasureScale;
 		//float value = heat.w;
 		value = (value - g_vTfRange.x) / (g_vTfRange.y - g_vTfRange.x);
 		color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
@@ -220,7 +221,7 @@ struct LinePSIn
 void vsLine(LineVertex input, out LinePSIn output)
 {
 	output.time = input.time;
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
+	output.vcolor = getColor(input);
 	output.pos = mul(g_mWorldViewProj, float4(input.pos, 1.0));
 }
 
@@ -254,7 +255,7 @@ void vsRibbon(LineVertex input, out RibbonGSIn output)
 	output.vel  = input.vel;
 	//output.vort = float3(1.0, 0.0, 0.0); //getVorticity(input.jac);
 	output.vort = getVorticity(input.jac);
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
+	output.vcolor = getColor(input);
 }
 
 struct RibbonPSIn
@@ -336,7 +337,7 @@ void vsTube(LineVertex input, out TubeGSIn output)
 	output.time   = input.time;
 	output.normal = input.normal;
 	output.vel    = input.vel;
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
+	output.vcolor = getColor(input);
 }
 
 struct TubePSIn
@@ -542,7 +543,7 @@ void vsParticle(LineVertex input, out ParticleGSIn output)
 	output.time = input.time;
 	output.normal = input.normal;
 	output.vel = input.vel;
-	output.vcolor = getColor(input.lineID, input.time, input.seedPos, input.vel, input.jac, input.heat, input.heatCurrent);
+	output.vcolor = getColor(input);
 }
 
 [maxvertexcount(6)]
