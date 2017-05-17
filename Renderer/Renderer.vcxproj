@@ -210,7 +210,9 @@ exit 1
     <ClCompile Include="Range.cpp" />
     <ClCompile Include="RaycastMode.cpp" />
     <ClCompile Include="RaycastParams.cpp" />
-    <ClCompile Include="RenderingManager.cpp" />
+    <CudaCompile Include="RenderingManager.cu">
+      <FileType>CppCode</FileType>
+    </CudaCompile>
     <ClCompile Include="ScreenEffect.cpp" />
     <ClCompile Include="TracingTestData.cpp" />
     <ClCompile Include="TransferFunctionEditor\TransferFunctionEditor.cpp" />

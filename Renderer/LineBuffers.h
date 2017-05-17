@@ -25,6 +25,8 @@ struct LineBuffers
 	cudaGraphicsResource* m_pVBCuda;
 	ID3D11Buffer*         m_pIB;
 	cudaGraphicsResource* m_pIBCuda;
+	ID3D11Buffer*         m_pIB_sorted;
+	cudaGraphicsResource* m_pIBCuda_sorted;
 	uint                  m_indexCountTotal;
 
 	bool Write(const std::string& filename, float posOffset = 0.0f) const;

@@ -4,6 +4,8 @@
 #include <numeric>
 
 #include <cudaUtil.h>
+#include <thrust/device_ptr.h>
+#include <thrust\sort.h>
 
 #include <LargeArray3D.h>
 
@@ -1332,7 +1334,7 @@ void DebugRenderLines(ID3D11Device* device, ID3D11DeviceContext* context, const 
 	SAFE_RELEASE(ibCopy);
 }
 
-void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableColor, bool blendBehind)
+void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, bool blendBehind)
 {
 	ID3D11DeviceContext* pContext = nullptr;
 	m_pDevice->GetImmediateContext(&pContext);
@@ -1414,6 +1416,7 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 
 	//Check if particles should be rendered
 	if (m_particleRenderParams.m_lineRenderMode == LINE_RENDER_PARTICLES) {
+		SortParticles(pLineBuffers, pContext);
 		if (!blendBehind) {
 			if (renderSlice) {
 				//render particles below, and then the slice
@@ -1515,6 +1518,68 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 	pContext->Release();
 }
 
+
+__global__ void FillVertexDepth(const LineVertex* vertices, const uint* indices, float* depthOut, float4 vec, uint maxIndex)
+{
+	uint index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index > maxIndex) return;
+
+	float4 pos = make_float4(vertices[indices[index]].Position, 1);
+	depthOut[index] = -dot(pos, vec);
+}
+
+void RenderingManager::SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext)
+{
+	//compute matrix
+	Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+	Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
+	Mat4f projView = proj * view;
+	//perform the inner product of the following vec4 with vec4(vertex.pos, 1) to compute the depth
+	float4 depthMultiplier = make_float4(projView.get(2, 0), projView.get(2, 1), projView.get(2, 2), projView.get(2, 3));
+
+	//aquire resources
+	cudaSafeCall(cudaGraphicsMapResources(1, &pLineBuffers->m_pIBCuda));
+	uint* dpIB = nullptr;
+	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpIB, nullptr, pLineBuffers->m_pIBCuda));
+	cudaSafeCall(cudaGraphicsMapResources(1, &pLineBuffers->m_pIBCuda_sorted));
+	uint* dpIB_sorted = nullptr;
+	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpIB_sorted, nullptr, pLineBuffers->m_pIBCuda_sorted));
+
+	//copy indices
+	cudaMemcpy(dpIB_sorted, dpIB, sizeof(uint) * pLineBuffers->m_indexCountTotal, cudaMemcpyDeviceToDevice);
+
+	if (m_particleRenderParams.m_sortParticles) {
+		//aquired vertex data
+		cudaSafeCall(cudaGraphicsMapResources(1, &pLineBuffers->m_pVBCuda));
+		LineVertex* dpVB = nullptr;
+		cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, pLineBuffers->m_pVBCuda));
+
+		//compute depth
+		float* depth;
+		cudaSafeCall(cudaMalloc(&depth, sizeof(float) * pLineBuffers->m_indexCountTotal)); //todo: cache this array
+		uint blockSize = 128;
+		uint blockCount = (pLineBuffers->m_indexCountTotal + blockSize - 1) / blockSize;
+		FillVertexDepth <<< blockCount, blockSize >>> (dpVB, dpIB, depth, depthMultiplier, pLineBuffers->m_indexCountTotal);
+
+		//sort indices 
+		thrust::device_ptr<float> thrustKey(depth);
+		thrust::device_ptr<uint> thrustValue(dpIB_sorted);
+		thrust::sort_by_key(thrustKey, thrustKey + pLineBuffers->m_indexCountTotal, thrustValue);
+
+		//release vertex data
+		cudaSafeCall(cudaFree(depth));
+		cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pVBCuda));
+	}
+	else {
+		
+	}
+
+	//release resources
+	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pIBCuda));
+	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pIBCuda_sorted));
+}
+
+
 void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, 
 	ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport, 
 	const tum3D::Vec4f* clipPlane, bool renderSlice)
@@ -1524,7 +1589,7 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 	UINT stride = sizeof(LineVertex);
 	UINT offset = 0;
 	pContext->IASetVertexBuffers(0, 1, &pLineBuffers->m_pVB, &stride, &offset);
-	pContext->IASetIndexBuffer(pLineBuffers->m_pIB, DXGI_FORMAT_R32_UINT, 0);
+	pContext->IASetIndexBuffer(pLineBuffers->m_pIB_sorted, DXGI_FORMAT_R32_UINT, 0);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	//set rotation, needed to compute the correct transformation

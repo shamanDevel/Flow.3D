@@ -1701,6 +1701,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ParticleRenderMode", twParticleRenderMode, &g_particleRenderParams.m_particleRenderMode, "label='Particle Render Mode' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ParticleTransparency", TW_TYPE_FLOAT, &g_particleRenderParams.m_particleTransparency, "label='Particle Transparency' group=ParticleRender min=0 max=1 step=0.01");
+	TwAddVarRW(g_pTwBarMain, "SortParticles",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_sortParticles,	"label='Sort Particles' group=ParticleRender");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ColorMode",		twLineColorMode,	&g_particleRenderParams.m_lineColorMode,	"label='Color Mode' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "Color0",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color0,			"label='Color 0' group=ParticleRender");

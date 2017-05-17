@@ -55,6 +55,8 @@ struct ParticleRenderParams
 	float m_slicePosition;
 	float m_sliceAlpha;
 
+	bool m_sortParticles;
+
 	bool operator==(const ParticleRenderParams& rhs) const;
 	bool operator!=(const ParticleRenderParams& rhs) const;
 };

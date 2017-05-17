@@ -12,7 +12,9 @@
 LineBuffers::LineBuffers(ID3D11Device* pDevice)
 	: m_lineCount(0), m_lineLengthMax(0)
 	, m_pVB(nullptr), m_pVBCuda(nullptr)
-	, m_pIB(nullptr), m_pIBCuda(nullptr), m_indexCountTotal(0)
+	, m_pIB(nullptr), m_pIBCuda(nullptr)
+	, m_pIB_sorted(nullptr), m_pIBCuda_sorted(nullptr)
+	, m_indexCountTotal(0)
 	, m_pDevice(pDevice)
 {
 }
@@ -20,7 +22,9 @@ LineBuffers::LineBuffers(ID3D11Device* pDevice)
 LineBuffers::LineBuffers(ID3D11Device* pDevice, uint lineCount, uint lineLengthMax)
 	: m_lineCount(lineCount), m_lineLengthMax(lineLengthMax)
 	, m_pVB(nullptr), m_pVBCuda(nullptr)
-	, m_pIB(nullptr), m_pIBCuda(nullptr), m_indexCountTotal(0)
+	, m_pIB(nullptr), m_pIBCuda(nullptr)
+	, m_pIB_sorted(nullptr), m_pIBCuda_sorted(nullptr)
+	, m_indexCountTotal(0)
 	, m_pDevice(pDevice)
 {
 	if(!CreateResources())
@@ -218,6 +222,12 @@ bool LineBuffers::CreateResources()
 		return false;
 	}
 	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pIBCuda, m_pIB, cudaGraphicsRegisterFlagsNone));
+	if (FAILED(hr = m_pDevice->CreateBuffer(&bufDesc, nullptr, &m_pIB_sorted)))
+	{
+		ReleaseResources();
+		return false;
+	}
+	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pIBCuda_sorted, m_pIB_sorted, cudaGraphicsRegisterFlagsNone));
 
 	return true;
 }
@@ -227,6 +237,18 @@ void LineBuffers::ReleaseResources()
 	m_lineCount = 0;
 	m_lineLengthMax = 0;
 	m_indexCountTotal = 0;
+
+	if (m_pIBCuda_sorted)
+	{
+		cudaSafeCall(cudaGraphicsUnregisterResource(m_pIBCuda_sorted));
+		m_pIBCuda_sorted = nullptr;
+	}
+	if (m_pIB_sorted)
+	{
+		m_pIB_sorted->Release();
+		m_pIB_sorted = nullptr;
+	}
+
 	if(m_pIBCuda)
 	{
 		cudaSafeCall(cudaGraphicsUnregisterResource(m_pIBCuda));

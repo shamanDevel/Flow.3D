@@ -28,7 +28,6 @@
     <ClCompile Include="stb_image.c">
       <Filter>util</Filter>
     </ClCompile>
-    <ClCompile Include="RenderingManager.cpp" />
     <ClCompile Include="BrickUpload.cpp" />
     <ClCompile Include="..\shared\ConfigFile.cpp">
       <Filter>util</Filter>
@@ -550,6 +549,7 @@
     <CudaCompile Include="IntegratorParticleKernels.cu">
       <Filter>ParticleTracing</Filter>
     </CudaCompile>
+    <CudaCompile Include="RenderingManager.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RaycasterKernelHelpers.cui">

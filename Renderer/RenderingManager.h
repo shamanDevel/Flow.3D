@@ -125,7 +125,7 @@ private:
 	void RenderBoxes(bool enableColor, bool blendBehind);
 
 	//Renders the stream + path lines
-	void RenderLines(const LineBuffers* pLineBuffers, bool enableColor, bool blendBehind);
+	void RenderLines(LineBuffers* pLineBuffers, bool enableColor, bool blendBehind);
 	//If lineRenderMode==Particles, RenderLines delegates to this method after setting the shader parameters
 	//If clipPlane != NULL, this defines a clip plane and only the points with a positive signed distance are drawn
 	//If drawSlice == true, the slice texture drawing call is injected after the drawing of the particles.
@@ -133,6 +133,8 @@ private:
 	//  This is the case if slice rendering is enabled.
 	void RenderParticles(const LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext, 
 		D3D11_VIEWPORT viewport, const tum3D::Vec4f* clipPlane = NULL, bool drawSlice = false);
+
+	void SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext);
 	
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);

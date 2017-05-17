@@ -16,6 +16,7 @@
 #include <MemUtils.h>
 #include <TimerCPU.h>
 #include <Vec.h>
+#include <SysTools.h>
 
 #include "FilePool.h"
 #include "TimeVolumeInfo.h"
