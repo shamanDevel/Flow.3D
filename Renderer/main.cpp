@@ -76,6 +76,7 @@ float            g_renderBufferSizeFactor = 2.0f;
 Vec4f            g_rotationX = Vec4f(1, 0, 0, 0);
 Vec4f            g_rotationY = Vec4f(1, 0, 0, 0);
 Vec4f            g_rotation = Vec4f(1, 0, 0, 0);
+bool             g_keyboardShiftPressed = false;
 
 ProjectionParams g_projParams;
 StereoParams     g_stereoParams;
@@ -1456,7 +1457,7 @@ void TW_CALL LoadSeedTexture(void *clientData)
 			SAFE_RELEASE(context);
 			SAFE_RELEASE(tex);
 			//reset color
-			g_particleTraceParams.m_seedTexture.m_picked = 0;
+			g_particleTraceParams.m_seedTexture.m_picked.clear();
 			std::cout << "Seed texture copied to cpu memory" << std::endl;
 		}
 		else {
@@ -2251,10 +2252,10 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	particleRenderParamsPrev = g_particleRenderParams;
 	g_redraw = g_redraw || particleRenderParamsChanged;
 	
-	if(particleRenderParamsChanged)
-	{
-		g_lastTraceParamsUpdate = curTime;
-	}
+	//if(particleRenderParamsChanged)
+	//{
+	//	g_lastTraceParamsUpdate = curTime;
+	//}
 
 
 	Vec3f camPos = g_viewParams.GetCameraPosition();
@@ -2977,6 +2978,10 @@ bool CALLBACK OnDeviceRemoved( void* pUserContext )
 //--------------------------------------------------------------------------------------
 void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 {
+	if (nChar == VK_RSHIFT || nChar == VK_SHIFT) {
+		g_keyboardShiftPressed = bKeyDown;
+	}
+
 	if(bKeyDown)
 	{
 		switch(nChar)
@@ -3041,10 +3046,15 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 						texY = g_particleTraceParams.m_seedTexture.m_height - texY - 1;
 						unsigned int color = g_particleTraceParams.m_seedTexture.m_colors[texX + texY * g_particleTraceParams.m_seedTexture.m_height];
 						printf("Pick color at position (%d, %d): 0x%08x\n", texX, texY, color);
-						g_particleTraceParams.m_seedTexture.m_picked = color;
+						if (!g_keyboardShiftPressed) {
+							g_particleTraceParams.m_seedTexture.m_picked.clear();
+						}
+						g_particleTraceParams.m_seedTexture.m_picked.insert(color);
 					} else {
 						std::cout << "Outside the bounds" << std::endl;
-						g_particleTraceParams.m_seedTexture.m_picked = 0; //disable seed from texture
+						if (!g_keyboardShiftPressed) {
+							g_particleTraceParams.m_seedTexture.m_picked.clear(); //disable seed from texture
+						}
 					}
 				}
 
@@ -3179,6 +3189,7 @@ LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		bool bKeyDown = ( uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN );
 		DWORD dwMask = ( 1 << 29 );
 		bool bAltDown = ( ( lParam & dwMask ) != 0 );
+		//bool bShiftDown = ((nMouseButtonState & MK_SHIFT) != 0);
 
 		OnKeyboard( ( UINT )wParam, bKeyDown, bAltDown, bHandledByGUI );
 	}

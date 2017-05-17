@@ -6,10 +6,26 @@
 using namespace tum3D;
 
 SeedTexture::SeedTexture()
-	: m_width(0), m_height(0), m_picked(0), m_colors(NULL)
+	: m_width(0), m_height(0), m_picked(), m_colors(NULL)
 {
 
 }
+
+bool SeedTexture::operator==(const SeedTexture& rhs) const
+{
+	return (
+		(m_width == rhs.m_width)
+		&& (m_height == rhs.m_height)
+		&& (m_colors == rhs.m_colors)
+		&& (m_picked == rhs.m_picked)
+		);
+}
+
+bool SeedTexture::operator!=(const SeedTexture& rhs) const
+{
+	return !(*this == rhs);
+}
+
 
 ParticleTraceParams::ParticleTraceParams()
 {
@@ -281,7 +297,7 @@ bool ParticleTraceParams::hasChangesForRetracing(const ParticleTraceParams & old
 		if (m_lineMode == eLineMode::LINE_PARTICLE_STREAM) {
 			if (m_seedBoxMin != old.m_seedBoxMin
 				|| m_seedBoxSize != old.m_seedBoxSize
-				|| memcmp(&m_seedTexture, &old.m_seedTexture, sizeof(SeedTexture)) != 0) {
+				|| m_seedTexture != old.m_seedTexture) {
 				return true;
 			}
 		}
@@ -296,7 +312,34 @@ bool ParticleTraceParams::hasChangesForRetracing(const ParticleTraceParams & old
 
 bool ParticleTraceParams::operator==(const ParticleTraceParams& rhs) const
 {
-	return memcmp(this, &rhs, sizeof(ParticleTraceParams)) == 0;
+	//return memcmp(this, &rhs, sizeof(ParticleTraceParams)) == 0;
+	if (m_seedBoxMin != rhs.m_seedBoxMin) return false;
+	if (m_seedBoxSize != rhs.m_seedBoxSize) return false;
+	if (m_advectMode != rhs.m_advectMode) return false;
+	if (m_enableDenseOutput != rhs.m_enableDenseOutput) return false;
+	if (m_filterMode != rhs.m_filterMode) return false;
+	if (m_lineMode != rhs.m_lineMode) return false;
+	if (m_lineCount != rhs.m_lineCount) return false;
+	if (m_lineLengthMax != rhs.m_lineLengthMax) return false;
+	if (m_lineAgeMax != rhs.m_lineAgeMax) return false;
+	if (m_advectDeltaT != rhs.m_advectDeltaT) return false;
+	if (m_advectErrorTolerance != rhs.m_advectErrorTolerance) return false;
+	if (m_advectDeltaTMin != rhs.m_advectDeltaTMin) return false;
+	if (m_advectDeltaTMax != rhs.m_advectDeltaTMax) return false;
+	if (m_advectStepsPerRound != rhs.m_advectStepsPerRound) return false;
+	if (m_purgeTimeoutInRounds != rhs.m_purgeTimeoutInRounds) return false;
+	if (m_heuristicBonusFactor != rhs.m_heuristicBonusFactor) return false;
+	if (m_heuristicPenaltyFactor != rhs.m_heuristicPenaltyFactor) return false;
+	if (m_heuristicFlags != rhs.m_heuristicFlags) return false;
+	if (m_outputPosDiff != rhs.m_outputPosDiff) return false;
+	if (m_outputTimeDiff != rhs.m_outputTimeDiff) return false;
+	if (m_waitForDisk != rhs.m_waitForDisk) return false;
+	if (m_enablePrefetching != rhs.m_enablePrefetching) return false;
+	if (m_upsampledVolumeHack != rhs.m_upsampledVolumeHack) return false;
+	if (m_cpuTracing != rhs.m_cpuTracing) return false;
+	if (m_particlesPerSecond != rhs.m_particlesPerSecond) return false;
+	if (m_seedTexture != rhs.m_seedTexture) return false;
+	return true;
 }
 
 bool ParticleTraceParams::operator!=(const ParticleTraceParams& rhs) const

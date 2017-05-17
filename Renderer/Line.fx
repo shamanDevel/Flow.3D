@@ -161,9 +161,9 @@ struct LineVertex
 	float3   normal  : NORMAL;
 	float3   vel     : VELOCITY;
 	uint     lineID  : LINE_ID;
+	float3   seedPos : SEED_POSITION;
 	float    heat    : HEAT;
 	float3   heatCurrent : HEAT_CURRENT;
-	float3   seedPos : SEED_POSITION;
 	float3x3 jac     : JACOBIAN;
 };
 

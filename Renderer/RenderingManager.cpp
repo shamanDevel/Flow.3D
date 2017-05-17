@@ -1322,7 +1322,8 @@ void DebugRenderLines(ID3D11Device* device, ID3D11DeviceContext* context, const 
 		for (uint i = 0; i < pLineBuffers->m_indexCountTotal; ++i) {
 			uint j = indexBuffer[i];
 			const LineVertex& v = vertexBuffer[j];
-			printf("%d->%d: pos=(%f, %f, %f), temp=%f\n", i, j, v.Position.x, v.Position.y, v.Position.z, v.Heat);
+			printf("%d->%d: pos=(%f, %f, %f), seed pos=(%f, %f, %f)\n", i, j, 
+				v.Position.x, v.Position.y, v.Position.z, v.SeedPosition.x, v.SeedPosition.y, v.SeedPosition.z);
 		}
 	}
 
@@ -1347,14 +1348,6 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 
 	// Debug
 	//DebugRenderLines(m_pDevice, pContext, pLineBuffers);
-
-	// IA
-	pContext->IASetInputLayout(m_lineEffect.m_pInputLayout);
-	UINT stride = sizeof(LineVertex);
-	UINT offset = 0;
-	pContext->IASetVertexBuffers(0, 1, &pLineBuffers->m_pVB, &stride, &offset);
-	pContext->IASetIndexBuffer(pLineBuffers->m_pIB, DXGI_FORMAT_R32_UINT, 0);
-	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
 
 	// common shader vars
 	m_lineEffect.m_pvLightPosVariable->SetFloatVector(m_viewParams.GetCameraPosition());
@@ -1439,6 +1432,14 @@ void RenderingManager::RenderLines(const LineBuffers* pLineBuffers, bool enableC
 		return;
 	}
 
+	// IA
+	pContext->IASetInputLayout(m_lineEffect.m_pInputLayout);
+	UINT stride = sizeof(LineVertex);
+	UINT offset = 0;
+	pContext->IASetVertexBuffers(0, 1, &pLineBuffers->m_pVB, &stride, &offset);
+	pContext->IASetIndexBuffer(pLineBuffers->m_pIB, DXGI_FORMAT_R32_UINT, 0);
+	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+
 	// save viewports and render targets
 	uint oldViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
 	D3D11_VIEWPORT oldViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
@@ -1518,6 +1519,12 @@ void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers,
 	ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport, 
 	const tum3D::Vec4f* clipPlane, bool renderSlice)
 {
+	// IA
+	pContext->IASetInputLayout(m_lineEffect.m_pInputLayout);
+	UINT stride = sizeof(LineVertex);
+	UINT offset = 0;
+	pContext->IASetVertexBuffers(0, 1, &pLineBuffers->m_pVB, &stride, &offset);
+	pContext->IASetIndexBuffer(pLineBuffers->m_pIB, DXGI_FORMAT_R32_UINT, 0);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
 	//set rotation, needed to compute the correct transformation

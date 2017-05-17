@@ -252,7 +252,7 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 	
 	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
 	{
-		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked == 0) {
+		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked.empty()) {
 			//seed directly from the seed box
 			m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
 		}
@@ -270,7 +270,7 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 					continue;
 				}
 				unsigned int color = m_traceParams.m_seedTexture.m_colors[texX + texY * m_traceParams.m_seedTexture.m_height];
-				if (color == m_traceParams.m_seedTexture.m_picked) {
+				if (m_traceParams.m_seedTexture.m_picked.find(color) != m_traceParams.m_seedTexture.m_picked.end()) {
 					//we found it
 					m_checkpoints[i].Position = pos;
 					break;
@@ -280,7 +280,7 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 
 		/*if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
 			printf("WARNING: seed %i is outside of domain!\n", i);*/
-		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
+		m_checkpoints[i].SeedPosition = make_float3(0.5, 0.2, 0.1);//m_checkpoints[i].Position;
 		m_checkpoints[i].Time = spawnTime;
 		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
 		m_checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
@@ -529,7 +529,9 @@ bool TracingManager::TraceParticlesIteratively()
 	//compute time per frame and update delta time
 	double tpf = std::chrono::duration_cast<std::chrono::duration<double>> (tp - m_particlesLastFrame).count();
 	m_particlesLastFrame = tp;
-	printf("TPF: %f\n", tpf);
+	if (m_verbose) {
+		printf("TPF: %f\n", tpf);
+	}
 
 	// integrate
 	m_timerIntegrateCPU.Start();

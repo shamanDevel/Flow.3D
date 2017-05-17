@@ -7,6 +7,7 @@
 #include <ConfigFile.h>
 #include <Vec.h>
 #include <vector>
+#include <set>
 
 #include "AdvectMode.h"
 #include "LineMode.h"
@@ -20,9 +21,12 @@ struct SeedTexture
 	//The picked color
 	// 0: seed from seed box
 	// >0: seed at positions where m_colors[pos] == m_picked
-	unsigned int m_picked;
+	std::set<unsigned int> m_picked;
 
 	SeedTexture();
+
+	bool operator==(const SeedTexture& rhs) const;
+	bool operator!=(const SeedTexture& rhs) const;
 };
 
 struct ParticleTraceParams
