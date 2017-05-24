@@ -194,6 +194,8 @@ exit 1
     <ClCompile Include="FilteringManager.cpp" />
     <ClCompile Include="FilterParams.cpp" />
     <ClCompile Include="FlowGraph.cpp" />
+    <ClCompile Include="HeatMap.cpp" />
+    <ClCompile Include="HeatMapManager.cpp" />
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp" />
     <ClCompile Include="LineBuffers.cpp" />
     <ClCompile Include="LineColorMode.cpp" />
@@ -210,6 +212,7 @@ exit 1
     <ClCompile Include="Range.cpp" />
     <ClCompile Include="RaycastMode.cpp" />
     <ClCompile Include="RaycastParams.cpp" />
+    <CudaCompile Include="HeatMapKernel.cu" />
     <CudaCompile Include="RenderingManager.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
@@ -282,6 +285,9 @@ exit 1
     <ClInclude Include="FilterParams.h" />
     <ClInclude Include="FlowGraph.h" />
     <ClInclude Include="HeatCurrent.cuh" />
+    <ClInclude Include="HeatMap.h" />
+    <ClInclude Include="HeatMapKernel.h" />
+    <ClInclude Include="HeatMapManager.h" />
     <ClInclude Include="IntegratorCommonCPU.h" />
     <ClInclude Include="IntegratorKernelDefines.h" />
     <ClInclude Include="IntegratorKernels.h" />

@@ -154,6 +154,12 @@
     <ClCompile Include="LineColorMode.cpp">
       <Filter>Enums</Filter>
     </ClCompile>
+    <ClCompile Include="HeatMap.cpp">
+      <Filter>HeatMap</Filter>
+    </ClCompile>
+    <ClCompile Include="HeatMapManager.cpp">
+      <Filter>HeatMap</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -200,6 +206,9 @@
     </Filter>
     <Filter Include="DirectXTK">
       <UniqueIdentifier>{a0c422fd-afd1-4c36-a38a-02fdb5650ad9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HeatMap">
+      <UniqueIdentifier>{db030e08-c948-4491-a97d-d9647924065a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -474,6 +483,15 @@
     <ClInclude Include="LineColorMode.h">
       <Filter>Enums</Filter>
     </ClInclude>
+    <ClInclude Include="HeatMap.h">
+      <Filter>HeatMap</Filter>
+    </ClInclude>
+    <ClInclude Include="HeatMapManager.h">
+      <Filter>HeatMap</Filter>
+    </ClInclude>
+    <ClInclude Include="HeatMapKernel.h">
+      <Filter>HeatMap</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -550,6 +568,9 @@
       <Filter>ParticleTracing</Filter>
     </CudaCompile>
     <CudaCompile Include="RenderingManager.cu" />
+    <CudaCompile Include="HeatMapKernel.cu">
+      <Filter>HeatMap</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="RaycasterKernelHelpers.cui">

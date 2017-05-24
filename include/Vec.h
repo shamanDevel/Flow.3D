@@ -9,6 +9,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <ostream>
 
 #include <cuda_runtime.h>
 

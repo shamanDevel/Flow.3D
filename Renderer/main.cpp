@@ -42,6 +42,7 @@ using namespace tum3D;
 #include "FilteringManager.h"
 #include "TracingManager.h"
 #include "RenderingManager.h"
+#include "HeatMapManager.h"
 
 #include "CompressVolume.h"
 #include "GPUResources.h"
@@ -120,6 +121,7 @@ bool                      g_useAllGPUs = false;
 FilteringManager g_filteringManager;
 TracingManager   g_tracingManager;
 RenderingManager g_renderingManager;
+HeatMapManager   g_heatMapManager;
 
 GPUResources            g_compressShared;
 CompressVolumeResources g_compressVolume;
@@ -483,6 +485,8 @@ void ReleaseVolumeDependentResources()
 
 	g_renderingManager.Release();
 
+	g_heatMapManager.Release();
+
 	g_tracingManager.ClearResult();
 	g_tracingManager.Release();
 
@@ -517,6 +521,10 @@ HRESULT CreateVolumeDependentResources(ID3D11Device* pDevice)
 	}
 
 	if(FAILED(hr = g_renderingManager.Create(&g_compressShared, &g_compressVolume, pDevice))) {
+		return hr;
+	}
+
+	if (FAILED(hr = g_heatMapManager.Create(&g_compressShared, &g_compressVolume, pDevice))) {
 		return hr;
 	}
 
@@ -1673,6 +1681,8 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddButton(g_pTwBarMain, "Retrace", Retrace, nullptr, "label='Retrace' group=ParticleTrace");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
+
+	// IO
 	TwAddButton(g_pTwBarMain, "SaveLines", SaveLinesDialog, nullptr, "label='Save Traced Lines' group=ParticleTraceIO");
 	TwAddButton(g_pTwBarMain, "LoadLines", LoadLinesDialog, nullptr, "label='Load Lines' group=ParticleTraceIO");
 	TwAddVarRW(g_pTwBarMain,  "LineID", TW_TYPE_INT32, &g_lineIDOverride,"label='Line ID Override' min=-1 group=ParticleTraceIO");
@@ -1719,31 +1729,32 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "SliceAlpha",      TW_TYPE_FLOAT,      &g_particleRenderParams.m_sliceAlpha,       "label='Slice Transparency' step=0.01 min=0 max=1 group=ParticleRender");
 	TwDefine("Main/ParticleRender label='Rendering'");
 
+	// Heat Map
+	g_heatMapManager.InitAntTweakBar(g_pTwBarMain);
 
 	// bounding boxes
 	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)'");
-	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)'");
+	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
+	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)' group=MiscRendering");
 
 
 	// view params
 	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddVarRW(g_pTwBarMain, "Supersample",		TW_TYPE_FLOAT,		&g_renderBufferSizeFactor,		"label='SuperSample Factor' min=0.5 max=8 step=0.5");
+	TwAddVarRW(g_pTwBarMain, "Supersample",		TW_TYPE_FLOAT,		&g_renderBufferSizeFactor,		"label='SuperSample Factor' min=0.5 max=8 step=0.5 group=MiscRendering");
 	TwAddVarRW(g_pTwBarMain, "LookAtX",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.x(),		"label='X' group=LookAt");
 	TwAddVarRW(g_pTwBarMain, "LookAtY",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.y(),		"label='Y' group=LookAt");
 	TwAddVarRW(g_pTwBarMain, "LookAtZ",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.z(),		"label='Z' group=LookAt");
-	TwAddVarRW(g_pTwBarMain, "ViewDistance",	TW_TYPE_FLOAT,		&g_viewParams.m_viewDistance,	"label='View Distance' min=0 step=0.01");
-	TwDefine("Main/LookAt label='LookAt' opened=false");
-	TwAddVarCB(g_pTwBarMain, "Rotation",		TW_TYPE_QUAT4F,	SetRotation, GetRotation, nullptr,	"label='Rotation' opened=false");
-	TwAddButton(g_pTwBarMain, "ResetView", ResetView, nullptr, "label='Reset View'");
-	TwAddVarRW(g_pTwBarMain, "BackColor",		TW_TYPE_COLOR3F,	&g_backgroundColor,	"label='Background Color' opened=false");
+	TwAddVarRW(g_pTwBarMain, "ViewDistance",	TW_TYPE_FLOAT,		&g_viewParams.m_viewDistance,	"label='View Distance' min=0 step=0.01 group=MiscRendering");
+	TwDefine("Main/LookAt label='LookAt' opened=false group=MiscRendering");
+	TwAddVarCB(g_pTwBarMain, "Rotation",		TW_TYPE_QUAT4F,	SetRotation, GetRotation, nullptr,	"label='Rotation' opened=false group=MiscRendering");
+	TwAddButton(g_pTwBarMain, "ResetView", ResetView, nullptr, "label='Reset View' group=MiscRendering");
+	TwAddVarRW(g_pTwBarMain, "BackColor",		TW_TYPE_COLOR3F,	&g_backgroundColor,	"label='Background Color' opened=false group=MiscRendering");
 	TwAddVarRW(g_pTwBarMain, "StereoEnable",	TW_TYPE_BOOLCPP,	&g_stereoParams.m_stereoEnabled,"label='Enable' group=Stereo");
 	TwAddVarRW(g_pTwBarMain, "StereoEyeDist",	TW_TYPE_FLOAT,		&g_stereoParams.m_eyeDistance,	"label='Eye Distance' min=0 step=0.001 group=Stereo");
-	TwDefine("Main/Stereo label='Stereo 3D' opened=false");
-
+	TwDefine("Main/Stereo label='Stereo 3D' opened=false group=MiscRendering");
+	TwDefine("Main/MiscRendering label='Misc Rendering Settings' opened=false");
 
 	// screenshot
-	TwAddSeparator(g_pTwBarMain, "", "");
 	TwAddButton(g_pTwBarMain, "SaveScreenshot", SaveScreenshot, nullptr, "label='Save Screenshot' key=s");
 	TwAddButton(g_pTwBarMain, "SaveRBScreenshot", SaveRenderBufferScreenshot, nullptr, "label='Save RenderBuffer' key=r");
 
@@ -2330,6 +2341,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		s_isTracing = g_tracingManager.StartTracing(g_volume, g_particleTraceParams, g_flowGraph);
 		g_timerTracing.Start();
 
+		//notify the heat map manager
+		g_heatMapManager.SetVolumeAndReset(g_volume);
+
 		g_retrace = false;
 	}
 
@@ -2346,6 +2360,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	{
 		//std::cout << "Trace" << std::endl;
 		bool finished = g_tracingManager.Trace();
+		if (finished || LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
+			g_heatMapManager.ProcessLines(g_tracingManager.GetResult());
+		}
 
 		if(finished)
 		{
