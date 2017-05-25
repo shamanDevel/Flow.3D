@@ -15,8 +15,10 @@
 #include "GPUResources.h"
 #include "CompressVolume.h"
 #include "TimeVolume.h"
+#include "ViewParams.h"
 
 #include "HeatMap.h"
+#include "HeatMapParams.h"
 
 class HeatMapManager
 {
@@ -28,10 +30,14 @@ public:
 	void Release();
 	bool IsCreated() const { return m_isCreated; }
 
-	void InitAntTweakBar(TwBar* bar);
+	void SetParams(const HeatMapParams& params);
 
 	void SetVolumeAndReset(const TimeVolume& volume);
 	void ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer);
+
+	//Renders the heat map.
+	//It is assumed that the correct frame buffer is already set.
+	void Render(const ViewParams& viewParams, const StereoParams& stereoParam);
 
 private:
 	void ClearChannels();
@@ -52,9 +58,7 @@ private:
 	float3                   m_worldOffset;
 
 	// settings
-	bool m_enableRecording;
-	bool m_enableRendering;
-	bool m_autoReset;
+	HeatMapParams            m_params;
 };
 
 #endif

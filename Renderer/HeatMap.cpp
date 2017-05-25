@@ -62,5 +62,6 @@ HeatMap::Channel::~Channel()
 {
 	if (m_pCudaBuffer != nullptr) {
 		cudaSafeCall(cudaFree(m_pCudaBuffer));
+		m_pCudaBuffer = nullptr;
 	}
 }

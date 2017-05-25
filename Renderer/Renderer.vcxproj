@@ -196,6 +196,7 @@ exit 1
     <ClCompile Include="FlowGraph.cpp" />
     <ClCompile Include="HeatMap.cpp" />
     <ClCompile Include="HeatMapManager.cpp" />
+    <ClCompile Include="HeatMapParams.cpp" />
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp" />
     <ClCompile Include="LineBuffers.cpp" />
     <ClCompile Include="LineColorMode.cpp" />
@@ -288,6 +289,7 @@ exit 1
     <ClInclude Include="HeatMap.h" />
     <ClInclude Include="HeatMapKernel.h" />
     <ClInclude Include="HeatMapManager.h" />
+    <ClInclude Include="HeatMapParams.h" />
     <ClInclude Include="IntegratorCommonCPU.h" />
     <ClInclude Include="IntegratorKernelDefines.h" />
     <ClInclude Include="IntegratorKernels.h" />

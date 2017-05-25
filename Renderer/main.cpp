@@ -55,6 +55,7 @@ using namespace tum3D;
 #include "ParticleTraceParams.h"
 #include "ParticleRenderParams.h"
 #include "ViewParams.h"
+#include "HeatMapParams.h"
 
 #include "WorkerThread.h"
 
@@ -88,6 +89,7 @@ FilterParams         g_filterParams;
 RaycastParams        g_raycastParams;
 ParticleTraceParams  g_particleTraceParams;
 ParticleRenderParams g_particleRenderParams;
+HeatMapParams        g_heatMapParams;
 
 BatchTraceParams g_batchTraceParams;
 
@@ -495,6 +497,8 @@ void ReleaseVolumeDependentResources()
 
 	g_compressVolume.destroy();
 	g_compressShared.destroy();
+
+	g_heatMapManager.Release();
 }
 
 HRESULT CreateVolumeDependentResources(ID3D11Device* pDevice)
@@ -1730,10 +1734,16 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwDefine("Main/ParticleRender label='Rendering'");
 
 	// Heat Map
-	g_heatMapManager.InitAntTweakBar(g_pTwBarMain);
+	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRecording", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRecording,
+		"label='Enable Recording' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRendering", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRendering,
+		"label='Enable Rendering' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_AutoReset", TW_TYPE_BOOLCPP, &g_heatMapParams.m_autoReset,
+		"label='Auto Reset' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_DensityScale", TW_TYPE_FLOAT, &g_heatMapParams.m_densityScale,
+		"label='Density Scale' min=0 step=0.01 group='Heat Map'");
 
 	// bounding boxes
-	TwAddSeparator(g_pTwBarMain, "", "");
 	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
 	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)' group=MiscRendering");
 
@@ -2209,6 +2219,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax();
 	g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin();
 	g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax();
+	g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale();
+	g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin();
+	g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax();
 
 	static FilterParams filterParamsPrev;
 	bool filterParamsChanged = (g_filterParams != filterParamsPrev);
@@ -2229,6 +2242,13 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	particleTraceParamsPrev = g_particleTraceParams;
 	g_retrace = g_retrace || particleTraceParamsChanged;
     g_redraw = g_redraw || seedBoxChanged;
+
+	// heat map parameters
+	static HeatMapParams heatMapParamsPrev;
+	g_retrace = g_retrace || g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams);
+	g_redraw = g_redraw || g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev);
+	heatMapParamsPrev = g_heatMapParams;
+	g_heatMapManager.SetParams(g_heatMapParams);
 
 	if(particleTraceParamsChanged)
 	{
@@ -2906,7 +2926,8 @@ NoVolumeLoaded:
 	{
 		g_tfEdt.setVisible(
 			(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
-			|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE));
+			|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE)
+		    || (g_heatMapParams.m_enableRendering));
 
 		// switch to dark text for bright backgrounds
 		if(Luminance(g_backgroundColor.xyz()) > 0.7f) {

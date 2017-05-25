@@ -17,9 +17,7 @@ HeatMapManager::HeatMapManager()
 	, m_pVolume(NULL)
 	, m_pHeatMap(NULL)
 	, m_isCreated(false)
-	, m_enableRecording(false)
-	, m_enableRendering(false)
-	, m_autoReset(false)
+	, m_params()
 {
 }
 
@@ -41,16 +39,13 @@ bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResour
 
 void HeatMapManager::Release()
 {
+	delete m_pHeatMap;
+	m_pHeatMap = nullptr;
 }
 
-void HeatMapManager::InitAntTweakBar(TwBar * bar)
+void HeatMapManager::SetParams(const HeatMapParams & params)
 {
-	TwAddVarRW(bar, "HeatMap_EnableRecording", TW_TYPE_BOOLCPP, &m_enableRecording, 
-		"label='Enable Recording' group='Heat Map'");
-	TwAddVarRW(bar, "HeatMap_EnableRendering", TW_TYPE_BOOLCPP, &m_enableRendering, 
-		"label='Enable Rendering' group='Heat Map'");
-	TwAddVarRW(bar, "HeatMap_AutoReset", TW_TYPE_BOOLCPP, &m_autoReset,
-		"label='Auto Reset' group='Heat Map'");
+	m_params = params;
 }
 
 void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
@@ -87,6 +82,7 @@ void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
 
 void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 {
+	if (!m_params.m_enableRecording) return;
 	std::cout << "Process lines" << std::endl;
 
 	//first test, fill channel '0'
@@ -112,6 +108,11 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	//test
 	std::pair<uint, uint> minMaxValue = heatmapKernelFindMinMax(channel->getCudaBuffer(), m_resolution);
 	std::cout << "Done, min value: " << minMaxValue.first << ", max value: " << minMaxValue.second << std::endl;
+}
+
+void HeatMapManager::Render(const ViewParams & viewParams, const StereoParams & stereoParam)
+{
+	if (!m_params.m_enableRendering) return;
 }
 
 void HeatMapManager::ClearChannels()

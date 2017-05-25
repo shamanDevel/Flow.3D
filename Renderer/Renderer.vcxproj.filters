@@ -160,6 +160,7 @@
     <ClCompile Include="HeatMapManager.cpp">
       <Filter>HeatMap</Filter>
     </ClCompile>
+    <ClCompile Include="HeatMapParams.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -492,6 +493,7 @@
     <ClInclude Include="HeatMapKernel.h">
       <Filter>HeatMap</Filter>
     </ClInclude>
+    <ClInclude Include="HeatMapParams.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
