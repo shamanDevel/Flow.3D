@@ -4,6 +4,9 @@
 #include <iostream>
 #include <cudaUtil.h>
 
+#include <D3Dcompiler.h>
+#include "CSysTools.h"
+
 #include "TracingCommon.h"
 #include "HeatMapKernel.h"
 
@@ -18,6 +21,7 @@ HeatMapManager::HeatMapManager()
 	, m_pHeatMap(NULL)
 	, m_isCreated(false)
 	, m_params()
+	, m_pShader(NULL)
 {
 }
 
@@ -25,6 +29,7 @@ HeatMapManager::HeatMapManager()
 HeatMapManager::~HeatMapManager()
 {
 	delete m_pHeatMap;
+	delete m_pShader;
 }
 
 bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResources * pCompressVolume, ID3D11Device * pDevice)
@@ -32,6 +37,10 @@ bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResour
 	m_pCompressShared = pCompressShared;
 	m_pCompressVolume = pCompressVolume;
 	m_pDevice = pDevice;
+
+	//create shader
+	m_pShader = new HeatMapRaytracerEffect();
+	m_pShader->Create(pDevice);
 
 	m_isCreated = true;
 	return true;
@@ -41,6 +50,12 @@ void HeatMapManager::Release()
 {
 	delete m_pHeatMap;
 	m_pHeatMap = nullptr;
+
+	if (m_pShader != nullptr) {
+		m_pShader->SafeRelease();
+		delete m_pShader;
+		m_pShader = nullptr;
+	}
 }
 
 void HeatMapManager::SetParams(const HeatMapParams & params)
@@ -110,9 +125,12 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	std::cout << "Done, min value: " << minMaxValue.first << ", max value: " << minMaxValue.second << std::endl;
 }
 
-void HeatMapManager::Render(const ViewParams & viewParams, const StereoParams & stereoParam)
+void HeatMapManager::Render(const ViewParams & viewParams, const StereoParams & stereoParam,
+	const D3D11_VIEWPORT& viewport, ID3D11Texture2D* depthTexture)
 {
 	if (!m_params.m_enableRendering) return;
+	std::cout << "HeatMapManager: render" << std::endl;
+
 }
 
 void HeatMapManager::ClearChannels()

@@ -161,6 +161,9 @@
       <Filter>HeatMap</Filter>
     </ClCompile>
     <ClCompile Include="HeatMapParams.cpp" />
+    <ClCompile Include="HeatMapRaytracerEffect.cpp">
+      <Filter>Shaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -494,6 +497,9 @@
       <Filter>HeatMap</Filter>
     </ClInclude>
     <ClInclude Include="HeatMapParams.h" />
+    <ClInclude Include="HeatMapRaytracerEffect.h">
+      <Filter>Shaders</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -647,6 +653,9 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Measures.fxh">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="HeatMapRaytracer.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

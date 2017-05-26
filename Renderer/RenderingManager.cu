@@ -734,6 +734,7 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 	const ParticleTraceParams& particleTraceParams, const ParticleRenderParams& particleRenderParams,
 	const std::vector<LineBuffers*>& pLineBuffers, bool linesOnly,
 	const std::vector<BallBuffers*>& pBallBuffers, float ballRadius,
+	HeatMapManager* pHeatMapManager,
 	const RaycastParams& raycastParams, cudaArray* pTransferFunction, int transferFunctionDevice)
 {
 	if(IsRendering()) CancelRendering();
@@ -964,6 +965,11 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 	for(size_t i = 0; i < pBallBuffers.size(); i++)
 	{
 		RenderBalls(pBallBuffers[i], ballRadius);
+	}
+
+	//render heat map directly
+	if (pHeatMapManager != nullptr) {
+		RenderHeatMap(pHeatMapManager);
 	}
 
 	//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
@@ -2101,34 +2107,13 @@ void RenderingManager::RenderBricks(bool recordEvents)
 	UpdateBricksToLoad();
 }
 
-/*
-void RenderingManager::RenderSliceTexture()
+void RenderingManager::RenderHeatMap(HeatMapManager* pHeatMapManager)
 {
-	if (!m_particleRenderParams.m_showSlice
-		|| m_particleRenderParams.m_pSliceTexture == nullptr) {
-		return;
-	}
+	if (!pHeatMapManager->IsRenderingEnabled()) return;
 
+	//get device context
 	ID3D11DeviceContext* pContext = nullptr;
 	m_pDevice->GetImmediateContext(&pContext);
-
-	//build shader params
-	Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
-	tum3D::Vec3f normal(0, 0, 1);
-	tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
-	tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
-
-	// save viewports and render targets
-	uint oldViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
-	D3D11_VIEWPORT oldViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
-	pContext->RSGetViewports(&oldViewportCount, oldViewports);
-	ID3D11RenderTargetView* ppOldRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
-	ID3D11DepthStencilView* pOldDSV;
-	pContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, &pOldDSV);
-
-	// set our render target
-	//pContext->OMSetRenderTargets(1, &m_pTransparentRTV, m_pDepthDSV);
-	pContext->OMSetRenderTargets(1, &m_pOpaqueRTV, m_pDepthDSV);
 
 	// build viewport
 	D3D11_VIEWPORT viewport = {};
@@ -2139,29 +2124,45 @@ void RenderingManager::RenderSliceTexture()
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 
-	if (m_stereoParams.m_stereoEnabled)
-	{
-		Mat4f viewLeft = m_viewParams.BuildViewMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance);
-		Mat4f viewRight = m_viewParams.BuildViewMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance);
-		Mat4f projLeft = m_projectionParams.BuildProjectionMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance, m_range);
-		Mat4f projRight = m_projectionParams.BuildProjectionMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance, m_range);
+	//set render target
+	uint oldViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+	D3D11_VIEWPORT oldViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+	pContext->RSGetViewports(&oldViewportCount, oldViewports);
+	ID3D11RenderTargetView* ppOldRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
+	ID3D11DepthStencilView* pOldDSV;
+	pContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, &pOldDSV);
+	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, NULL);
 
-		viewport.Height /= 2.0f;
-		pContext->RSSetViewports(1, &viewport);
-		m_pQuadEffect->DrawTexture(m_particleRenderParams.m_pSliceTexture, center, normal, size, projLeft * viewLeft, pContext);
-		
-		viewport.TopLeftY += viewport.Height;
-		pContext->RSSetViewports(1, &viewport);
-		m_pQuadEffect->DrawTexture(m_particleRenderParams.m_pSliceTexture, center, normal, size, projRight * viewRight, pContext);
-	}
-	else
-	{
-		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
-		Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
 
-		pContext->RSSetViewports(1, &viewport);
-		m_pQuadEffect->DrawTexture(m_particleRenderParams.m_pSliceTexture, center, normal, size, proj * view, pContext);
-	}
+	// set transparent offscreen target
+	float clearColor[4] = {0.0f, 0.0f, 0.0f, 0.0f };
+	pContext->ClearRenderTargetView(m_pTransparentRTV, clearColor);
+	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, NULL);
+
+	// get depth texture
+	ID3D11Texture2D* pDepthTex = m_pDepthTex;
+
+	// RENDER IT
+	pContext->RSSetViewports(1, &viewport);
+	pHeatMapManager->Render(m_viewParams, m_stereoParams, viewport, pDepthTex);
+
+	// set our final render target
+	pContext->OMSetRenderTargets(1, &m_pOpaqueRTV, m_pDepthDSV);
+
+	// render transparent texture to final output
+	Vec2f screenMin(-1.0f, -1.0f);
+	Vec2f screenMax(1.0f, 1.0f);
+	m_pScreenEffect->m_pvScreenMinVariable->SetFloatVector(screenMin);
+	m_pScreenEffect->m_pvScreenMaxVariable->SetFloatVector(screenMax);
+	Vec2f texCoordMin(0.0f, 0.0f);
+	Vec2f texCoordMax(1.0f, 1.0f);
+	m_pScreenEffect->m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
+	m_pScreenEffect->m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
+	pContext->IASetInputLayout(NULL);
+	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	m_pScreenEffect->m_pTexVariable->SetResource(m_pTransparentSRV);
+	m_pScreenEffect->m_pTechnique->GetPassByIndex(2)->Apply(0, pContext);
+	pContext->Draw(4, 0);
 
 	// restore viewports and render targets
 	pContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, pOldDSV);
@@ -2172,12 +2173,9 @@ void RenderingManager::RenderSliceTexture()
 	}
 	SAFE_RELEASE(pOldDSV);
 
-	// copy z buffer into cuda-compatible texture
-	pContext->CopyResource(m_pDepthTexCopy, m_pDepthTex);
-
+	//release device context
 	pContext->Release();
 }
-*/
 
 void RenderingManager::UpdateTimings()
 {

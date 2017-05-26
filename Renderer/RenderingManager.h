@@ -30,6 +30,7 @@
 #include "StereoParams.h"
 #include "TimeVolume.h"
 #include "ViewParams.h"
+#include "HeatMapManager.h"
 
 #include "GPUResources.h"
 #include "CompressVolume.h"
@@ -64,6 +65,7 @@ public:
 		const ParticleTraceParams& particleTraceParams, const ParticleRenderParams& particleRenderParams,
 		const std::vector<LineBuffers*>& pLineBuffers, bool linesOnly,
 		const std::vector<BallBuffers*>& pBallBuffers, float ballRadius,
+		HeatMapManager* pHeatMapManager,
 		const RaycastParams& raycastParams, cudaArray* pTransferFunction, int transferFunctionDevice = -1);
 	eRenderState Render();
 	void CancelRendering();
@@ -138,6 +140,8 @@ private:
 	
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);
+
+	void RenderHeatMap(HeatMapManager* pHeatMapManager);
 
 	void UpdateTimings();
 

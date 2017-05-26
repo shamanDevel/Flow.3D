@@ -497,8 +497,6 @@ void ReleaseVolumeDependentResources()
 
 	g_compressVolume.destroy();
 	g_compressShared.destroy();
-
-	g_heatMapManager.Release();
 }
 
 HRESULT CreateVolumeDependentResources(ID3D11Device* pDevice)
@@ -2459,6 +2457,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 			g_particleTraceParams, g_particleRenderParams,
 			lineBuffers, linesOnly,
 			g_ballBuffers, g_ballRadius,
+			&g_heatMapManager,
 			g_raycastParams, pTfArray);
 
 

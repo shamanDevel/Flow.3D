@@ -197,6 +197,7 @@ exit 1
     <ClCompile Include="HeatMap.cpp" />
     <ClCompile Include="HeatMapManager.cpp" />
     <ClCompile Include="HeatMapParams.cpp" />
+    <ClCompile Include="HeatMapRaytracerEffect.cpp" />
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp" />
     <ClCompile Include="LineBuffers.cpp" />
     <ClCompile Include="LineColorMode.cpp" />
@@ -290,6 +291,7 @@ exit 1
     <ClInclude Include="HeatMapKernel.h" />
     <ClInclude Include="HeatMapManager.h" />
     <ClInclude Include="HeatMapParams.h" />
+    <ClInclude Include="HeatMapRaytracerEffect.h" />
     <ClInclude Include="IntegratorCommonCPU.h" />
     <ClInclude Include="IntegratorKernelDefines.h" />
     <ClInclude Include="IntegratorKernels.h" />
@@ -381,6 +383,7 @@ exit 1
     <FxCompile Include="Box.fx">
       <FileType>Document</FileType>
     </FxCompile>
+    <FxCompile Include="HeatMapRaytracer.fx" />
     <FxCompile Include="Line.fx">
       <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DisableOptimizations>
       <DisableOptimizations Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DisableOptimizations>

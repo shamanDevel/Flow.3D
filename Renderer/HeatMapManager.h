@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 #include <cuda_d3d11_interop.h>
 #include <D3D11.h>
+#include <D3DX11Effect/d3dx11effect.h>
 #include <AntTweakBar\AntTweakBar.h>
 
 #include "ProjectionParams.h"
@@ -19,6 +20,7 @@
 
 #include "HeatMap.h"
 #include "HeatMapParams.h"
+#include "HeatMapRaytracerEffect.h"
 
 class HeatMapManager
 {
@@ -37,7 +39,9 @@ public:
 
 	//Renders the heat map.
 	//It is assumed that the correct frame buffer is already set.
-	void Render(const ViewParams& viewParams, const StereoParams& stereoParam);
+	void Render(const ViewParams& viewParams, const StereoParams& stereoParam,
+		const D3D11_VIEWPORT& viewport, ID3D11Texture2D* depthTexture);
+	bool IsRenderingEnabled() { return m_params.m_enableRendering; }
 
 private:
 	void ClearChannels();
@@ -59,6 +63,9 @@ private:
 
 	// settings
 	HeatMapParams            m_params;
+
+	// raytracing shader
+	HeatMapRaytracerEffect*	 m_pShader;
 };
 
 #endif
