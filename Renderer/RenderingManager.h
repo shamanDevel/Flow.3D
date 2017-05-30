@@ -177,6 +177,7 @@ private:
 	ID3D11RenderTargetView*   m_pTransparentRTV;
 	ID3D11Texture2D*          m_pDepthTex;
 	ID3D11DepthStencilView*   m_pDepthDSV;
+	ID3D11ShaderResourceView* m_pDepthSRV;
 	ID3D11Texture2D*          m_pDepthTexCopy;
 	cudaGraphicsResource*     m_pDepthTexCopyCuda;
 	// if there is no D3D device:

@@ -40,11 +40,14 @@ public:
 	//Renders the heat map.
 	//It is assumed that the correct frame buffer is already set.
 	void Render(const ViewParams& viewParams, const StereoParams& stereoParam,
-		const D3D11_VIEWPORT& viewport, ID3D11Texture2D* depthTexture);
+		const D3D11_VIEWPORT& viewport, ID3D11ShaderResourceView* depthTexture);
 	bool IsRenderingEnabled() { return m_params.m_enableRendering; }
 
 private:
 	void ClearChannels();
+	void ReleaseRenderTextures();
+	void CreateRenderTextures(ID3D11Device* pDevice);
+	void CopyToRenderTexture(HeatMap::Channel_ptr channel, int slot);
 
 private:
 	bool m_isCreated;
@@ -60,6 +63,16 @@ private:
 	int3                     m_resolution;
 	float3                   m_worldToGrid;
 	float3                   m_worldOffset;
+
+	// for rendering
+	struct HeatMapTexture
+	{
+		cudaGraphicsResource* cudaResource;
+		ID3D11Texture3D* dxTexture;
+		ID3D11ShaderResourceView* dxSRV;
+	} m_textures[2];
+	bool                    m_hasData;
+	bool                    m_dataChanged;
 
 	// settings
 	HeatMapParams            m_params;

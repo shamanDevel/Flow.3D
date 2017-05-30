@@ -68,7 +68,7 @@ float4 psRaytrace(float4 pos : SV_Position, float2 texCoord : TEXCOORD) : SV_Tar
 {
 	float depth = g_depthTexture.Sample(SamplerLinear, texCoord);
 	
-	return float4(0, 0, 0, 0);
+	return float4(0, 0, 0, 0.2f);
 }
 
 

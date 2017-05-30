@@ -24,7 +24,7 @@ RenderingManager::RenderingManager()
 	, m_pRaycastTex(nullptr), m_pRaycastSRV(nullptr), m_pRaycastRTV(nullptr), m_pRaycastTexCuda(nullptr)
 	, m_pRaycastArray(nullptr)
 	, m_pTransparentTex(nullptr), m_pTransparentSRV(nullptr), m_pTransparentRTV(nullptr)
-	, m_pDepthTex(nullptr), m_pDepthDSV(nullptr)
+	, m_pDepthTex(nullptr), m_pDepthDSV(nullptr), m_pDepthSRV(nullptr)
 	, m_pDepthTexCopy(nullptr), m_pDepthTexCopyCuda(nullptr)
 	, m_brickSize(0), m_channelCount(0)
 	, m_bricksPerFrame(1)
@@ -443,12 +443,23 @@ HRESULT RenderingManager::CreateScreenDependentResources()
 		if (FAILED(hr)) return hr;
 
 		// create depth buffer
-		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-		desc.Format = DXGI_FORMAT_D32_FLOAT;
+		desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+		desc.Format = DXGI_FORMAT_R32_TYPELESS;
 		hr = m_pDevice->CreateTexture2D(&desc, nullptr, &m_pDepthTex);
 		if(FAILED(hr)) return hr;
-		hr = m_pDevice->CreateDepthStencilView(m_pDepthTex, nullptr, &m_pDepthDSV);
+		D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+		dsvDesc.Flags = 0;
+		dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+		dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		dsvDesc.Texture2D.MipSlice = 0;
+		hr = m_pDevice->CreateDepthStencilView(m_pDepthTex, &dsvDesc, &m_pDepthDSV);
 		if(FAILED(hr)) return hr;
+		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+		srvDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Texture2D.MipLevels = 1;
+		hr = m_pDevice->CreateShaderResourceView(m_pDepthTex, &srvDesc, &m_pDepthSRV);
+		if (FAILED(hr)) return hr;
 
 		// CUDA can't share depth or typeless resources, so we have to allocate another tex and copy into it...
 		desc.BindFlags = 0;
@@ -487,6 +498,12 @@ void RenderingManager::ReleaseScreenDependentResources()
 	{
 		m_pDepthDSV->Release();
 		m_pDepthDSV = nullptr;
+	}
+
+	if (m_pDepthSRV)
+	{
+		m_pDepthSRV->Release();
+		m_pDepthSRV = nullptr;
 	}
 
 	if(m_pDepthTex)
@@ -2139,12 +2156,9 @@ void RenderingManager::RenderHeatMap(HeatMapManager* pHeatMapManager)
 	pContext->ClearRenderTargetView(m_pTransparentRTV, clearColor);
 	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, NULL);
 
-	// get depth texture
-	ID3D11Texture2D* pDepthTex = m_pDepthTex;
-
 	// RENDER IT
 	pContext->RSSetViewports(1, &viewport);
-	pHeatMapManager->Render(m_viewParams, m_stereoParams, viewport, pDepthTex);
+	pHeatMapManager->Render(m_viewParams, m_stereoParams, viewport, m_pDepthSRV);
 
 	// set our final render target
 	pContext->OMSetRenderTargets(1, &m_pOpaqueRTV, m_pDepthDSV);
