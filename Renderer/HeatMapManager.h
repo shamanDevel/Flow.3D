@@ -43,8 +43,10 @@ public:
 		const Range1D& range, ID3D11ShaderResourceView* depthTexture);
 	bool IsRenderingEnabled() { return m_params.m_enableRendering; }
 
-private:
+	//Clears all channels
 	void ClearChannels();
+
+private:
 	void ReleaseRenderTextures();
 	void CreateRenderTextures(ID3D11Device* pDevice);
 	void CopyToRenderTexture(HeatMap::Channel_ptr channel, int slot);

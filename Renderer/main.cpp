@@ -1738,6 +1738,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		"label='Enable Rendering' group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_AutoReset", TW_TYPE_BOOLCPP, &g_heatMapParams.m_autoReset,
 		"label='Auto Reset' group='Heat Map'");
+	TwAddButton(g_pTwBarMain, "HeatMap_Reset", [](void* data) {
+			g_heatMapManager.ClearChannels();
+		}, 
+		NULL, "label='Reset' group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", TW_TYPE_BOOLCPP, &g_heatMapParams.m_normalize,
 		"label='Normalize' group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_StepSize", TW_TYPE_FLOAT, &g_heatMapParams.m_stepSize,

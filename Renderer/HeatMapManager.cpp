@@ -78,9 +78,12 @@ void HeatMapManager::SetParams(const HeatMapParams & params)
 
 void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
 {
+	if (m_pVolume == &volume) {
+		std::cout << "HeatMapManager::SetVolumeAndReset called with the same volume" << std::endl;
+		return;
+	}
 	delete m_pHeatMap;
 	m_pHeatMap = nullptr;
-
 	m_pVolume = &volume;
 	m_boxMin = -Vec4f(volume.GetVolumeHalfSizeWorld(), 1.0f);
 	m_boxMax = Vec4f(volume.GetVolumeHalfSizeWorld(), 1.0f);
@@ -123,7 +126,9 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 
 	//first test, fill channel '0'
 	HeatMap::Channel_ptr channel = m_pHeatMap->createChannel(0);
-	ClearChannels();
+	if (m_params.m_autoReset) {
+		ClearChannels();
+	}
 
 	//aquire buffers
 	cudaSafeCall(cudaGraphicsMapResources(1, &pLineBuffer->m_pIBCuda));
@@ -214,6 +219,7 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 void HeatMapManager::ClearChannels()
 {
 	m_pHeatMap->clearAllChannels();
+	m_hasData = false;
 }
 
 void HeatMapManager::ReleaseRenderTextures()
