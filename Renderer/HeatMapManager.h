@@ -39,8 +39,8 @@ public:
 
 	//Renders the heat map.
 	//It is assumed that the correct frame buffer is already set.
-	void Render(const ViewParams& viewParams, const StereoParams& stereoParam,
-		const D3D11_VIEWPORT& viewport, ID3D11ShaderResourceView* depthTexture);
+	void Render(tum3D::Mat4f viewProjMat, ProjectionParams projParams,
+		const Range1D& range, ID3D11ShaderResourceView* depthTexture);
 	bool IsRenderingEnabled() { return m_params.m_enableRendering; }
 
 private:
@@ -59,6 +59,8 @@ private:
 
 	// only valid while tracing
 	const TimeVolume*        m_pVolume;
+	tum3D::Vec4f             m_boxMin;
+	tum3D::Vec4f             m_boxMax;
 	HeatMap*                 m_pHeatMap;
 	int3                     m_resolution;
 	float3                   m_worldToGrid;

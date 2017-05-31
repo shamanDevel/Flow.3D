@@ -2157,8 +2157,11 @@ void RenderingManager::RenderHeatMap(HeatMapManager* pHeatMapManager)
 	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, NULL);
 
 	// RENDER IT
+	Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+	Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
 	pContext->RSSetViewports(1, &viewport);
-	pHeatMapManager->Render(m_viewParams, m_stereoParams, viewport, m_pDepthSRV);
+	//pHeatMapManager->Render(proj * view, m_projectionParams, viewport, m_pDepthSRV);
+	pHeatMapManager->Render(view, m_projectionParams, m_range, m_pDepthSRV);
 
 	// set our final render target
 	pContext->OMSetRenderTargets(1, &m_pOpaqueRTV, m_pDepthDSV);

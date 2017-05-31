@@ -75,6 +75,8 @@ void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
 	m_pHeatMap = nullptr;
 
 	m_pVolume = &volume;
+	m_boxMin = -Vec4f(volume.GetVolumeHalfSizeWorld(), 1.0f);
+	m_boxMax = Vec4f(volume.GetVolumeHalfSizeWorld(), 1.0f);
 
 	//compute heatmap size
 	Vec3i volumeResolution = volume.GetVolumeSize();
@@ -140,8 +142,8 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	m_hasData = true;
 }
 
-void HeatMapManager::Render(const ViewParams & viewParams, const StereoParams & stereoParam,
-	const D3D11_VIEWPORT& viewport, ID3D11ShaderResourceView* depthTextureSRV)
+void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams, 
+	const Range1D& range, ID3D11ShaderResourceView* depthTextureSRV)
 {
 	if (!m_params.m_enableRendering) return;
 	if (!m_hasData) return;
@@ -161,12 +163,46 @@ void HeatMapManager::Render(const ViewParams & viewParams, const StereoParams & 
 	m_pShader->m_pTransferFunction->SetResource(m_params.m_pTransferFunction);
 	m_pShader->m_pHeatMap->SetResource(m_textures[0].dxSRV);
 	m_pShader->m_pDepthTexture->SetResource(depthTextureSRV);
+
+	Mat4f invViewProjMat;
+	invert4x4(viewProjMat, invViewProjMat);
+	m_pShader->m_pmInvWorldViewProjVariable->SetMatrix(invViewProjMat);
+	m_pShader->m_pvDepthParams->SetFloatVector(Vec4f(
+		projParams.m_near, projParams.m_far, 
+		projParams.m_near * projParams.m_far, projParams.m_far - projParams.m_near));
+	m_pShader->m_pvScreenSize->SetIntVector(
+		Vec2i(projParams.m_imageWidth, projParams.m_imageHeight));
+	m_pShader->m_pvBoxMin->SetFloatVector(m_boxMin);
+	m_pShader->m_pvBoxMax->SetFloatVector(m_boxMax);
+	float frustum[6];
+	projParams.GetFrustumParams(frustum, EYE_CYCLOP, 0.0f, range);
+	float nearFrustum = frustum[4];
+	Vec4f viewport(
+		frustum[0] / nearFrustum, //left
+		frustum[1] / nearFrustum, //right
+		frustum[2] / nearFrustum, //bottom
+		frustum[3] / nearFrustum); //top
+	m_pShader->m_pvViewport->SetFloatVector(viewport);
 	m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
 
 	pContext->Draw(4, 0);
 
 	m_pShader->m_pDepthTexture->SetResource(nullptr); //clear depth buffer
 	m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
+
+
+	//debug
+	{
+		float x = 0;
+		float y = 0;
+		Vec3f rayPos = Vec3f(
+			invViewProjMat.get(3, 0), //last row
+			invViewProjMat.get(3, 1),
+			invViewProjMat.get(3, 2));
+		Vec3f rayDir = normalize(Vec3f(invViewProjMat * Vec4f(x, y, -1.0f, 0.0f)));
+		std::cout << "ray pos: " << rayPos << ", ray dir: " << rayDir << std::endl;
+	}
+
 
 	SAFE_RELEASE(pContext);
 }

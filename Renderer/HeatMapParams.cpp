@@ -3,8 +3,8 @@
 
 
 HeatMapParams::HeatMapParams()
-	: m_enableRecording(false)
-	, m_enableRendering(false)
+	: m_enableRecording(true)
+	, m_enableRendering(true)
 	, m_autoReset(false)
 	, m_densityScale(1)
 	, m_tfAlphaScale(1)

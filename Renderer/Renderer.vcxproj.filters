@@ -160,9 +160,11 @@
     <ClCompile Include="HeatMapManager.cpp">
       <Filter>HeatMap</Filter>
     </ClCompile>
-    <ClCompile Include="HeatMapParams.cpp" />
     <ClCompile Include="HeatMapRaytracerEffect.cpp">
       <Filter>Shaders</Filter>
+    </ClCompile>
+    <ClCompile Include="HeatMapParams.cpp">
+      <Filter>Params</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -496,9 +498,11 @@
     <ClInclude Include="HeatMapKernel.h">
       <Filter>HeatMap</Filter>
     </ClInclude>
-    <ClInclude Include="HeatMapParams.h" />
     <ClInclude Include="HeatMapRaytracerEffect.h">
       <Filter>Shaders</Filter>
+    </ClInclude>
+    <ClInclude Include="HeatMapParams.h">
+      <Filter>Params</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
