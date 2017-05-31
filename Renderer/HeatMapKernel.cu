@@ -38,3 +38,19 @@ std::pair<uint, uint> heatmapKernelFindMinMax(uint * channel, int3 size)
 
 	return std::pair<uint, uint>(minValue, maxValue);
 }
+
+__global__ void heatmapCopyChannelKernel(uint* channel, float* texture, int count)
+{
+	uint index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index > count) return;
+	texture[index] = (float)channel[index];
+}
+
+void heatmapKernelCopyChannel(uint * channel, float * texture, int3 size)
+{
+	int count = size.x * size.y * size.z;
+	uint blockSize = 128;
+	uint blockCount = (count + blockSize - 1) / blockSize;
+	heatmapCopyChannelKernel <<<blockCount, blockSize >>> (
+		channel, texture, count);
+}

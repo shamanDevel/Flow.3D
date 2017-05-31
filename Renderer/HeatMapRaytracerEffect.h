@@ -14,7 +14,8 @@ public:
 
 	// *** Variables ***
 
-	ID3DX11EffectMatrixVariable*			m_pmInvWorldViewProjVariable;
+	ID3DX11EffectMatrixVariable*			m_pmWorldView;
+	ID3DX11EffectMatrixVariable*			m_pmInvWorldView;
 	ID3DX11EffectVectorVariable*			m_pvViewport;
 	ID3DX11EffectVectorVariable*			m_pvScreenSize;
 	ID3DX11EffectVectorVariable*			m_pvDepthParams;
@@ -22,6 +23,7 @@ public:
 	ID3DX11EffectVectorVariable*			m_pvBoxMax;
 	ID3DX11EffectScalarVariable*			m_pfStepSizeWorld;
 	ID3DX11EffectScalarVariable*			m_pfDensityScale;
+	ID3DX11EffectScalarVariable*			m_pfAlphaScale;
 	ID3DX11EffectShaderResourceVariable*	m_pHeatMap;
 	ID3DX11EffectShaderResourceVariable*	m_pTransferFunction;
 	ID3DX11EffectShaderResourceVariable*	m_pDepthTexture;

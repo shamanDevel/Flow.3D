@@ -24,6 +24,7 @@ HeatMapManager::HeatMapManager()
 	, m_pShader(NULL)
 	, m_dataChanged(true)
 	, m_hasData(false)
+	, m_cudaCopyBuffer(NULL)
 {
 	m_textures[0] = {};
 	m_textures[1] = {};
@@ -47,6 +48,9 @@ bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResour
 	m_pShader->Create(pDevice);
 
 	m_isCreated = true;
+
+	std::cout << "HeatMapManager created" << std::endl;
+
 	return true;
 }
 
@@ -62,11 +66,14 @@ void HeatMapManager::Release()
 	}
 
 	ReleaseRenderTextures();
+
+	std::cout << "HeatMapMaanger released" << std::endl;
 }
 
 void HeatMapManager::SetParams(const HeatMapParams & params)
 {
 	m_params = params;
+	//std::cout << "enable rendering: " << m_params.m_enableRendering << std::endl;
 }
 
 void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
@@ -134,8 +141,9 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffer->m_pVBCuda));
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffer->m_pIBCuda));
 
-	//test
+	//get min and max value
 	std::pair<uint, uint> minMaxValue = heatmapKernelFindMinMax(channel->getCudaBuffer(), m_resolution);
+	m_maxData = minMaxValue.second;
 	std::cout << "Done, min value: " << minMaxValue.first << ", max value: " << minMaxValue.second << std::endl;
 
 	m_dataChanged = true;
@@ -158,15 +166,19 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 	}
 
 	//perform the raytracing
+
+	//textures, volume data
 	pContext->IASetInputLayout(NULL);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	m_pShader->m_pTransferFunction->SetResource(m_params.m_pTransferFunction);
 	m_pShader->m_pHeatMap->SetResource(m_textures[0].dxSRV);
 	m_pShader->m_pDepthTexture->SetResource(depthTextureSRV);
 
+	//projection settings
 	Mat4f invViewProjMat;
 	invert4x4(viewProjMat, invViewProjMat);
-	m_pShader->m_pmInvWorldViewProjVariable->SetMatrix(invViewProjMat);
+	m_pShader->m_pmWorldView->SetMatrix(viewProjMat);
+	m_pShader->m_pmInvWorldView->SetMatrix(invViewProjMat);
 	m_pShader->m_pvDepthParams->SetFloatVector(Vec4f(
 		projParams.m_near, projParams.m_far, 
 		projParams.m_near * projParams.m_far, projParams.m_far - projParams.m_near));
@@ -185,24 +197,16 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 	m_pShader->m_pvViewport->SetFloatVector(viewport);
 	m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
 
+	//tracing settings
+	m_pShader->m_pfStepSizeWorld->SetFloat(m_params.m_stepSize);
+	m_pShader->m_pfDensityScale->SetFloat(m_params.m_densityScale
+		* (m_params.m_normalize ? 1.0/m_maxData : 0));
+	m_pShader->m_pfAlphaScale->SetFloat(m_params.m_tfAlphaScale);
+
 	pContext->Draw(4, 0);
 
 	m_pShader->m_pDepthTexture->SetResource(nullptr); //clear depth buffer
 	m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
-
-
-	//debug
-	{
-		float x = 0;
-		float y = 0;
-		Vec3f rayPos = Vec3f(
-			invViewProjMat.get(3, 0), //last row
-			invViewProjMat.get(3, 1),
-			invViewProjMat.get(3, 2));
-		Vec3f rayDir = normalize(Vec3f(invViewProjMat * Vec4f(x, y, -1.0f, 0.0f)));
-		std::cout << "ray pos: " << rayPos << ", ray dir: " << rayDir << std::endl;
-	}
-
 
 	SAFE_RELEASE(pContext);
 }
@@ -220,11 +224,19 @@ void HeatMapManager::ReleaseRenderTextures()
 		SAFE_RELEASE(m_textures[i].dxSRV);
 		SAFE_RELEASE(m_textures[i].dxTexture);
 	}
+
+	if (m_cudaCopyBuffer != nullptr) {
+		cudaFree(m_cudaCopyBuffer);
+		m_cudaCopyBuffer = nullptr;
+	}
 }
 
 void HeatMapManager::CreateRenderTextures(ID3D11Device* pDevice)
 {
 	ReleaseRenderTextures();
+
+	cudaSafeCall(cudaMalloc(&m_cudaCopyBuffer, sizeof(float) 
+		* m_resolution.x * m_resolution.y * m_resolution.z));
 
 	D3D11_TEXTURE3D_DESC desc;
 	ZeroMemory(&desc, sizeof(D3D11_TEXTURE3D_DESC));
@@ -232,7 +244,7 @@ void HeatMapManager::CreateRenderTextures(ID3D11Device* pDevice)
 	desc.Height = m_resolution.y;
 	desc.Depth = m_resolution.z;
 	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_R32_UINT;
+	desc.Format = DXGI_FORMAT_R32_FLOAT;
 	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
@@ -258,9 +270,10 @@ void HeatMapManager::CopyToRenderTexture(HeatMap::Channel_ptr channel, int slot)
 	cudaArray *cuArray;
 	cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&cuArray, m_textures[slot].cudaResource, 0, 0));
 
+	heatmapKernelCopyChannel(channel->getCudaBuffer(), m_cudaCopyBuffer, m_resolution);
 	struct cudaMemcpy3DParms memcpyParams = { 0 };
 	memcpyParams.dstArray = cuArray;
-	memcpyParams.srcPtr.ptr = channel->getCudaBuffer();
+	memcpyParams.srcPtr.ptr = m_cudaCopyBuffer;
 	memcpyParams.srcPtr.pitch = m_resolution.x * sizeof(int);
 	memcpyParams.srcPtr.xsize = m_resolution.x;
 	memcpyParams.srcPtr.ysize = m_resolution.y;

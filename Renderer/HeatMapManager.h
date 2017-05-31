@@ -52,6 +52,9 @@ private:
 private:
 	bool m_isCreated;
 
+	// settings
+	HeatMapParams            m_params;
+
 	// valid between create/release
 	GPUResources*            m_pCompressShared;
 	CompressVolumeResources* m_pCompressVolume;
@@ -73,11 +76,10 @@ private:
 		ID3D11Texture3D* dxTexture;
 		ID3D11ShaderResourceView* dxSRV;
 	} m_textures[2];
+	float*                  m_cudaCopyBuffer;
 	bool                    m_hasData;
 	bool                    m_dataChanged;
-
-	// settings
-	HeatMapParams            m_params;
+	int                     m_maxData;
 
 	// raytracing shader
 	HeatMapRaytracerEffect*	 m_pShader;

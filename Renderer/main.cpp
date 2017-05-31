@@ -1738,6 +1738,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		"label='Enable Rendering' group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_AutoReset", TW_TYPE_BOOLCPP, &g_heatMapParams.m_autoReset,
 		"label='Auto Reset' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", TW_TYPE_BOOLCPP, &g_heatMapParams.m_normalize,
+		"label='Normalize' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_StepSize", TW_TYPE_FLOAT, &g_heatMapParams.m_stepSize,
+		"label='Step Size' min=0.001 step=0.001 group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_DensityScale", TW_TYPE_FLOAT, &g_heatMapParams.m_densityScale,
 		"label='Density Scale' min=0 step=0.01 group='Heat Map'");
 
@@ -1939,6 +1943,7 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 		return hr;
 	}
 	g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV();
+	g_heatMapParams.m_pTransferFunction = g_tfEdt.getSRV();
 	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(), cudaGraphicsRegisterFlagsNone));
 
 	//TracingBenchmark bench;

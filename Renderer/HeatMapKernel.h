@@ -11,4 +11,6 @@ void heatmapKernelFillChannel(uint* channel,
 
 std::pair<uint, uint> heatmapKernelFindMinMax(uint* channel, int3 size);
 
+void heatmapKernelCopyChannel(uint* channel, float* texture, int3 size);
+
 #endif

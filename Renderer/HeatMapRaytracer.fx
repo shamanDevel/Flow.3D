@@ -1,7 +1,8 @@
 cbuffer PerFrame
 {
-	//inverse world-view-projection matrix
-	float4x4 g_mInvWorldViewProj;
+	float4x4 g_mWorldView;
+	//inverse world-view matrix
+	float4x4 g_mInvWorldView;
 	//viewport: left, right, bottom, top
 	float4 g_vViewport;
 	//screen width, height
@@ -14,6 +15,7 @@ cbuffer PerFrame
 
 	float g_fStepSizeWorld;
 	float g_fDensityScale;
+	float g_fAlphaScale;
 }
 
 texture3D<float> g_heatMap;
@@ -81,6 +83,15 @@ float3 transformDir(float4x4 M, float3 v)
 	return r;
 }
 
+float3 transformPos(float4x4 M, float3 v)
+{
+	float3 r;
+	r.x = dot(float4(v, 1.0f), M[0]);
+	r.y = dot(float4(v, 1.0f), M[1]);
+	r.z = dot(float4(v, 1.0f), M[2]);
+	return r;
+}
+
 bool intersectBox(float3 rayPos, float3 rayDir, float3 boxMin, float3 boxMax, out float tnear, out float tfar)
 {
 	float3 rayDirInv = float3(1.0f, 1.0f, 1.0f) / rayDir;
@@ -126,29 +137,61 @@ bool intersectBox(float3 rayPos, float3 rayDir, float3 boxMin, float3 boxMax, ou
 	//return *tnear < *tfar;
 }
 
-float4 psRaytrace(float4 pos : SV_Position, float2 texCoord : TEXCOORD) : SV_Target
+float4 psRaytrace(float4 screenPos : SV_Position, float2 texCoord : TEXCOORD) : SV_Target
 {
 	float x = g_vViewport.x + (g_vViewport.y - g_vViewport.x) * texCoord.x;
 	float y = g_vViewport.w - (g_vViewport.w - g_vViewport.z) * texCoord.y;
 	
 	// calculate eye ray in world space
 	float3 rayPos = float3(
-		g_mInvWorldViewProj[0].w,
-		g_mInvWorldViewProj[1].w,
-		g_mInvWorldViewProj[2].w);
-	float3 rayDir = normalize(transformDir(g_mInvWorldViewProj, float3(x, y, -1.0f)));
+		g_mInvWorldView[0].w,
+		g_mInvWorldView[1].w,
+		g_mInvWorldView[2].w);
+	float3 rayDir = normalize(transformDir(g_mInvWorldView, float3(x, y, -1.0f)));
 
 	float tnear, tfar;
+	float3 boxSize = g_vBoxMax.xyz - g_vBoxMin.xyz;
 	if (!intersectBox(rayPos, rayDir, g_vBoxMin.xyz, g_vBoxMax.xyz, tnear, tfar)) {
 		return float4(0, 0, 0, 0);
 	}
 	tnear = max(tnear, 0.0f);
 
-	// read depth buffer
-	float depth = g_depthTexture.Sample(SamplerLinear, texCoord);
-	float depthLinear = depthToLinear(depth);
+	// current position and step increment in world space
+	float3 pos = rayPos + rayDir * tnear;
+	float3 step = rayDir * g_fStepSizeWorld;
+	float depthLinear = 0;//-transformPos(g_mWorldView, pos).z;
+	float depthStepLinear = g_fStepSizeWorld;//-transformDir(g_mWorldView, step).z;
 
-	return float4(1,0,0,0.2f);
+	// read depth buffer
+	float depthMax = g_depthTexture.Sample(SamplerLinear, texCoord);
+	float depthMaxLinear = depthToLinear(depthMax);
+	// restrict depthMaxLinear to exit point depth, so we can use it as stop criterion
+	//depthMaxLinear = min(depthMaxLinear, -transformPos(g_mWorldView, rayPos + rayDir * tfar).z);
+	depthMaxLinear = tfar - tnear;
+
+	if (depthLinear >= depthMaxLinear) return float4(0,0,0,0);
+
+	// march along ray from front to back, accumulating color
+	float4 sum = float4(0, 0, 0, 0);
+	int numSteps = 0;
+	while (depthLinear < depthMaxLinear && sum.w < 0.99)
+	{
+		float3 posTex = (pos - g_vBoxMin.xyz) / (boxSize);
+		float density = g_heatMap.SampleLevel(SamplerLinear, posTex, 0) * g_fDensityScale;
+		float4 color = g_transferFunction.SampleLevel(SamplerLinear, density, 0);
+		//float4 color = float4(density, density, density, 1);
+		color.a *= g_fStepSizeWorld * g_fAlphaScale;
+		sum.rgb += (1 - sum.a) * color.a * color.rgb;
+		sum.a += (1 - sum.a) * color.a;
+
+		pos += step;
+		depthLinear += depthStepLinear;
+
+		numSteps++;
+		if (numSteps > 1000) break;
+	}
+
+	return saturate(sum);
 }
 
 

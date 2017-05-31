@@ -19,6 +19,8 @@ public:
 	bool m_enableRendering;
 	bool m_autoReset;
 
+	bool  m_normalize;
+	float m_stepSize;
 	float m_densityScale;
 	float m_tfAlphaScale;
 	float m_tfRangeMin;
