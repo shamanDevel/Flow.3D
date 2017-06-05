@@ -33,6 +33,7 @@ public:
 	bool IsCreated() const { return m_isCreated; }
 
 	void SetParams(const HeatMapParams& params);
+	void DebugPrintParams();
 
 	void SetVolumeAndReset(const TimeVolume& volume);
 	void ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer);

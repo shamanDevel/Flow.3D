@@ -76,6 +76,21 @@ void HeatMapManager::SetParams(const HeatMapParams & params)
 	//std::cout << "enable rendering: " << m_params.m_enableRendering << std::endl;
 }
 
+void HeatMapManager::DebugPrintParams()
+{
+	std::cout << "HeatMapParams {" << std::endl;
+	std::cout << "  enable recording: " << m_params.m_enableRecording << std::endl;
+	std::cout << "  enable rendering: " << m_params.m_enableRendering << std::endl;
+	std::cout << "  auto reset: " << m_params.m_autoReset << std::endl;
+	std::cout << "  normalize: " << m_params.m_normalize << std::endl;
+	std::cout << "  step size: " << m_params.m_stepSize << std::endl;
+	std::cout << "  density scale: " << m_params.m_densityScale << std::endl;
+	std::cout << "  tf alpha scale: " << m_params.m_tfAlphaScale << std::endl;
+	std::cout << "  tf range min: " << m_params.m_tfRangeMin << std::endl;
+	std::cout << "  tf range max: " << m_params.m_tfRangeMax << std::endl;
+	std::cout << "}" << std::endl;
+}
+
 void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
 {
 	if (m_pVolume == &volume) {
@@ -205,7 +220,7 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 	//tracing settings
 	m_pShader->m_pfStepSizeWorld->SetFloat(m_params.m_stepSize);
 	m_pShader->m_pfDensityScale->SetFloat(m_params.m_densityScale
-		* (m_params.m_normalize ? 1.0/m_maxData : 0));
+		* (m_params.m_normalize ? 1.0/m_maxData : 1));
 	m_pShader->m_pfAlphaScale->SetFloat(m_params.m_tfAlphaScale);
 
 	pContext->Draw(4, 0);

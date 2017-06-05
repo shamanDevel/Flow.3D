@@ -2252,10 +2252,33 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 
 	// heat map parameters
 	static HeatMapParams heatMapParamsPrev;
-	g_retrace = g_retrace || g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams);
-	g_redraw = g_redraw || g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev);
+	static bool heatMapDoubleRedraw = false;
+	bool debugHeatMapPrint = false;
+	//g_retrace = g_retrace || g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams);
+	//g_redraw = g_redraw || g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev);
+	if (g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams)) {
+		g_retrace = true;
+		std::cout << "heat map has changes for retracing" << std::endl;
+		debugHeatMapPrint = true;
+		heatMapDoubleRedraw = true;
+	}
+	if (g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev)) {
+		g_redraw = true;
+		std::cout << "heat map has changes for redrawing" << std::endl;
+		debugHeatMapPrint = true;
+		heatMapDoubleRedraw = true;
+	}
 	heatMapParamsPrev = g_heatMapParams;
 	g_heatMapManager.SetParams(g_heatMapParams);
+	if (debugHeatMapPrint) {
+		g_heatMapManager.DebugPrintParams();
+	}
+	if (heatMapDoubleRedraw && !g_redraw) {
+		//Hack: For some reasons, the heat map manager only applies changes after the second rendering
+		//Or does the RenderManager not update the render targets?
+		g_redraw = true;
+		heatMapDoubleRedraw = false;
+	}
 
 	if(particleTraceParamsChanged)
 	{
