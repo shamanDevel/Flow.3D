@@ -1359,6 +1359,8 @@ void DebugRenderLines(ID3D11Device* device, ID3D11DeviceContext* context, const 
 
 void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, bool blendBehind)
 {
+	if (pLineBuffers->m_indexCountTotal == 0) return;
+
 	ID3D11DeviceContext* pContext = nullptr;
 	m_pDevice->GetImmediateContext(&pContext);
 
