@@ -11,7 +11,7 @@ HeatMap::~HeatMap()
 {
 }
 
-HeatMap::Channel_ptr HeatMap::createChannel(int id)
+HeatMap::Channel_ptr HeatMap::createChannel(unsigned int id)
 {
 	auto it = m_channels.find(id);
 	if (it == m_channels.end()) {
@@ -24,7 +24,7 @@ HeatMap::Channel_ptr HeatMap::createChannel(int id)
 	}
 }
 
-HeatMap::Channel_ptr HeatMap::getChannel(int id)
+HeatMap::Channel_ptr HeatMap::getChannel(unsigned int id)
 {
 	auto it = m_channels.find(id);
 	if (it == m_channels.end())
@@ -33,7 +33,7 @@ HeatMap::Channel_ptr HeatMap::getChannel(int id)
 		return it->second;
 }
 
-bool HeatMap::deleteChannel(int id)
+bool HeatMap::deleteChannel(unsigned int id)
 {
 	return m_channels.erase(id)==1;
 }
@@ -54,6 +54,15 @@ void HeatMap::clearAllChannels()
 size_t HeatMap::getChannelCount()
 {
 	return m_channels.size();
+}
+
+std::vector<unsigned int> HeatMap::getAllChannelIDs() const
+{
+	std::vector<unsigned int> v;
+	for (const auto& e : m_channels) {
+		v.push_back(e.first);
+	}
+	return v;
 }
 
 HeatMap::Channel::Channel(size_t width, size_t height, size_t depth)

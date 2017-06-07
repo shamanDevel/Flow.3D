@@ -86,6 +86,7 @@ private:
 	bool                    m_hasData;
 	bool                    m_dataChanged;
 	int                     m_maxData;
+	unsigned int            m_oldPickedChannels[2];
 
 	// raytracing shader
 	HeatMapRaytracerEffect*	 m_pShader;

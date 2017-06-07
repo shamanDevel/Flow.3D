@@ -172,39 +172,26 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	m_seedTexChanged = false;
 
 	//allocate new or delete old channels
-	size_t expectedChannelCount = std::max((size_t) 1, m_params.m_recordTexture.m_picked.size());
-	if (m_params.m_recordTexture.m_colors == nullptr) expectedChannelCount = 1;
-	if (m_params.m_autoReset) { //clear existing channels
-		for (size_t i = 0; i < std::min(expectedChannelCount, m_pHeatMap->getChannelCount()); ++i) {
-			m_pHeatMap->getChannel(i)->clear();
+	std::set<unsigned int> picked = m_params.m_recordTexture.m_picked;
+	if (picked.empty()) {
+		picked.insert(0); //nothing selected -> use everything
+	}
+	for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
+		if (picked.count(id) == 0) m_pHeatMap->deleteChannel(id); //delete old channels
+	}
+	for (unsigned int id : picked) {
+		HeatMap::Channel_ptr c = m_pHeatMap->getChannel(id);
+		if (c == nullptr) {
+			c = m_pHeatMap->createChannel(id); //create new channel
+			c->clear();
 		}
-	}
-	if (expectedChannelCount > m_pHeatMap->getChannelCount()) { //create new channels
-		for (size_t i = m_pHeatMap->getChannelCount(); i < expectedChannelCount; ++i) {
-			HeatMap::Channel_ptr channel = m_pHeatMap->createChannel(i);
-			channel->clear();
+		else if (m_params.m_autoReset) {
+			c->clear(); //clear existing channel
 		}
-	}
-	if (expectedChannelCount < m_pHeatMap->getChannelCount()) { //delete unused channels
-		while (m_pHeatMap->getChannelCount() > expectedChannelCount) {
-			m_pHeatMap->deleteChannel(m_pHeatMap->getChannelCount() - 1);
-		}
-	}
-
-	//get channel key colors
-	std::vector<unsigned int> keyColors;
-	if (m_params.m_recordTexture.m_colors == nullptr
-		|| m_params.m_recordTexture.m_picked.empty()) {
-		keyColors.push_back(0);
-	}
-	else {
-		keyColors.insert(keyColors.end(), m_params.m_recordTexture.m_picked.begin(), m_params.m_recordTexture.m_picked.end());
-		std::sort(keyColors.begin(), keyColors.end());
 	}
 	std::cout << "key colors:";
-	for (unsigned int k : keyColors) std::cout << " " << k;
+	for (unsigned int k : picked) std::cout << " " << k;
 	std::cout << std::endl;
-	assert(keyColors.size() == m_pHeatMap->getChannelCount());
 
 	//aquire buffers
 	cudaSafeCall(cudaGraphicsMapResources(1, &pLineBuffer->m_pIBCuda));
@@ -215,11 +202,11 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, pLineBuffer->m_pVBCuda));
 
 	//fill channels
-	for (size_t i = 0; i < keyColors.size(); ++i) {
-		HeatMap::Channel_ptr channel = m_pHeatMap->getChannel(i);
+	for (unsigned int id : picked) {
+		HeatMap::Channel_ptr channel = m_pHeatMap->getChannel(id);
 		heatmapKernelFillChannel(channel->getCudaBuffer(), dpVB, dpIB, pLineBuffer->m_indexCountTotal,
 			m_resolution, m_worldOffset, m_worldToGrid,
-			m_seedTexCuda, make_int2(m_params.m_recordTexture.m_width, m_params.m_recordTexture.m_height), keyColors[i]);
+			m_seedTexCuda, make_int2(m_params.m_recordTexture.m_width, m_params.m_recordTexture.m_height), id);
 	}
 
 	//release resources
@@ -228,9 +215,9 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 
 	//get min and max value
 	std::pair<uint, uint> minMaxValue (std::numeric_limits<uint>::max(), std::numeric_limits<uint>::min());
-	for (size_t i = 0; i < m_pHeatMap->getChannelCount(); ++i) {
+	for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
 		std::pair<uint, uint> temp = heatmapKernelFindMinMax(
-			m_pHeatMap->getChannel(i)->getCudaBuffer(), m_resolution);
+			m_pHeatMap->getChannel(id)->getCudaBuffer(), m_resolution);
 		minMaxValue.first = std::min(minMaxValue.first, temp.first);
 		minMaxValue.second = std::max(minMaxValue.second, temp.second);
 	}
@@ -246,14 +233,37 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 {
 	if (!m_params.m_enableRendering) return;
 	if (!m_hasData) return;
-	std::cout << "HeatMapManager: render" << std::endl;
+	//std::cout << "HeatMapManager: render " 
+	//	<< m_params.m_renderedChannels[0] << " and "
+	//	<< m_params.m_renderedChannels[1] << std::endl;
+
+	//retrieve channels
+	HeatMap::Channel_ptr channels[2];
+	int validChannelCount = 0;
+	for (int i = 0; i < 2; ++i) {
+		channels[validChannelCount] = m_pHeatMap->getChannel(m_params.m_renderedChannels[i]);
+		if (channels[validChannelCount] != nullptr)
+			validChannelCount++;
+	}
+	//std::cout << "number of valid channels for rendering: " << validChannelCount << std::endl;
+	if (validChannelCount == 0) return;
 
 	ID3D11DeviceContext* pContext = nullptr;
 	m_pDevice->GetImmediateContext(&pContext);
 
+	//test if the selected channels have changed, if yes, copy them to the gpu
+	for (int i = 0; i < 2; ++i) {
+		if (m_oldPickedChannels[i] != m_params.m_renderedChannels[i]) {
+			m_dataChanged = true;
+			m_oldPickedChannels[i] = m_params.m_renderedChannels[i];
+		}
+	}
+
 	if (m_dataChanged) {
 		m_dataChanged = false;
-		CopyToRenderTexture(m_pHeatMap->getChannel(0), 0);
+		CopyToRenderTexture(channels[0], 0);
+		if (validChannelCount>1)
+			CopyToRenderTexture(channels[1], 1);
 	}
 
 	//perform the raytracing
@@ -262,7 +272,9 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 	pContext->IASetInputLayout(NULL);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	m_pShader->m_pTransferFunction->SetResource(m_params.m_pTransferFunction);
-	m_pShader->m_pHeatMap->SetResource(m_textures[0].dxSRV);
+	m_pShader->m_pHeatMap1->SetResource(m_textures[0].dxSRV);
+	if (validChannelCount>1)
+		m_pShader->m_pHeatMap2->SetResource(m_textures[1].dxSRV);
 	m_pShader->m_pDepthTexture->SetResource(depthTextureSRV);
 
 	//projection settings
@@ -286,7 +298,10 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 		frustum[2] / nearFrustum, //bottom
 		frustum[3] / nearFrustum); //top
 	m_pShader->m_pvViewport->SetFloatVector(viewport);
-	m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
+	if (validChannelCount>1)
+		m_pShader->m_pTechnique->GetPassByIndex(1)->Apply(0, pContext);
+	else
+		m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
 
 	//tracing settings
 	m_pShader->m_pfStepSizeWorld->SetFloat(m_params.m_stepSize);

@@ -18,7 +18,8 @@ cbuffer PerFrame
 	float g_fAlphaScale;
 }
 
-texture3D<float> g_heatMap;
+texture3D<float> g_heatMap1;
+texture3D<float> g_heatMap2;
 texture1D<float4> g_transferFunction;
 texture2D<float> g_depthTexture;
 
@@ -137,7 +138,7 @@ bool intersectBox(float3 rayPos, float3 rayDir, float3 boxMin, float3 boxMax, ou
 	//return *tnear < *tfar;
 }
 
-float4 psRaytrace(float4 screenPos : SV_Position, float2 texCoord : TEXCOORD) : SV_Target
+float4 psRaytrace(float4 screenPos : SV_Position, float2 texCoord : TEXCOORD, uniform bool twoChannels) : SV_Target
 {
 	float x = g_vViewport.x + (g_vViewport.y - g_vViewport.x) * texCoord.x;
 	float y = g_vViewport.w - (g_vViewport.w - g_vViewport.z) * texCoord.y;
@@ -177,8 +178,24 @@ float4 psRaytrace(float4 screenPos : SV_Position, float2 texCoord : TEXCOORD) : 
 	while (depthLinear < depthMaxLinear && sum.w < 0.99)
 	{
 		float3 posTex = (pos - g_vBoxMin.xyz) / (boxSize);
-		float density = g_heatMap.SampleLevel(SamplerLinear, posTex, 0) * g_fDensityScale;
-		float4 color = g_transferFunction.SampleLevel(SamplerLinear, density, 0);
+		float density = 0;
+		float alpha = 1;
+		float4 color;
+		if (twoChannels) {
+			float density1 = g_heatMap1.SampleLevel(SamplerLinear, posTex, 0);
+			float density2 = g_heatMap2.SampleLevel(SamplerLinear, posTex, 0);
+			alpha = (density1 + density2);
+			density1 /= alpha;
+			density2 /= alpha;
+			alpha *= g_fDensityScale;
+			density = (density1 + 1 - density2) / 2;
+			color = g_transferFunction.SampleLevel(SamplerLinear, density, 0);
+			color.a = alpha; //force alpha,
+		}
+		else {
+			density = g_heatMap1.SampleLevel(SamplerLinear, posTex, 0) * g_fDensityScale;
+			color = g_transferFunction.SampleLevel(SamplerLinear, density, 0);
+		}
 		//float4 color = float4(density, density, density, 1);
 		color.a *= g_fStepSizeWorld * g_fAlphaScale;
 		sum.rgb += (1 - sum.a) * color.a * color.rgb;
@@ -197,11 +214,21 @@ float4 psRaytrace(float4 screenPos : SV_Position, float2 texCoord : TEXCOORD) : 
 
 technique11 tRaytrace
 {
-	pass P0_Blit
+	pass P0_OneChannel
 	{
 		SetVertexShader(CompileShader(vs_5_0, vsScreen()));
 		SetGeometryShader(NULL);
-		SetPixelShader(CompileShader(ps_5_0, psRaytrace()));
+		SetPixelShader(CompileShader(ps_5_0, psRaytrace(false)));
+		SetRasterizerState(CullNone);
+		SetDepthStencilState(DepthDisable, 0);
+		SetBlendState(BlendDisable, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);
+	}
+
+	pass P1_TwoChannel
+	{
+		SetVertexShader(CompileShader(vs_5_0, vsScreen()));
+		SetGeometryShader(NULL);
+		SetPixelShader(CompileShader(ps_5_0, psRaytrace(true)));
 		SetRasterizerState(CullNone);
 		SetDepthStencilState(DepthDisable, 0);
 		SetBlendState(BlendDisable, float4(0.0f, 0.0f, 0.0f, 0.0f), 0xFFFFFFFF);

@@ -1749,6 +1749,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		"label='Step Size' min=0.001 step=0.001 group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_DensityScale", TW_TYPE_FLOAT, &g_heatMapParams.m_densityScale,
 		"label='Density Scale' min=0 step=0.01 group='Heat Map'");
+	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel1", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[0],
+		"label='First displayed channel (1)' group='Heat Map'");
+	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel2", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[1],
+		"label='Second displayed channel (2)' group='Heat Map'");
 
 	// bounding boxes
 	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
@@ -3043,6 +3047,58 @@ bool CALLBACK OnDeviceRemoved( void* pUserContext )
 }
 
 
+// Picks the seed from the seed texture and places is into 'seed' if there is a intersection.
+// The function returns true iff there was an intersection
+// 'intersection' will contain the 3D-coordinate of intersection
+bool PickSeed(unsigned int* pSeed, Vec3f* pIntersection) {
+	std::cout << "Pick seed, mouse position = (" << g_mouseScreenPosition.x() << ", " << g_mouseScreenPosition.y() << ")" << std::endl;
+	//create ray through the mouse
+	Mat4f viewProjMat = g_projParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, g_cudaDevices[g_primaryCudaDeviceIndex].range)
+		* g_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+	Mat4f invViewProjMat;
+	tum3D::invert4x4(viewProjMat, invViewProjMat);
+	Vec4f start4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.01f, 1.0f);
+	Vec3f start = start4.xyz() / start4.w();
+	Vec4f end4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.99f, 1.0f);
+	Vec3f end = end4.xyz() / end4.w();
+	std::cout << "Ray, start=" << start << ", end=" << end << std::endl;
+	//cut ray with the xy-plane
+	Vec3f dir = end - start;
+	normalize(dir);
+	Vec3f n = Vec3f(0, 0, 1); //normal of the plane
+	float d = (-start).dot(n) / (dir.dot(n));
+	if (d < 0) return false; //we are behind the plane
+	Vec3f intersection = start + d * dir;
+	std::cout << "Intersection: " << intersection << std::endl;
+	if (pIntersection) *pIntersection = intersection;
+	//Test if seed texture is loaded
+	if (g_particleTraceParams.m_seedTexture.m_colors == NULL) {
+		//no texture
+		*pSeed = 0;
+		return true;
+	}
+	else {
+		//a seed texture was found
+		//check if intersection is in the volume
+		if (intersection > -g_volume.GetVolumeHalfSizeWorld()
+			&& intersection < g_volume.GetVolumeHalfSizeWorld()) {
+			//inside, convert to texture coordinates
+			Vec3f localIntersection = (intersection + g_volume.GetVolumeHalfSizeWorld()) / (2 * g_volume.GetVolumeHalfSizeWorld());
+			int texX = (int)(localIntersection.x() * g_particleTraceParams.m_seedTexture.m_width);
+			int texY = (int)(localIntersection.y() * g_particleTraceParams.m_seedTexture.m_height);
+			texY = g_particleTraceParams.m_seedTexture.m_height - texY - 1;
+			unsigned int color = g_particleTraceParams.m_seedTexture.m_colors[texX + texY * g_particleTraceParams.m_seedTexture.m_height];
+			printf("Pick color at position (%d, %d): 0x%08x\n", texX, texY, color);
+			*pSeed = color;
+			return true;
+		}
+		else {
+			std::cout << "Outside the bounds" << std::endl;
+			return false;
+		}
+	}
+}
+
 // NOTE: OnKeyboard and OnMouse are *not* registered as DXUT callbacks because this doesn't work well with AntTweakBar
 //--------------------------------------------------------------------------------------
 // Handle key presses
@@ -3080,54 +3136,58 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 			}
 			case 'P' : 
 			{
-				std::cout << "Pick seed, mouse position = (" << g_mouseScreenPosition.x() << ", " << g_mouseScreenPosition.y() << ")" << std::endl;
-				//create ray through the mouse
-				Mat4f viewProjMat = g_projParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, g_cudaDevices[g_primaryCudaDeviceIndex].range)
-					* g_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
-				Mat4f invViewProjMat;
-				tum3D::invert4x4(viewProjMat, invViewProjMat);
-				Vec4f start4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.01f, 1.0f);
-				Vec3f start = start4.xyz() / start4.w();
-				Vec4f end4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.99f, 1.0f);
-				Vec3f end = end4.xyz() / end4.w();
-				std::cout << "Ray, start=" << start << ", end=" << end << std::endl;
-				//cut ray with the xy-plane
-				Vec3f dir = end - start;
-				normalize(dir);
-				Vec3f n = Vec3f(0, 0, 1); //normal of the plane
-				float d = (-start).dot(n) / (dir.dot(n));
-				if (d < 0) break; //we are behind the plane
-				Vec3f intersection = start + d * dir;
-				std::cout << "Intersection: " << intersection << std::endl;
+				unsigned int color;
+				Vec3f pos;
+				bool ret = PickSeed(&color, &pos);
+
 				//Test if seed texture is loaded
 				if (g_particleTraceParams.m_seedTexture.m_colors == NULL) {
 					//no texture, just adjust seed box
-					g_particleTraceParams.m_seedBoxMin = intersection - Vec3f(0.05f);
+					g_particleTraceParams.m_seedBoxMin = pos - Vec3f(0.05f);
 					g_particleTraceParams.m_seedBoxSize = Vec3f(0.1f);
 				}
 				else {
 					//a seed texture was found
 					//check if intersection is in the volume
-					if (intersection > -g_volume.GetVolumeHalfSizeWorld()
-						&& intersection < g_volume.GetVolumeHalfSizeWorld()) {
-						//inside, convert to texture coordinates
-						Vec3f localIntersection = (intersection + g_volume.GetVolumeHalfSizeWorld()) / (2 * g_volume.GetVolumeHalfSizeWorld());
-						int texX = (int)(localIntersection.x() * g_particleTraceParams.m_seedTexture.m_width);
-						int texY = (int)(localIntersection.y() * g_particleTraceParams.m_seedTexture.m_height);
-						texY = g_particleTraceParams.m_seedTexture.m_height - texY - 1;
-						unsigned int color = g_particleTraceParams.m_seedTexture.m_colors[texX + texY * g_particleTraceParams.m_seedTexture.m_height];
-						printf("Pick color at position (%d, %d): 0x%08x\n", texX, texY, color);
+					if (ret) {
 						if (!g_keyboardShiftPressed) {
 							g_particleTraceParams.m_seedTexture.m_picked.clear();
 						}
 						g_particleTraceParams.m_seedTexture.m_picked.insert(color);
 					} else {
-						std::cout << "Outside the bounds" << std::endl;
 						if (!g_keyboardShiftPressed) {
 							g_particleTraceParams.m_seedTexture.m_picked.clear(); //disable seed from texture
 						}
 					}
+					//update heat map params
 					g_heatMapParams.m_recordTexture = g_particleTraceParams.m_seedTexture;
+					//check if the rendered channels are still alive
+					if (g_heatMapParams.m_recordTexture.m_picked.count(g_heatMapParams.m_renderedChannels[0]) == 0) {
+						if (g_heatMapParams.m_recordTexture.m_picked.empty()) {
+							g_heatMapParams.m_renderedChannels[0] = 0;
+						}
+						else {
+							g_heatMapParams.m_renderedChannels[0] = *g_heatMapParams.m_recordTexture.m_picked.begin();
+						}
+					}
+					if (g_heatMapParams.m_recordTexture.m_picked.count(g_heatMapParams.m_renderedChannels[1]) == 0) {
+						g_heatMapParams.m_renderedChannels[1] = 0;
+					}
+				}
+
+				break;
+			}
+			case '1':
+			case '2':
+			{
+				//Update rendered channel
+				int channel = nChar - '1';
+				
+				unsigned int color;
+				Vec3f pos;
+				bool ret = PickSeed(&color, &pos);
+				if (ret) {
+					g_heatMapParams.m_renderedChannels[channel] = color;
 				}
 
 				break;

@@ -24,7 +24,8 @@ public:
 	ID3DX11EffectScalarVariable*			m_pfStepSizeWorld;
 	ID3DX11EffectScalarVariable*			m_pfDensityScale;
 	ID3DX11EffectScalarVariable*			m_pfAlphaScale;
-	ID3DX11EffectShaderResourceVariable*	m_pHeatMap;
+	ID3DX11EffectShaderResourceVariable*	m_pHeatMap1;
+	ID3DX11EffectShaderResourceVariable*	m_pHeatMap2;
 	ID3DX11EffectShaderResourceVariable*	m_pTransferFunction;
 	ID3DX11EffectShaderResourceVariable*	m_pDepthTexture;
 

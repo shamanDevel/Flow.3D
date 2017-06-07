@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 class HeatMap
 {
@@ -33,24 +34,26 @@ private:
 	//the resolution
 	const size_t m_width, m_height, m_depth;
 	
-	std::unordered_map<int, Channel_ptr> m_channels;
+	std::unordered_map<unsigned int, Channel_ptr> m_channels;
 
 public:
 	HeatMap(size_t width, size_t height, size_t depth);
 	~HeatMap();
 
 	//Get or creates the channel with the specified id
-	Channel_ptr createChannel(int id);
+	Channel_ptr createChannel(unsigned int id);
 	//Get the channel with the specified id, or nullptr if it does not exist
-	Channel_ptr getChannel(int id);
+	Channel_ptr getChannel(unsigned int id);
 	//Deletes the channel with the specified id, returns true if a channel was found
-	bool deleteChannel(int id);
+	bool deleteChannel(unsigned int id);
 	//As the name suggests: deletes all channels
 	void deleteAllChannels();
 	//Sets the data of all channels to zero.
 	void clearAllChannels();
 	//returns the number of channels
 	size_t getChannelCount();
+	//Returns the ids of the channels in this heat map
+	std::vector<unsigned int> getAllChannelIDs() const;
 };
 
 #endif

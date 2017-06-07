@@ -20,6 +20,7 @@ public:
 	bool m_autoReset;
 
 	SeedTexture m_recordTexture;
+	int32 m_renderedChannels[2];
 
 	bool  m_normalize;
 	float m_stepSize;
