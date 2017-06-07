@@ -18,12 +18,14 @@ public:
 	private:
 		//The 3d buffer, written to with atomicAdd
 		uint* m_pCudaBuffer;
+		size_t m_count;
 
 	public:
 		Channel(size_t width, size_t height, size_t depth);
 		~Channel();
 
 		uint* getCudaBuffer() { return m_pCudaBuffer; }
+		void clear();
 	};
 	typedef std::shared_ptr<Channel> Channel_ptr;
 
@@ -47,6 +49,8 @@ public:
 	void deleteAllChannels();
 	//Sets the data of all channels to zero.
 	void clearAllChannels();
+	//returns the number of channels
+	size_t getChannelCount();
 };
 
 #endif

@@ -19,6 +19,8 @@ public:
 	bool m_enableRendering;
 	bool m_autoReset;
 
+	SeedTexture m_recordTexture;
+
 	bool  m_normalize;
 	float m_stepSize;
 	float m_densityScale;

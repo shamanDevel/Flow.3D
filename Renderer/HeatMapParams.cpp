@@ -5,7 +5,7 @@
 HeatMapParams::HeatMapParams()
 	: m_enableRecording(true)
 	, m_enableRendering(true)
-	, m_autoReset(false)
+	, m_autoReset(true)
 	, m_normalize(true)
 	, m_stepSize(0.01)
 	, m_densityScale(1)
@@ -29,6 +29,7 @@ bool HeatMapParams::HasChangesForRetracing(const HeatMapParams& other,
 		&& !LineModeIsIterative(traceParams.m_lineMode)) {
 		return true;
 	}
+	if (m_recordTexture != other.m_recordTexture) return true;
 
 	return false;
 }

@@ -1740,8 +1740,9 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		"label='Auto Reset' group='Heat Map'");
 	TwAddButton(g_pTwBarMain, "HeatMap_Reset", [](void* data) {
 			g_heatMapManager.ClearChannels();
+			g_redraw = true;
 		}, 
-		NULL, "label='Reset' group='Heat Map'");
+		NULL, "label='Reset (C)' group='Heat Map' key=c");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", TW_TYPE_BOOLCPP, &g_heatMapParams.m_normalize,
 		"label='Normalize' group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_StepSize", TW_TYPE_FLOAT, &g_heatMapParams.m_stepSize,
@@ -3126,6 +3127,7 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 							g_particleTraceParams.m_seedTexture.m_picked.clear(); //disable seed from texture
 						}
 					}
+					g_heatMapParams.m_recordTexture = g_particleTraceParams.m_seedTexture;
 				}
 
 				break;

@@ -45,17 +45,22 @@ void HeatMap::deleteAllChannels()
 
 void HeatMap::clearAllChannels()
 {
-	size_t count = sizeof(uint) * m_width * m_height * m_depth;
 	for (auto& e : m_channels) {
 		Channel_ptr c = e.second;
-		cudaMemset(c->getCudaBuffer(), 0, count);
+		c->clear();
 	}
+}
+
+size_t HeatMap::getChannelCount()
+{
+	return m_channels.size();
 }
 
 HeatMap::Channel::Channel(size_t width, size_t height, size_t depth)
 	: m_pCudaBuffer(nullptr)
 {
-	cudaSafeCall(cudaMalloc(&m_pCudaBuffer, sizeof(uint) * width * height * depth));
+	m_count = sizeof(uint) * width * height * depth;
+	cudaSafeCall(cudaMalloc(&m_pCudaBuffer, m_count));
 }
 
 HeatMap::Channel::~Channel()
@@ -64,4 +69,9 @@ HeatMap::Channel::~Channel()
 		cudaSafeCall(cudaFree(m_pCudaBuffer));
 		m_pCudaBuffer = nullptr;
 	}
+}
+
+void HeatMap::Channel::clear()
+{
+	cudaMemset(m_pCudaBuffer, 0, m_count);
 }

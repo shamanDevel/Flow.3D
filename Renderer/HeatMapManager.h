@@ -57,6 +57,7 @@ private:
 
 	// settings
 	HeatMapParams            m_params;
+	bool                     m_seedTexChanged;
 
 	// valid between create/release
 	GPUResources*            m_pCompressShared;
@@ -71,6 +72,8 @@ private:
 	int3                     m_resolution;
 	float3                   m_worldToGrid;
 	float3                   m_worldOffset;
+	unsigned int*            m_seedTexCuda;
+	size_t                   m_seedTexSize;
 
 	// for rendering
 	struct HeatMapTexture
