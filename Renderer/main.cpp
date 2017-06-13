@@ -3152,10 +3152,15 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 					//a seed texture was found
 					//check if intersection is in the volume
 					if (ret) {
-						if (!g_keyboardShiftPressed) {
+						if (g_keyboardShiftPressed) {
+							if (g_particleTraceParams.m_seedTexture.m_picked.count(color)==0)
+								g_particleTraceParams.m_seedTexture.m_picked.insert(color);
+							else //toggle selection status
+								g_particleTraceParams.m_seedTexture.m_picked.erase(color);
+						} else {
 							g_particleTraceParams.m_seedTexture.m_picked.clear();
+							g_particleTraceParams.m_seedTexture.m_picked.insert(color);
 						}
-						g_particleTraceParams.m_seedTexture.m_picked.insert(color);
 					} else {
 						if (!g_keyboardShiftPressed) {
 							g_particleTraceParams.m_seedTexture.m_picked.clear(); //disable seed from texture

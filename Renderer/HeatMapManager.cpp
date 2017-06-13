@@ -12,6 +12,8 @@
 
 using namespace tum3D;
 
+//#define HEAT_MAP_MANAGER_VERBOSE_PRINTS
+
 
 HeatMapManager::HeatMapManager()
 	: m_pCompressShared(NULL)
@@ -148,7 +150,9 @@ void HeatMapManager::SetVolumeAndReset(const TimeVolume & volume)
 void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 {
 	if (!m_params.m_enableRecording) return;
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
 	std::cout << "Process lines" << std::endl;
+#endif
 
 	m_hasData = false;
 
@@ -179,7 +183,9 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
 		if (picked.count(id) == 0/* && m_params.m_autoReset*/) {
 			m_pHeatMap->deleteChannel(id); //delete old channels
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
 			std::cout << "Channel with id " << id << " deleted" << std::endl;
+#endif
 		}
 	}
 	for (unsigned int id : picked) {
@@ -187,16 +193,22 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 		if (c == nullptr) {
 			c = m_pHeatMap->createChannel(id); //create new channel
 			c->clear();
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
 			std::cout << "Channel with id " << id << " created" << std::endl;
+#endif
 		}
 		else if (m_params.m_autoReset) {
 			c->clear(); //clear existing channel
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
 			std::cout << "Channel with id " << id << " cleared" << std::endl;
+#endif
 		}
 	}
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
 	std::cout << "key colors:";
 	for (unsigned int k : picked) std::cout << " " << k;
 	std::cout << std::endl;
+#endif
 
 	//aquire buffers
 	cudaSafeCall(cudaGraphicsMapResources(1, &pLineBuffer->m_pIBCuda));
@@ -227,7 +239,9 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 		minMaxValue.second = std::max(minMaxValue.second, temp.second);
 	}
 	m_maxData = minMaxValue.second;
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
 	std::cout << "Done, min value: " << minMaxValue.first << ", max value: " << minMaxValue.second << std::endl;
+#endif
 
 	m_dataChanged = true;
 	m_hasData = true;

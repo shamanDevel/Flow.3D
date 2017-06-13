@@ -10,6 +10,7 @@ __global__ void heatmapFillChannelKernel(uint* channel,
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 	if (index > numVertices) return;
+	if (vertices[indices[index]].Time < 0) return;
 
 	float3 position = vertices[indices[index]].Position;
 	float3 gridPositionF = (position + worldOffset) * worldToGrid;
