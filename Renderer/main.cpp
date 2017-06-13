@@ -1468,6 +1468,8 @@ void TW_CALL LoadSeedTexture(void *clientData)
 			SAFE_RELEASE(tex);
 			//reset color
 			g_particleTraceParams.m_seedTexture.m_picked.clear();
+			//set seed box to domain
+			SetBoundingBoxToDomainSize(clientData);
 			std::cout << "Seed texture copied to cpu memory" << std::endl;
 		}
 		else {
@@ -3188,6 +3190,9 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 				bool ret = PickSeed(&color, &pos);
 				if (ret) {
 					g_heatMapParams.m_renderedChannels[channel] = color;
+				}
+				else {
+					g_heatMapParams.m_renderedChannels[channel] = 0;
 				}
 
 				break;

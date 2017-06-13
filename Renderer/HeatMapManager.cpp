@@ -177,16 +177,21 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 		picked.insert(0); //nothing selected -> use everything
 	}
 	for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
-		if (picked.count(id) == 0) m_pHeatMap->deleteChannel(id); //delete old channels
+		if (picked.count(id) == 0/* && m_params.m_autoReset*/) {
+			m_pHeatMap->deleteChannel(id); //delete old channels
+			std::cout << "Channel with id " << id << " deleted" << std::endl;
+		}
 	}
 	for (unsigned int id : picked) {
 		HeatMap::Channel_ptr c = m_pHeatMap->getChannel(id);
 		if (c == nullptr) {
 			c = m_pHeatMap->createChannel(id); //create new channel
 			c->clear();
+			std::cout << "Channel with id " << id << " created" << std::endl;
 		}
 		else if (m_params.m_autoReset) {
 			c->clear(); //clear existing channel
+			std::cout << "Channel with id " << id << " cleared" << std::endl;
 		}
 	}
 	std::cout << "key colors:";
@@ -320,6 +325,7 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 void HeatMapManager::ClearChannels()
 {
 	m_pHeatMap->clearAllChannels();
+	m_pHeatMap->deleteAllChannels();
 	m_hasData = false;
 }
 
