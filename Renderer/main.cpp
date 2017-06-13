@@ -1546,6 +1546,11 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		strLineModes << "," << GetLineModeName(eLineMode(i));
 	TwType twLineMode = TwDefineEnumFromString("EnumLineMode", strLineModes.str().c_str());
 
+	std::ostringstream strHeatMapNormalizationModes;
+	strHeatMapNormalizationModes << GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(0));
+	for (uint i = 1; i < HEAT_MAP_NORMALIZATION_MODE_COUNT; i++)
+		strHeatMapNormalizationModes << "," << GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(i));
+	TwType twHeatMapNormalizationMode = TwDefineEnumFromString("EnumHeatMapNormalizationMode", strHeatMapNormalizationModes.str().c_str());
 
 	// MAIN BAR
 	g_pTwBarMain = TwNewBar("Main");
@@ -1745,8 +1750,8 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 			g_redraw = true;
 		}, 
 		NULL, "label='Reset (C)' group='Heat Map' key=c");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", TW_TYPE_BOOLCPP, &g_heatMapParams.m_normalize,
-		"label='Normalize' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", twHeatMapNormalizationMode, &g_heatMapParams.m_normalizationMode,
+		"label='Normalization' group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_StepSize", TW_TYPE_FLOAT, &g_heatMapParams.m_stepSize,
 		"label='Step Size' min=0.001 step=0.001 group='Heat Map'");
 	TwAddVarRW(g_pTwBarMain, "HeatMap_DensityScale", TW_TYPE_FLOAT, &g_heatMapParams.m_densityScale,

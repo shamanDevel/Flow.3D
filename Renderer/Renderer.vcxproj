@@ -196,6 +196,7 @@ exit 1
     <ClCompile Include="FlowGraph.cpp" />
     <ClCompile Include="HeatMap.cpp" />
     <ClCompile Include="HeatMapManager.cpp" />
+    <ClCompile Include="HeatMapNormalizationMode.cpp" />
     <ClCompile Include="HeatMapParams.cpp" />
     <ClCompile Include="HeatMapRaytracerEffect.cpp" />
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp" />
@@ -214,7 +215,9 @@ exit 1
     <ClCompile Include="Range.cpp" />
     <ClCompile Include="RaycastMode.cpp" />
     <ClCompile Include="RaycastParams.cpp" />
-    <CudaCompile Include="HeatMapKernel.cu" />
+    <CudaCompile Include="HeatMapKernel.cu">
+      <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateRelocatableDeviceCode>
+    </CudaCompile>
     <CudaCompile Include="RenderingManager.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
@@ -290,6 +293,7 @@ exit 1
     <ClInclude Include="HeatMap.h" />
     <ClInclude Include="HeatMapKernel.h" />
     <ClInclude Include="HeatMapManager.h" />
+    <ClInclude Include="HeatMapNormalizationMode.h" />
     <ClInclude Include="HeatMapParams.h" />
     <ClInclude Include="HeatMapRaytracerEffect.h" />
     <ClInclude Include="IntegratorCommonCPU.h" />

@@ -85,6 +85,9 @@ void HeatMapManager::SetParams(const HeatMapParams & params)
 	if (m_params.m_recordTexture.m_colors != params.m_recordTexture.m_colors) {
 		m_seedTexChanged = true;
 	}
+	if (m_params.m_normalizationMode != params.m_normalizationMode) {
+		m_normalizationChanged = true;
+	}
 	m_params = params;
 	//std::cout << "enable rendering: " << m_params.m_enableRendering << std::endl;
 }
@@ -95,7 +98,7 @@ void HeatMapManager::DebugPrintParams()
 	std::cout << "  enable recording: " << m_params.m_enableRecording << std::endl;
 	std::cout << "  enable rendering: " << m_params.m_enableRendering << std::endl;
 	std::cout << "  auto reset: " << m_params.m_autoReset << std::endl;
-	std::cout << "  normalize: " << m_params.m_normalize << std::endl;
+	std::cout << "  normalize: " << GetHeatMapNormalizationModeName(m_params.m_normalizationMode) << std::endl;
 	std::cout << "  step size: " << m_params.m_stepSize << std::endl;
 	std::cout << "  density scale: " << m_params.m_densityScale << std::endl;
 	std::cout << "  tf alpha scale: " << m_params.m_tfAlphaScale << std::endl;
@@ -230,21 +233,65 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffer->m_pVBCuda));
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffer->m_pIBCuda));
 
-	//get min and max value
-	std::pair<uint, uint> minMaxValue (std::numeric_limits<uint>::max(), std::numeric_limits<uint>::min());
-	for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
-		std::pair<uint, uint> temp = heatmapKernelFindMinMax(
-			m_pHeatMap->getChannel(id)->getCudaBuffer(), m_resolution);
-		minMaxValue.first = std::min(minMaxValue.first, temp.first);
-		minMaxValue.second = std::max(minMaxValue.second, temp.second);
-	}
-	m_maxData = minMaxValue.second;
-#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
-	std::cout << "Done, min value: " << minMaxValue.first << ", max value: " << minMaxValue.second << std::endl;
-#endif
-
 	m_dataChanged = true;
 	m_hasData = true;
+	m_normalizationChanged = true;
+}
+
+void HeatMapManager::Normalize() {
+	if (!m_normalizationChanged) {
+		return;
+	}
+
+	switch (m_params.m_normalizationMode)
+	{
+	case NORMALIZATION_OFF:
+	{
+		m_normalizationFactor = 1;
+		break;
+	}
+	case NORMALIZATION_MAX:
+	{
+		//get min and max value
+		std::pair<uint, uint> minMaxValue(std::numeric_limits<uint>::max(), std::numeric_limits<uint>::min());
+		for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
+			std::pair<uint, uint> temp = heatmapKernelFindMinMax(
+				m_pHeatMap->getChannel(id)->getCudaBuffer(), m_resolution);
+			minMaxValue.first = std::min(minMaxValue.first, temp.first);
+			minMaxValue.second = std::max(minMaxValue.second, temp.second);
+		}
+		m_normalizationFactor = 1.0 / minMaxValue.second;
+#ifdef HEAT_MAP_MANAGER_VERBOSE_PRINTS
+		std::cout << "Normalization: min value: " << minMaxValue.first << ", max value: " << minMaxValue.second << std::endl;
+#endif
+		break;
+	}
+	case NORMALIZATION_MEAN:
+	{
+		float mean = 0;
+		unsigned int count = 0;
+		for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
+			mean += heatmapKernelFindMean(m_pHeatMap->getChannel(id)->getCudaBuffer(), m_resolution);
+			count++;
+		}
+		m_normalizationFactor = 1.0 / (mean / count);
+		break;
+	}
+	case NORMALIZATION_MEDIAN:
+	{
+		//it is the means of the medians
+		float median = 0;
+		unsigned int count = 0;
+		for (unsigned int id : m_pHeatMap->getAllChannelIDs()) {
+			median += heatmapKernelFindMedian(m_pHeatMap->getChannel(id)->getCudaBuffer(), m_resolution);
+			count++;
+		}
+		m_normalizationFactor = 1.0 / (median / count);
+		break;
+	}
+	}
+
+	m_normalizationChanged = false;
 }
 
 void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams, 
@@ -252,6 +299,7 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 {
 	if (!m_params.m_enableRendering) return;
 	if (!m_hasData) return;
+	Normalize();
 	//std::cout << "HeatMapManager: render " 
 	//	<< m_params.m_renderedChannels[0] << " and "
 	//	<< m_params.m_renderedChannels[1] << std::endl;
@@ -324,8 +372,7 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 
 	//tracing settings
 	m_pShader->m_pfStepSizeWorld->SetFloat(m_params.m_stepSize);
-	m_pShader->m_pfDensityScale->SetFloat(m_params.m_densityScale
-		* (m_params.m_normalize ? 1.0/m_maxData : 1));
+	m_pShader->m_pfDensityScale->SetFloat(m_params.m_densityScale * m_normalizationFactor);
 	m_pShader->m_pfAlphaScale->SetFloat(m_params.m_tfAlphaScale);
 
 	pContext->Draw(4, 0);

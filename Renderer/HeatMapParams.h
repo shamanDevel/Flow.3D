@@ -8,6 +8,7 @@
 #include <D3D11.h>
 
 #include "ParticleTraceParams.h"
+#include "HeatMapNormalizationMode.h"
 
 class HeatMapParams
 {
@@ -22,7 +23,7 @@ public:
 	SeedTexture m_recordTexture;
 	int32 m_renderedChannels[2];
 
-	bool  m_normalize;
+	eHeatMapNormalizationMode  m_normalizationMode;
 	float m_stepSize;
 	float m_densityScale;
 	float m_tfAlphaScale;

@@ -6,7 +6,7 @@ HeatMapParams::HeatMapParams()
 	: m_enableRecording(true)
 	, m_enableRendering(true)
 	, m_autoReset(true)
-	, m_normalize(true)
+	, m_normalizationMode(eHeatMapNormalizationMode::NORMALIZATION_MAX)
 	, m_stepSize(0.01)
 	, m_densityScale(1)
 	, m_tfAlphaScale(1)
@@ -39,7 +39,7 @@ bool HeatMapParams::HasChangesForRetracing(const HeatMapParams& other,
 bool HeatMapParams::HasChangesForRedrawing(const HeatMapParams& other)
 {
 	if (m_enableRendering != other.m_enableRendering) return true;
-	if (m_normalize != other.m_normalize) return true;
+	if (m_normalizationMode != other.m_normalizationMode) return true;
 	if (m_stepSize != other.m_stepSize) return true;
 	if (m_densityScale != other.m_densityScale) return true;
 	if (m_tfAlphaScale != other.m_tfAlphaScale) return true;

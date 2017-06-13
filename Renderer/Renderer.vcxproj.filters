@@ -166,6 +166,9 @@
     <ClCompile Include="HeatMapParams.cpp">
       <Filter>Params</Filter>
     </ClCompile>
+    <ClCompile Include="HeatMapNormalizationMode.cpp">
+      <Filter>Enums</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -503,6 +506,9 @@
     </ClInclude>
     <ClInclude Include="HeatMapParams.h">
       <Filter>Params</Filter>
+    </ClInclude>
+    <ClInclude Include="HeatMapNormalizationMode.h">
+      <Filter>Enums</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

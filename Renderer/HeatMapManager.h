@@ -51,6 +51,7 @@ private:
 	void ReleaseRenderTextures();
 	void CreateRenderTextures(ID3D11Device* pDevice);
 	void CopyToRenderTexture(HeatMap::Channel_ptr channel, int slot);
+	void Normalize();
 
 private:
 	bool m_isCreated;
@@ -85,7 +86,8 @@ private:
 	float*                  m_cudaCopyBuffer;
 	bool                    m_hasData;
 	bool                    m_dataChanged;
-	int                     m_maxData;
+	bool                    m_normalizationChanged;
+	float                   m_normalizationFactor;
 	unsigned int            m_oldPickedChannels[2];
 
 	// raytracing shader
