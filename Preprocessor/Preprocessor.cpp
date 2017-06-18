@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iterator>
 #include <conio.h>
+#include <vector>
 
 #include <tclap/CmdLine.h>
 #include <cudaCompress/Init.h>
@@ -45,6 +46,23 @@ void WriteStatsCSV(std::ostream& stream, const Statistics::Stats& stats, float q
 		<< stats.ReconstMin << ";" << stats.ReconstMax << ";" << stats.ReconstRange << ";" << stats.ReconstAverage << ";" << stats.ReconstVariance << ";"
 		<< quantStep << ";" << stats.AvgAbsError << ";" << stats.MaxAbsError << ";" << stats.AvgRelError << ";" << stats.MaxRelError << ";" << stats.RelErrorCount << ";"
 		<< stats.RMSError << ";" << stats.SNR << ";" << stats.PSNR << std::endl;
+}
+
+
+// https://stackoverflow.com/a/236803
+template<typename Out>
+void split(const std::string &s, char delim, Out result) {
+	std::stringstream ss;
+	ss.str(s);
+	std::string item;
+	while (std::getline(ss, item, delim)) {
+		*(result++) = item;
+	}
+}
+std::vector<std::string> split(const std::string &s, char delim) {
+	std::vector<std::string> elems;
+	split(s, delim, std::back_inserter(elems));
+	return elems;
 }
 
 
@@ -98,7 +116,9 @@ int main(int argc, char* argv[])
 		TCLAP::UnlabeledValueArg<string> outFileArg("outfile", "Output file name without extension (index file will be <filename>.timevol)", true, "", "String", cmd);
 		TCLAP::UnlabeledMultiArg<string> inMaskArg("inmask", "Any number of input files in the format <filename>:<channels>, where <filename>"
 			" must contain a decimal-formator like %d that will be replaced by the timestep index. For example, \"testdata_256_%d.raw:3\" adds"
-			" a 3-channel-file.", true, "String", cmd);
+			" a 3-channel-file."
+			"\nThis argument is optional: Either pass the file here or with --filenames and --channels",
+			false, "String", cmd);
 
 		TCLAP::ValueArg<string> outPathArg("O", "outpath", "Output path", false, "", "String", cmd);
 		TCLAP::ValueArg<string> inPathArg("I", "inpath", "Input path", false, "", "String", cmd);
@@ -123,21 +143,57 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<float> domainSizeYArg("", "domainY", "The domain size in y-direction", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> domainSizeZArg("", "domainZ", "The domain size in z-direction", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> timeSpacingArg("t", "timespacing", "Distance between time steps", false, 1.0f, "Float", cmd);
-		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 256, "Integer", cmd);
+		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 64, "Integer", cmd);
 		TCLAP::ValueArg<int32> overlapArg("v", "overlap", "Brick overlap (size of halo)", false, 4, "Integer", cmd);
 
-		TCLAP::ValueArg<string> quantStepsArg("q", "quantstep", "Enable compression with fixed quantization steps [%f %f ...]", false, "", "Float Array", cmd);
+		TCLAP::ValueArg<string> quantStepsArg("q", "quantstep", "Enable compression with fixed quantization steps [%f %f ...]", false, "[5e-4 5e-4 5e-4 5e-4]", "Float Array", cmd);
 		TCLAP::SwitchArg quantFirstArg("", "quantfirst", "Perform quantization before DWT", cmd);
 		TCLAP::SwitchArg lessRLEArg("", "lessrle", "Do RLE only on finest level (improves compression with fine to moderate quant steps)", cmd);
 		TCLAP::ValueArg<int32> huffmanBitsArg("", "huffmanbits", "Max number of bits per symbol for Huffman coding", false, 0, "Integer", cmd);
 
 		TCLAP::SwitchArg autoBuildArg("a", "autobuild", "Suppress all confirmation messages", cmd, false);
 
+		TCLAP::ValueArg<string> filenamesArg("f", "filenames", "Input filename template: e.g. %s.32.dat_%03d. %s will be filled by the channels-argument, %d by the timestep", 
+			false, "", "String", cmd);
+		TCLAP::ValueArg<string> channelsArg("c", "channels",
+			"If the input files are given as templates by --filenames. This channel argument then fills the values. Format: <name>:<channels>,<name>:<channels>...",
+			false, "", "String Array", cmd);
+
 
 		cmd.parse(argc, argv);
 
-		const vector<string>& inMask = inMaskArg.getValue();
+		vector<string> inMask = inMaskArg.getValue();
 		outFile = outFileArg.getValue();
+
+		if (filenamesArg.isSet() || channelsArg.isSet()) {
+			if (!filenamesArg.isSet()) {
+				cout << "If you specify --channels, you must also use --filenames" << endl;
+				return -1;
+			}
+			if (!channelsArg.isSet()) {
+				cout << "If you specify --filenames, you must also use --channels" << endl;
+			}
+			if (!inMask.empty()) {
+				cout << "WARNING: --filenames and --channels specified, but input file mask is not empty, overwrite them" << endl;
+			}
+			inMask = vector<string>();
+			const string& filenames = filenamesArg.getValue();
+			auto it = filenames.find("%s");
+			if (it == string::npos) {
+				cout << "--filenames does not contain %s for the channel name!" << endl;
+				return -1;
+			}
+			for (string channel : split(channelsArg.getValue(), ',')) {
+				vector<string> parts = split(channel, ':');
+				if (parts.size() != 2) {
+					cout << "Each entry in --channels must have the form <name>:<channels>, seperated by ','. But it was: " << channel << endl;
+					return -1;
+				}
+				string name = filenames;
+				name.replace(it, 2, parts[0]);
+				inMask.push_back(name + ":" + parts[1]);
+			}
+		}
 
 		outPath = outPathArg.getValue();
 		inPath = inPathArg.getValue();
