@@ -130,9 +130,35 @@ exit 1</Command>
     <ClInclude Include="..\include\FilePool.h" />
     <ClInclude Include="..\include\global.h" />
     <ClInclude Include="..\include\GPUResources.h" />
+    <ClInclude Include="..\include\Json\Json.h" />
+    <ClInclude Include="..\include\Json\json_st.hh" />
     <ClInclude Include="..\include\LargeArray3D.h" />
     <ClInclude Include="..\include\MemUtils.h" />
     <ClInclude Include="..\include\SysTools.h" />
+    <ClInclude Include="..\include\tclap\Arg.h" />
+    <ClInclude Include="..\include\tclap\ArgException.h" />
+    <ClInclude Include="..\include\tclap\ArgTraits.h" />
+    <ClInclude Include="..\include\tclap\CmdLine.h" />
+    <ClInclude Include="..\include\tclap\CmdLineInterface.h" />
+    <ClInclude Include="..\include\tclap\CmdLineOutput.h" />
+    <ClInclude Include="..\include\tclap\Constraint.h" />
+    <ClInclude Include="..\include\tclap\DocBookOutput.h" />
+    <ClInclude Include="..\include\tclap\HelpVisitor.h" />
+    <ClInclude Include="..\include\tclap\IgnoreRestVisitor.h" />
+    <ClInclude Include="..\include\tclap\MultiArg.h" />
+    <ClInclude Include="..\include\tclap\MultiSwitchArg.h" />
+    <ClInclude Include="..\include\tclap\OptionalUnlabeledTracker.h" />
+    <ClInclude Include="..\include\tclap\StandardTraits.h" />
+    <ClInclude Include="..\include\tclap\StdOutput.h" />
+    <ClInclude Include="..\include\tclap\SwitchArg.h" />
+    <ClInclude Include="..\include\tclap\UnlabeledMultiArg.h" />
+    <ClInclude Include="..\include\tclap\UnlabeledValueArg.h" />
+    <ClInclude Include="..\include\tclap\ValueArg.h" />
+    <ClInclude Include="..\include\tclap\ValuesConstraint.h" />
+    <ClInclude Include="..\include\tclap\VersionVisitor.h" />
+    <ClInclude Include="..\include\tclap\Visitor.h" />
+    <ClInclude Include="..\include\tclap\XorHandler.h" />
+    <ClInclude Include="..\include\tclap\ZshCompletionOutput.h" />
     <ClInclude Include="..\include\TimerCPU.h" />
     <ClInclude Include="..\include\TimeVolumeInfo.h" />
     <ClInclude Include="..\include\TimeVolumeIO.h" />
@@ -142,6 +168,8 @@ exit 1</Command>
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\include\Json\Json.cpp" />
+    <ClCompile Include="..\include\Json\Json_st.cc" />
     <ClCompile Include="..\shared\CompressVolume.cpp" />
     <ClCompile Include="..\shared\FilePool.cpp" />
     <ClCompile Include="..\shared\GPUResources.cpp" />

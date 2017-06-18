@@ -162,9 +162,12 @@ int main(int argc, char* argv[])
 
 		cmd.parse(argc, argv);
 
+		
+
 		vector<string> inMask = inMaskArg.getValue();
 		outFile = outFileArg.getValue();
 
+		
 		if (filenamesArg.isSet() || channelsArg.isSet()) {
 			if (!filenamesArg.isSet()) {
 				cout << "If you specify --channels, you must also use --filenames" << endl;

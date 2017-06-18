@@ -48,6 +48,84 @@
     </ClInclude>
     <ClInclude Include="..\include\CompressVolume.h" />
     <ClInclude Include="..\include\GPUResources.h" />
+    <ClInclude Include="..\include\tclap\Arg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\ArgException.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\ArgTraits.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\CmdLine.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\CmdLineInterface.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\CmdLineOutput.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\Constraint.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\DocBookOutput.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\HelpVisitor.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\IgnoreRestVisitor.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\MultiArg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\MultiSwitchArg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\OptionalUnlabeledTracker.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\StandardTraits.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\StdOutput.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\SwitchArg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\UnlabeledMultiArg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\UnlabeledValueArg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\ValueArg.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\ValuesConstraint.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\VersionVisitor.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\Visitor.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\XorHandler.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\tclap\ZshCompletionOutput.h">
+      <Filter>TCLAP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Json\Json.h">
+      <Filter>Json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Json\json_st.hh">
+      <Filter>Json</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
@@ -59,6 +137,12 @@
     <ClCompile Include="..\shared\TimerCPU.cpp" />
     <ClCompile Include="..\shared\CompressVolume.cpp" />
     <ClCompile Include="..\shared\GPUResources.cpp" />
+    <ClCompile Include="..\include\Json\Json.cpp">
+      <Filter>Json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\Json\Json_st.cc">
+      <Filter>Json</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="cudaCompress">
@@ -66,6 +150,12 @@
     </Filter>
     <Filter Include="cudaCompress\util">
       <UniqueIdentifier>{3461c7aa-8ade-4ecf-91e1-cbba8a07fa87}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TCLAP">
+      <UniqueIdentifier>{62f3bdf1-ac80-4b0d-8bc5-179d58492e67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Json">
+      <UniqueIdentifier>{d7fec3f0-079e-4485-b77e-70d323f10ac9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
