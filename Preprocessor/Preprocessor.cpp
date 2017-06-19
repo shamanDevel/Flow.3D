@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <tclap/CmdLine.h>
+#include <Json\Json.h>
 #include <cudaCompress/Init.h>
 #include <cudaUtil.h>
 
@@ -98,6 +99,9 @@ int main(int argc, char* argv[])
 	int32 brickSize;
 	int32 overlap;
 
+	Json::Object jsonObject;
+	bool jsonObjectAvailable;
+
 	eCompressionType compression = COMPRESSION_NONE;
 	string quantStepsString;
 	vector<float> quantSteps;
@@ -120,6 +124,9 @@ int main(int argc, char* argv[])
 			"\nThis argument is optional: Either pass the file here or with --filenames and --channels",
 			false, "String", cmd);
 
+		TCLAP::ValueArg<string> jsonFileArg("i", "json", "The path to a json file with key-value pairs for settings the arguments.\n"
+			"Command line argumenst always have priority", false, "", "String", cmd);
+
 		TCLAP::ValueArg<string> outPathArg("O", "outpath", "Output path", false, "", "String", cmd);
 		TCLAP::ValueArg<string> inPathArg("I", "inpath", "Input path", false, "", "String", cmd);
 		TCLAP::ValueArg<string> tmpPathArg("", "tmp", "Path for temporary la3d files; default outpath", false, "", "String", cmd);
@@ -131,9 +138,9 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<int32> tStepArg("", "tstep", "Timestep increment", false, 1, "Integer", cmd);
 		TCLAP::ValueArg<int32> tOffsetArg("", "toffset", "Index of the first timestep to write (for appending!)", false, 0, "Integer", cmd);
 
-		TCLAP::ValueArg<int32> volumeSizeXArg("x", "volumesizex", "X dimension of the volume", true, 1024, "Integer", cmd);
-		TCLAP::ValueArg<int32> volumeSizeYArg("y", "volumesizey", "Y dimension of the volume", true, 1024, "Integer", cmd);
-		TCLAP::ValueArg<int32> volumeSizeZArg("z", "volumesizez", "Z dimension of the volume", true, 1024, "Integer", cmd);
+		TCLAP::ValueArg<int32> volumeSizeXArg("x", "volumesizex", "X dimension of the volume", false, 1024, "Integer", cmd);
+		TCLAP::ValueArg<int32> volumeSizeYArg("y", "volumesizey", "Y dimension of the volume", false, 1024, "Integer", cmd);
+		TCLAP::ValueArg<int32> volumeSizeZArg("z", "volumesizez", "Z dimension of the volume", false, 1024, "Integer", cmd);
 		TCLAP::SwitchArg periodicArg("", "periodic", "Use periodic boundary, i.e. wrap (default is clamp)", cmd);
 		TCLAP::ValueArg<float> gridSpacingArg("g", "gridspacing", "Distance between grid points (for cubic cells)", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> gridSpacingXArg("", "gridspacingX", "Distance between grid points in x-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
@@ -162,31 +169,70 @@ int main(int argc, char* argv[])
 
 		cmd.parse(argc, argv);
 
-		
+		//Load Json-File
+		if (jsonFileArg.isSet()) {
+			jsonObject = Json::ParseFile(jsonFileArg.getValue());
+			if (jsonObject.Size() == 0) {
+				cout << "Invalid or empty file passed as --json argument" << endl;
+				return -1;
+			}
+			jsonObjectAvailable = true;
+			cout << "Json file with extra arguments loaded" << endl;
+		}
 
 		vector<string> inMask = inMaskArg.getValue();
-		outFile = outFileArg.getValue();
+		if (!inMaskArg.isSet() && jsonObjectAvailable) { //try to set inMask from the json
+			Json::Value v = jsonObject["inMask"];
+			if (v.Type() == Json::ARRAY) {
+				Json::Array va = v.AsArray();
+				for (auto it = va.Begin(); it != va.End(); ++it) {
+					inMask.push_back(it->AsString());
+				}
+			}
+		}
 
-		
-		if (filenamesArg.isSet() || channelsArg.isSet()) {
-			if (!filenamesArg.isSet()) {
+		string filenames = filenamesArg.getValue();
+		string channelsStr = channelsArg.getValue();
+		bool filenamesSet = filenamesArg.isSet();
+		bool channelsSet = channelsArg.isSet();
+		bool filenameTemplatesSet = false;
+
+		if (!filenamesSet && jsonObjectAvailable) { //try to load filenames from the json file
+			Json::Value v = jsonObject["filenames"];
+			if (v.Type() == Json::STRING) {
+				filenames = v.AsString();
+				filenamesSet = true;
+			}
+		}
+		if (!channelsSet && jsonObjectAvailable) { //try to load channels from the json file
+			Json::Value v = jsonObject["channels"];
+			if (v.Type() == Json::STRING) {
+				channelsStr = v.AsString();
+				channelsSet = true;
+			}
+		}
+		if (filenamesSet || channelsSet) {
+			if (!filenamesSet) {
 				cout << "If you specify --channels, you must also use --filenames" << endl;
 				return -1;
 			}
-			if (!channelsArg.isSet()) {
+			if (!channelsSet) {
 				cout << "If you specify --filenames, you must also use --channels" << endl;
+				return -1;
 			}
+			filenameTemplatesSet = true;
+		}
+		if (filenameTemplatesSet) {
 			if (!inMask.empty()) {
 				cout << "WARNING: --filenames and --channels specified, but input file mask is not empty, overwrite them" << endl;
 			}
 			inMask = vector<string>();
-			const string& filenames = filenamesArg.getValue();
 			auto it = filenames.find("%s");
 			if (it == string::npos) {
 				cout << "--filenames does not contain %s for the channel name!" << endl;
 				return -1;
 			}
-			for (string channel : split(channelsArg.getValue(), ',')) {
+			for (string channel : split(channelsStr, ',')) {
 				vector<string> parts = split(channel, ':');
 				if (parts.size() != 2) {
 					cout << "Each entry in --channels must have the form <name>:<channels>, seperated by ','. But it was: " << channel << endl;
@@ -198,20 +244,32 @@ int main(int argc, char* argv[])
 			}
 		}
 
-		outPath = outPathArg.getValue();
-		inPath = inPathArg.getValue();
-		tmpPath = tmpPathArg.getValue();
-		keepLA3Ds = keepLA3DsArg.getValue();
-		overwrite = overwriteArg.getValue();
+#define LOAD_ARG_FROM_JSON(variable, cmdArg, jsonArg, jsonType, jsonGetter) \
+	variable = (cmdArg).getValue(); \
+	if (!(cmdArg).isSet() && jsonObjectAvailable) { \
+		Json::Value v = jsonObject[jsonArg]; \
+		if (v.Type() == jsonType) { \
+			variable = v. jsonGetter; \
+		} \
+	}
+		
+		LOAD_ARG_FROM_JSON(outPath, outPathArg, "outPath", Json::STRING, AsString());
+		LOAD_ARG_FROM_JSON(inPath, inPathArg, "inPath", Json::STRING, AsString());
+		LOAD_ARG_FROM_JSON(tmpPath, tmpPathArg, "tmpPath", Json::STRING, AsString());
+		LOAD_ARG_FROM_JSON(keepLA3Ds, keepLA3DsArg, "keepLA3Ds", Json::BOOL, AsBool());
+		LOAD_ARG_FROM_JSON(overwrite, overwriteArg, "overwrite", Json::BOOL, AsBool());
 
-		tMin = tMinArg.getValue();
-		tMax = tMaxArg.getValue();
-		tStep = tStepArg.getValue();
-		tOffset = tOffsetArg.getValue();
+		LOAD_ARG_FROM_JSON(tMin, tMinArg, "tmin", Json::INT, AsInt32());
+		LOAD_ARG_FROM_JSON(tMax, tMaxArg, "tmax", Json::INT, AsInt32());
+		LOAD_ARG_FROM_JSON(tStep, tStepArg, "tstep", Json::INT, AsInt32());
+		LOAD_ARG_FROM_JSON(tOffset, tOffsetArg, "toffset", Json::INT, AsInt32());
 
-		volumeSize[0] = volumeSizeXArg.getValue();
-		volumeSize[1] = volumeSizeYArg.getValue();
-		volumeSize[2] = volumeSizeZArg.getValue();
+		LOAD_ARG_FROM_JSON(volumeSize[0], volumeSizeXArg, "griddims", Json::ARRAY, AsArray()[0].AsInt32());
+		LOAD_ARG_FROM_JSON(volumeSize[1], volumeSizeYArg, "griddims", Json::ARRAY, AsArray()[1].AsInt32());
+		LOAD_ARG_FROM_JSON(volumeSize[2], volumeSizeZArg, "griddims", Json::ARRAY, AsArray()[2].AsInt32());
+		//volumeSize[0] = volumeSizeXArg.getValue();
+		//volumeSize[1] = volumeSizeYArg.getValue();
+		//volumeSize[2] = volumeSizeZArg.getValue();
 		periodic = periodicArg.getValue();
 
 		if (gridSpacingArg.isSet()) {
@@ -250,6 +308,10 @@ int main(int argc, char* argv[])
 			);
 		}
 		else {
+			//try JSON
+			if (jsonObjectAvailable) {
+
+			}
 			//cubic cells with default spacing
 			gridSpacing = tum3D::Vec3f(2.0f / float(volumeSize.maximum()));
 		}
