@@ -180,6 +180,8 @@ int main(int argc, char* argv[])
 			cout << "Json file with extra arguments loaded" << endl;
 		}
 
+		outFile = outFileArg.getValue();
+
 		vector<string> inMask = inMaskArg.getValue();
 		if (!inMaskArg.isSet() && jsonObjectAvailable) { //try to set inMask from the json
 			Json::Value v = jsonObject["inMask"];
@@ -252,7 +254,7 @@ int main(int argc, char* argv[])
 			variable = v. jsonGetter; \
 		} \
 	}
-		
+
 		LOAD_ARG_FROM_JSON(outPath, outPathArg, "outPath", Json::STRING, AsString());
 		LOAD_ARG_FROM_JSON(inPath, inPathArg, "inPath", Json::STRING, AsString());
 		LOAD_ARG_FROM_JSON(tmpPath, tmpPathArg, "tmpPath", Json::STRING, AsString());
@@ -309,12 +311,23 @@ int main(int argc, char* argv[])
 		}
 		else {
 			//try JSON
+			bool spacingDefined = false;
 			if (jsonObjectAvailable) {
-
+				Json::Value v = jsonObject["aspectratio"];
+				if (v.Type() == Json::ARRAY) {
+					gridSpacing = tum3D::Vec3f(
+						v.AsArray()[0].AsFloat() / float(volumeSize.x() - 1),
+						v.AsArray()[1].AsFloat() / float(volumeSize.x() - 1),
+						v.AsArray()[2].AsFloat() / float(volumeSize.x() - 1));
+					spacingDefined = true;
+				}
 			}
-			//cubic cells with default spacing
-			gridSpacing = tum3D::Vec3f(2.0f / float(volumeSize.maximum()));
+			if (!spacingDefined) {
+				//cubic cells with default spacing
+				gridSpacing = tum3D::Vec3f(2.0f / float(volumeSize.maximum()));
+			}
 		}
+		cout << "Grid spacing: " << gridSpacing.x() << ", " << gridSpacing.y() << ", " << gridSpacing.z() << endl;
 
 		timeSpacing = timeSpacingArg.getValue();
 		brickSize = brickSizeArg.getValue();
