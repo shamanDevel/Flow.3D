@@ -6,6 +6,7 @@
 #include <iterator>
 #include <conio.h>
 #include <vector>
+#include <stdlib.h>
 
 #include <tclap/CmdLine.h>
 #include <Json\Json.h>
@@ -50,6 +51,15 @@ void WriteStatsCSV(std::ostream& stream, const Statistics::Stats& stats, float q
 }
 
 
+string getFullPath(string relName)
+{
+	char* fp = _fullpath(NULL, relName.c_str(), 0);
+	string s(fp);
+	delete[] fp;
+	return s;
+}
+
+
 // https://stackoverflow.com/a/236803
 template<typename Out>
 void split(const std::string &s, char delim, Out result) {
@@ -87,6 +97,7 @@ int main(int argc, char* argv[])
 	vector<FileListItem> fileList;
 	string outFile;
 	string inPath;
+	string inRootPath = "";
 	string outPath;
 	string tmpPath;
 	bool overwrite;
@@ -178,6 +189,16 @@ int main(int argc, char* argv[])
 			}
 			jsonObjectAvailable = true;
 			cout << "Json file with extra arguments loaded" << endl;
+			string absFilePath = getFullPath(jsonFileArg.getValue());
+			auto lastDel = absFilePath.find_last_of("/");
+			if (lastDel == string::npos)
+				lastDel = absFilePath.find_last_of("\\");
+			if (lastDel == string::npos) {
+				cout << "Unable to extract the folder from the json file: " << absFilePath << endl;
+				return -1;
+			}
+			inRootPath = absFilePath.substr(0, lastDel);
+			cout << "Resolve input files relative to " << inRootPath << endl;
 		}
 
 		outFile = outFileArg.getValue();
@@ -260,6 +281,15 @@ int main(int argc, char* argv[])
 		LOAD_ARG_FROM_JSON(tmpPath, tmpPathArg, "tmpPath", Json::STRING, AsString());
 		LOAD_ARG_FROM_JSON(keepLA3Ds, keepLA3DsArg, "keepLA3Ds", Json::BOOL, AsBool());
 		LOAD_ARG_FROM_JSON(overwrite, overwriteArg, "overwrite", Json::BOOL, AsBool());
+
+		if (inPath.find(":") == string::npos //not an absolute path
+			&& !inRootPath.empty()) { //json file defines the root
+			inPath = inRootPath + "\\" + inPath;
+		}
+		if (outPath.find(":") == string::npos //not an absolute path
+			&& !inRootPath.empty()) { //json file defines the root
+			outPath = inRootPath + "\\" + outPath;
+		}
 
 		LOAD_ARG_FROM_JSON(tMin, tMinArg, "tmin", Json::INT, AsInt32());
 		LOAD_ARG_FROM_JSON(tMax, tMaxArg, "tmax", Json::INT, AsInt32());
