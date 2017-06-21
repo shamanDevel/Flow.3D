@@ -363,11 +363,11 @@ int main(int argc, char* argv[])
 		brickSize = brickSizeArg.getValue();
 		overlap = overlapArg.getValue();
 
-		if(quantStepsArg.isSet())
-		{
-			compression = quantFirstArg.isSet() ? COMPRESSION_FIXEDQUANT_QF : COMPRESSION_FIXEDQUANT;
-			quantStepsString = quantStepsArg.getValue();
-		}
+		//if(quantStepsArg.isSet())
+		//{
+		compression = quantFirstArg.isSet() ? COMPRESSION_FIXEDQUANT_QF : COMPRESSION_FIXEDQUANT;
+		quantStepsString = quantStepsArg.getValue();
+		//}
 		lessRLE = lessRLEArg.getValue();
 		huffmanBits = huffmanBitsArg.getValue();
 
