@@ -296,9 +296,9 @@ int main(int argc, char* argv[])
 		LOAD_ARG_FROM_JSON(tStep, tStepArg, "tstep", Json::INT, AsInt32());
 		LOAD_ARG_FROM_JSON(tOffset, tOffsetArg, "toffset", Json::INT, AsInt32());
 
-		LOAD_ARG_FROM_JSON(volumeSize[0], volumeSizeXArg, "griddims", Json::ARRAY, AsArray()[0].AsInt32());
+		LOAD_ARG_FROM_JSON(volumeSize[2], volumeSizeXArg, "griddims", Json::ARRAY, AsArray()[0].AsInt32());
 		LOAD_ARG_FROM_JSON(volumeSize[1], volumeSizeYArg, "griddims", Json::ARRAY, AsArray()[1].AsInt32());
-		LOAD_ARG_FROM_JSON(volumeSize[2], volumeSizeZArg, "griddims", Json::ARRAY, AsArray()[2].AsInt32());
+		LOAD_ARG_FROM_JSON(volumeSize[0], volumeSizeZArg, "griddims", Json::ARRAY, AsArray()[2].AsInt32());
 		//volumeSize[0] = volumeSizeXArg.getValue();
 		//volumeSize[1] = volumeSizeYArg.getValue();
 		//volumeSize[2] = volumeSizeZArg.getValue();
@@ -346,9 +346,9 @@ int main(int argc, char* argv[])
 				Json::Value v = jsonObject["aspectratio"];
 				if (v.Type() == Json::ARRAY) {
 					gridSpacing = tum3D::Vec3f(
-						v.AsArray()[0].AsFloat() / float(volumeSize.x() - 1),
-						v.AsArray()[1].AsFloat() / float(volumeSize.x() - 1),
-						v.AsArray()[2].AsFloat() / float(volumeSize.x() - 1));
+						v.AsArray()[2].AsFloat() / float(volumeSize.x() - 1),
+						v.AsArray()[1].AsFloat() / float(volumeSize.y() - 1),
+						v.AsArray()[0].AsFloat() / float(volumeSize.z() - 1));
 					spacingDefined = true;
 				}
 			}

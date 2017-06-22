@@ -102,13 +102,8 @@ exit 1</Command>
       <AdditionalDependencies>cudart.lib;cudaCompress.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>robocopy "$(SolutionDir)dll" "$(TargetDir)\" *.dll /XX /NJH /NJS /NP
-if errorlevel 4 goto error
-robocopy "$(SolutionDir)dll\$(Configuration)" "$(TargetDir)\" *.dll /XX /NJH /NJS /NP
-if errorlevel 4 goto error
-exit 0
-:error
-exit 1</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copy *.dll files to target dir</Message>
