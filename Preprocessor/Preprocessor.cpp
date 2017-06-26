@@ -349,6 +349,9 @@ int main(int argc, char* argv[])
 						v.AsArray()[2].AsFloat() / float(volumeSize.x() - 1),
 						v.AsArray()[1].AsFloat() / float(volumeSize.y() - 1),
 						v.AsArray()[0].AsFloat() / float(volumeSize.z() - 1));
+					//normalize size to one
+					float maxGridSize = (gridSpacing * tum3D::Vec3f(volumeSize)).maximum();
+					gridSpacing /= maxGridSize;
 					spacingDefined = true;
 				}
 			}
