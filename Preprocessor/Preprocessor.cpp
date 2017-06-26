@@ -59,6 +59,10 @@ string getFullPath(string relName)
 	return s;
 }
 
+bool isRelative(string name)
+{
+	return (name.find(":") == string::npos && name.find("//") == string::npos);
+}
 
 // https://stackoverflow.com/a/236803
 template<typename Out>
@@ -282,13 +286,15 @@ int main(int argc, char* argv[])
 		LOAD_ARG_FROM_JSON(keepLA3Ds, keepLA3DsArg, "keepLA3Ds", Json::BOOL, AsBool());
 		LOAD_ARG_FROM_JSON(overwrite, overwriteArg, "overwrite", Json::BOOL, AsBool());
 
-		if (inPath.find(":") == string::npos //not an absolute path
+		if (isRelative(inPath) //not an absolute path
 			&& !inRootPath.empty()) { //json file defines the root
 			inPath = inRootPath + "\\" + inPath;
+			std::cout << "Resolve input path relative to the json file" << std::endl;
 		}
-		if (outPath.find(":") == string::npos //not an absolute path
+		if (isRelative(outPath) //not an absolute path
 			&& !inRootPath.empty()) { //json file defines the root
 			outPath = inRootPath + "\\" + outPath;
+			std::cout << "Resolve output path relative to the json file" << std::endl;
 		}
 
 		LOAD_ARG_FROM_JSON(tMin, tMinArg, "tmin", Json::INT, AsInt32());
@@ -360,7 +366,6 @@ int main(int argc, char* argv[])
 				gridSpacing = tum3D::Vec3f(2.0f / float(volumeSize.maximum()));
 			}
 		}
-		cout << "Grid spacing: " << gridSpacing.x() << ", " << gridSpacing.y() << ", " << gridSpacing.z() << endl;
 
 		timeSpacing = timeSpacingArg.getValue();
 		brickSize = brickSizeArg.getValue();
@@ -449,7 +454,7 @@ int main(int argc, char* argv[])
 	E_ASSERT("No channels found", channels > 0);
 	int32 brickDataSize = brickSize - 2 * overlap;
 
-
+	cout << std::endl;
 	cout << "Preprocessing started with the following parameters: \n" <<
 		"Inpath: " << inPath << "\n" <<
 		"Outpath: " << outPath << "\n" <<
@@ -457,8 +462,10 @@ int main(int argc, char* argv[])
 		"Outfile: " << outFile << "\n" <<
 		"Volume size: [" << volumeSize[0] << ", " << volumeSize[1] << ", " << volumeSize[2] << "]\n"
 		"Brick size: " << brickSize << "\n" <<
+		"Grid spacing: " << gridSpacing.x() << ", " << gridSpacing.y() << ", " << gridSpacing.z() << "\n"
 		"Overlap: " << overlap << "\n" <<
-		"Compression: " << GetCompressionTypeName(compression) << "\n";
+		"Compression: " << GetCompressionTypeName(compression) << "\n" <<
+		"tMin: " << tMin << ", tMax: " << tMax << "\n";
 	if(compression == COMPRESSION_FIXEDQUANT || compression == COMPRESSION_FIXEDQUANT_QF)
 	{
 		cout << "Quantization Steps: [";
