@@ -469,11 +469,13 @@ TimeVolumeIO::Brick& TimeVolumeIO::AddBrick(int32 timestep, const Vec3i& spatial
 		}
 		else
 		{
-			fileFlags = CREATE_NEW;
+			//fileFlags = CREATE_NEW;
+			fileFlags = CREATE_ALWAYS;
 		}
 
 		m_hCurrentOutputFile = CreateFileA(fileName.c_str(), GENERIC_WRITE, 0, 0, fileFlags, 0, 0);
-		E_ASSERT("Could not create file " << fileName + " for writing", m_hCurrentOutputFile != INVALID_HANDLE_VALUE);
+		DWORD errorCode = GetLastError();
+		E_ASSERT("Could not create file " << fileName + " for writing, error code: " << errorCode, m_hCurrentOutputFile != INVALID_HANDLE_VALUE);
 		SetEndOfFile(m_hCurrentOutputFile);
 	}
 
