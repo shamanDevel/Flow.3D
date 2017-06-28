@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <string>
 
 #include <D3D11.h>
 #include <D3DX11Effect/d3dx11effect.h>
@@ -23,8 +24,11 @@ typedef std::map< ID3D11Device*, ID3DX11Effect* > TransferFunctionEditorEffectMa
 class TransferFunctionEditor
 {
 public:
-    // Create a TransferFunctionEditor of size uiWidth x uiHeight
-	TransferFunctionEditor(UINT uiWidth, UINT uiHeight);
+    // Create a TransferFunctionEditor of size uiWidth x uiHeight with multiple instances.
+	// Each instance is completely independent of each other, in terms of scaling an the transfer function line.
+	//  The names of these instances as passed, these are displayed in the ui. 
+	//  In the API, you access them by the zero-based index.
+	TransferFunctionEditor(UINT uiWidth, UINT uiHeight, std::vector<std::string> instanceNames);
 	~TransferFunctionEditor();
 
     // Callbacks
@@ -42,14 +46,14 @@ public:
 	void						setHistogramSRV(ID3D11ShaderResourceView* pSRV) {  pHistogramSRV_ = pSRV;  }
 
     // Access to the transfer function texture/SRV
-	ID3D11Texture1D*			getTexture() const { return pTfTex_; }
-	ID3D11ShaderResourceView*	getSRV() const { return pTfSRV_; }
+	ID3D11Texture1D*			getTexture(int instance) const { return pTfTex_[instance]; }
+	ID3D11ShaderResourceView*	getSRV(int instance) const { return pTfSRV_[instance]; }
 
     // Loading and saving of transfer functions to files
-	void						saveTransferFunction();
-	void						loadTransferFunction();
-	void						saveTransferFunction(std::ofstream* binary_file);
-	void						loadTransferFunction(std::ifstream* binary_file);
+	void						saveTransferFunction(int instance);
+	void						loadTransferFunction(int instance);
+	void						saveTransferFunction(int instance, std::ofstream* binary_file);
+	void						loadTransferFunction(int instance, std::ifstream* binary_file);
 
 	HRESULT						saveTfLegend();
 
@@ -57,18 +61,20 @@ public:
 	void						setVisible( bool b );
 	bool						isVisible() { return bShowTfEditor_; }
 
+	int							getCurrentInstance() { return iCurrentInstance_; }
+	void						setCurrentInstance(int instance);
 
-	bool						transferFuncTexChanged() { return bTransferFunctionTexChanged_; }
+	bool						transferFuncTexChanged(int instance) { return bTransferFunctionTexChanged_[instance]; }
 
 
-	void						bringChannelToTop( int ch );
+	void						bringChannelToTop(int instance, int ch );
 
-	void						reset( );
+	void						reset(int instance);
 
-	void						moveSelectedControlPoint( float fPos, int iDim );
-	float						getSelectedControlPointCoord( int iDim );
+	void						moveSelectedControlPoint(int instance, float fPos, int iDim );
+	float						getSelectedControlPointCoord(int instance, int iDim );
 
-	int							getSelectedChannel() {return iaCurrChannelsOrder_[0];}
+	int							getSelectedChannel(int instance) {return iaCurrChannelsOrder_[instance][0];}
 
 	bool						isPointSelected();
 
@@ -80,14 +86,14 @@ public:
 
 	int							getTimestamp() const { return iTimestamp_; }
 
-	float						getTfRangeMin() const	{ return v2fTfRangeMinMax_.x(); }
-	float						getTfRangeMax() const	{ return v2fTfRangeMinMax_.y(); }
+	float						getTfRangeMin(int instance) const	{ return v2fTfRangeMinMax_[instance].x(); }
+	float						getTfRangeMax(int instance) const	{ return v2fTfRangeMinMax_[instance].y(); }
 
-	void						setTfRangeMin(float val)	{ v2fTfRangeMinMax_.x() = val; }
-	void						setTfRangeMax(float val)	{ v2fTfRangeMinMax_.y() = val; }
+	void						setTfRangeMin(int instance, float val)	{ v2fTfRangeMinMax_[instance].x() = val; }
+	void						setTfRangeMax(int instance, float val)	{ v2fTfRangeMinMax_[instance].y() = val; }
 
-	float						getAlphaScale() {return fAlphaScale_;}
-	void						setAlphaScale(float f) {fAlphaScale_ = f; /*updateTexture();*/}
+	float						getAlphaScale(int instance) {return fAlphaScale_[instance];}
+	void						setAlphaScale(int instance, float f) {fAlphaScale_[instance] = f; /*updateTexture();*/}
 
 protected:
 	static UINT								s_uiConstructorCallCount_;
@@ -98,14 +104,18 @@ protected:
 	bool 									bMouseOutside_;
     tum3D::Vec2i 							v2iCursorPos_;
 
-	bool									bTransferFunctionTexChanged_;
+	size_t									iInstanceCount_;
+	std::vector<std::string>				vsInstanceNames_;
+	int                                     iCurrentInstance_;
 
-	TransferFunctionLine*					pTfLineR_;
-	TransferFunctionLine*					pTfLineG_;
-	TransferFunctionLine*					pTfLineB_;
-	TransferFunctionLine*					pTfLineAlpha_;
-	TransferFunctionLine*					paChannels_[4]; 
-	int										iaCurrChannelsOrder_[4]; 
+	std::vector<bool>						bTransferFunctionTexChanged_;
+
+	std::vector<TransferFunctionLine*>		pTfLineR_;
+	std::vector<TransferFunctionLine*>		pTfLineG_;
+	std::vector<TransferFunctionLine*>		pTfLineB_;
+	std::vector<TransferFunctionLine*>		pTfLineAlpha_;
+	std::vector<TransferFunctionLine**>		paChannels_;
+	std::vector<int*>						iaCurrChannelsOrder_;
 
 	int										iPickedControlPoint_;	
 	int										iSelectedControlPoint_;	
@@ -115,10 +125,10 @@ protected:
 	tum3D::Vec2i							v2iTopLeftCornerUI_;
 	tum3D::Vec2i							v2iTopLeftCorner_;
 
-	float*									pTexData_;
+	std::vector<float*>						pTexData_;
 
-	ID3D11Texture1D*						pTfTex_;
-	ID3D11ShaderResourceView*				pTfSRV_;
+	std::vector<ID3D11Texture1D*>			pTfTex_;
+	std::vector<ID3D11ShaderResourceView*>	pTfSRV_;
 
 	bool									bShowTfEditor_;
 
@@ -144,14 +154,14 @@ protected:
 
 	int										iTimestamp_;
 
-    tum3D::Vec2f 							v2fTfRangeMinMax_;
-	float									fAlphaScale_;
+	std::vector<tum3D::Vec2f>				v2fTfRangeMinMax_;
+	std::vector<float>						fAlphaScale_;
 
 
 
 	void						drawTransferFunction( );
 	bool						handleMessages( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
-	void						updateTexture();
+	void						updateTexture(int instance);
 	void						initUI();
 	void						updateUiPosition( UINT uiBBWidth, UINT uiBBHeight );
 };

@@ -28,7 +28,8 @@ using namespace tum3D;
 
 enum eUIControls_Dx11TfEditor
 {
-	UI_DX11TFEDT_COMBO_SELECTED_CHANNEL=0,
+	UI_DX11TFEDT_COMBO_SELECTED_INSTANCE=0,
+	UI_DX11TFEDT_COMBO_SELECTED_CHANNEL,
 	UI_DX11TFEDT_BTN_RESET,
 	UI_DX11TFEDT_FLOAT_POS_X,
 	UI_DX11TFEDT_FLOAT_POS_Y,
@@ -65,11 +66,19 @@ void TW_CALL Dx11TfEditorGetVarCallback( void *value, void *clientData )
 	TransferFunctionEditor* pTfEdt				= cd->first;
 	eUIControls_Dx11TfEditor eUiId		= static_cast<eUIControls_Dx11TfEditor>(cd->second);
 
+	int inst = pTfEdt->getCurrentInstance();
+
 	switch( eUiId )
     {
+		case UI_DX11TFEDT_COMBO_SELECTED_INSTANCE :
+		{
+			*((int*)value) = inst;
+			break;
+		}
+
 		case UI_DX11TFEDT_COMBO_SELECTED_CHANNEL :
 		{
-			int iChannelId = pTfEdt->getSelectedChannel();
+			int iChannelId = pTfEdt->getSelectedChannel(inst);
 			*((int*)value) = iChannelId;
 			break;
 		}
@@ -77,25 +86,25 @@ void TW_CALL Dx11TfEditorGetVarCallback( void *value, void *clientData )
 		case UI_DX11TFEDT_FLOAT_POS_X :
 		case UI_DX11TFEDT_FLOAT_POS_Y :
 		{
-			*((float*)value) = pTfEdt->getSelectedControlPointCoord( eUiId == UI_DX11TFEDT_FLOAT_POS_X ? 0 : 1 );
+			*((float*)value) = pTfEdt->getSelectedControlPointCoord(inst, eUiId == UI_DX11TFEDT_FLOAT_POS_X ? 0 : 1 );
 			break;
 		}
 
 		case UI_DX11TFEDT_FLOAT_SCALE_ALPHA : 
 		{
-			*((float*)value) = pTfEdt->getAlphaScale();
+			*((float*)value) = pTfEdt->getAlphaScale(inst);
 			break;
 		}
 
 		case UI_DX11TFEDT_FLOAT_TFRANGE_MIN : 
 		{
-			*((float*)value) = pTfEdt->getTfRangeMin();
+			*((float*)value) = pTfEdt->getTfRangeMin(inst);
 			break;
 		}
 	
 		case UI_DX11TFEDT_FLOAT_TFRANGE_MAX : 
 		{
-			*((float*)value) = pTfEdt->getTfRangeMax();
+			*((float*)value) = pTfEdt->getTfRangeMax(inst);
 			break;
 		}
 
@@ -123,42 +132,50 @@ void TW_CALL Dx11TfEditorSetVarCallback( const void *value, void *clientData )
 	TransferFunctionEditor* pTfEdt				= cd->first;
 	eUIControls_Dx11TfEditor eUiId		= static_cast<eUIControls_Dx11TfEditor>(cd->second);
 
+	int inst = pTfEdt->getCurrentInstance();
+
 	switch( eUiId )
     {
+		case UI_DX11TFEDT_COMBO_SELECTED_INSTANCE :
+		{
+			pTfEdt->setCurrentInstance(*((int*)value));
+			break;
+		}
+
 		case UI_DX11TFEDT_COMBO_SELECTED_CHANNEL :
 		{
-			pTfEdt->bringChannelToTop( *((int*)value) );
+			pTfEdt->bringChannelToTop(inst, *((int*)value) );
 			break;
 		}
 
 		case UI_DX11TFEDT_FLOAT_POS_X :
 		case UI_DX11TFEDT_FLOAT_POS_Y :
 		{
-			pTfEdt->moveSelectedControlPoint( *((float*)value), eUiId == UI_DX11TFEDT_FLOAT_POS_X ? 0 : 1 );
+			pTfEdt->moveSelectedControlPoint(inst, *((float*)value), eUiId == UI_DX11TFEDT_FLOAT_POS_X ? 0 : 1 );
 			break;
 		}
 
 		case UI_DX11TFEDT_FLOAT_SCALE_ALPHA : 
 		{
-			pTfEdt->setAlphaScale( *((float*)value) );
+			pTfEdt->setAlphaScale(inst, *((float*)value) );
 			break;
 		}
 
 		case UI_DX11TFEDT_FLOAT_TFRANGE_MIN : 
 		{
-			pTfEdt->setTfRangeMin( *((float*)value) );
+			pTfEdt->setTfRangeMin(inst, *((float*)value) );
 			break;
 		}
 	
 		case UI_DX11TFEDT_FLOAT_TFRANGE_MAX : 
 		{
-			pTfEdt->setTfRangeMax( *((float*)value) );
+			pTfEdt->setTfRangeMax(inst, *((float*)value) );
 			break;
 		}
 		
 		case UI_DX11TFEDT_BOOL_SHOW_HISTOGRAM : 
 		{
-			pTfEdt->setShowHistogram( *((bool*)value) );
+			pTfEdt->setShowHistogram(*((bool*)value) );
 			break;
 		}
 		
@@ -180,23 +197,25 @@ void TW_CALL Dx11TfEditorButtonCallback( void *clientData )
 	TransferFunctionEditor* pTfEdt				= cd->first;
 	eUIControls_Dx11TfEditor eUiId		= static_cast<eUIControls_Dx11TfEditor>(cd->second);
 
+	int inst = pTfEdt->getCurrentInstance();
+
 	switch( eUiId )
     {
 		case UI_DX11TFEDT_BTN_RESET :
 		{
-			pTfEdt->reset();
+			pTfEdt->reset(inst);
 			break;
 		}
 
 		case UI_DX11TFEDT_BTN_SAVE_TF :
 		{
-			pTfEdt->saveTransferFunction();
+			pTfEdt->saveTransferFunction(inst);
 			break;
 		}
 
 		case UI_DX11TFEDT_BTN_LOAD_TF :
 		{
-			pTfEdt->loadTransferFunction();
+			pTfEdt->loadTransferFunction(inst);
 			break;
 		}
 
@@ -207,19 +226,23 @@ void TW_CALL Dx11TfEditorButtonCallback( void *clientData )
 //-----------------------------------------------------------------------------
 // Constructor transfer function editor
 //-----------------------------------------------------------------------------
-TransferFunctionEditor::TransferFunctionEditor(UINT uiWidth, UINT uiHeight)
+TransferFunctionEditor::TransferFunctionEditor(UINT uiWidth, UINT uiHeight, std::vector<std::string> instanceNames)
 	: bMouseOutside_(true)
-	, v2iCursorPos_(0,0)
-	, bTransferFunctionTexChanged_(false)
+	, v2iCursorPos_(0, 0)
+	, iInstanceCount_(instanceNames.size())
+	, vsInstanceNames_(instanceNames)
+	, iCurrentInstance_(0)
+	, bTransferFunctionTexChanged_(instanceNames.size())
 	, iPickedControlPoint_(NONE_PICKED)
 	, iSelectedControlPoint_(NONE_PICKED)
 	, v2iSizeUI_(uiWidth, uiHeight )
 	, v2iTopLeftCornerUI_(0,0)
 	, v2iTopLeftCorner_(0,0)
-	, fAlphaScale_(1.0f)
-	, pTexData_(NULL)
-	, pTfTex_(NULL)
-	, pTfSRV_(NULL)
+	, fAlphaScale_(instanceNames.size())
+	, iaCurrChannelsOrder_(instanceNames.size())
+	, pTexData_(instanceNames.size())
+	, pTfTex_(instanceNames.size())
+	, pTfSRV_(instanceNames.size())
 	, bShowTfEditor_(true)
 	, pd3dDevice_(NULL)
 	, pFxTechRenderTFEWindow_(NULL)
@@ -234,19 +257,26 @@ TransferFunctionEditor::TransferFunctionEditor(UINT uiWidth, UINT uiHeight)
 	, fExpHistoScale_(0.2f)
 	, bShowHistogram_(true)
 	, iTimestamp_(0)
-	, v2fTfRangeMinMax_(0.0f,1.0f)
-    , v2iSizeTfEdt_(0,0)
+	, v2fTfRangeMinMax_(instanceNames.size())
+    , v2iSizeTfEdt_(instanceNames.size())
 {	
 	uiUniqueID_ = ++s_uiConstructorCallCount_;
+	assert(instanceNames.size() > 0);
 
     v2iSizeTfEdt_ = Vec2i(v2iSizeUI_.x()-(2*DX11TFEDITOR_CELL_SPACING), v2iSizeUI_.y()-(2*DX11TFEDITOR_CELL_SPACING));
 
-	for(int k=0; k<4; k++)
-		iaCurrChannelsOrder_[k] = k; 
+	for (int inst = 0; inst < iInstanceCount_; ++inst) {
+		bTransferFunctionTexChanged_[inst] = false;
+		fAlphaScale_[inst] = 1.0f;
+		v2fTfRangeMinMax_[inst] = Vec2f(0.0f, 1.0f);
 
+		iaCurrChannelsOrder_[inst] = new int[4];
+		for (int k = 0; k<4; k++)
+			iaCurrChannelsOrder_[inst][k] = k;
 
-	pTexData_ = new float[ v2iSizeTfEdt_.x()*4 ];
-	memset( pTexData_, 0, v2iSizeTfEdt_.x()*4*sizeof(float) );
+		pTexData_[inst] = new float[v2iSizeTfEdt_.x() * 4];
+		memset(pTexData_[inst], 0, v2iSizeTfEdt_.x() * 4 * sizeof(float));
+	}
 
 	vCallbackClientData_.resize(0);
 	for(UINT i=0; i<UI_DX11TFEDT_NUM_CONTROLS; i++)
@@ -259,8 +289,10 @@ TransferFunctionEditor::TransferFunctionEditor(UINT uiWidth, UINT uiHeight)
 //-----------------------------------------------------------------------------
 TransferFunctionEditor::~TransferFunctionEditor()
 {
-	if ( pTexData_ != NULL )
-		delete pTexData_;
+	for (int inst = 0; inst < iInstanceCount_; ++inst) {
+		if (pTexData_[inst] != NULL)
+			delete[] pTexData_[inst];
+	}
 
 	assert(pd3dDevice_ == NULL);
 }
@@ -302,20 +334,31 @@ void TransferFunctionEditor::onResizeSwapChain( UINT uiBBWidth, UINT uiBBHeight 
 HRESULT TransferFunctionEditor::onCreateDevice(ID3D11Device* pd3dDevice)
 {
 	HRESULT hr;
-	
-	assert( pd3dDevice != NULL);
 
-	pd3dDevice_		  = pd3dDevice;
+	assert(pd3dDevice != NULL);
 
-	pTfLineAlpha_	= new TransferFunctionLine( Vec4f(0,1,1,1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
-	pTfLineR_ 		= new TransferFunctionLine( Vec4f(1,0,0,1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
-	pTfLineG_ 		= new TransferFunctionLine( Vec4f(0,1,0,1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
-	pTfLineB_ 		= new TransferFunctionLine( Vec4f(0,0,1,1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
+	pd3dDevice_ = pd3dDevice;
 
-	paChannels_[0] = pTfLineR_;
-	paChannels_[1] = pTfLineG_;
-	paChannels_[2] = pTfLineB_;
-	paChannels_[3] = pTfLineAlpha_;
+	paChannels_.resize(iInstanceCount_);
+	pTfLineAlpha_.resize(iInstanceCount_);
+	pTfLineR_.resize(iInstanceCount_);
+	pTfLineG_.resize(iInstanceCount_);
+	pTfLineB_.resize(iInstanceCount_);
+
+	for (int inst = 0; inst < iInstanceCount_; ++inst) {
+
+		pTfLineAlpha_[inst] = new TransferFunctionLine(Vec4f(0, 1, 1, 1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
+		pTfLineR_[inst] = new TransferFunctionLine(Vec4f(1, 0, 0, 1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
+		pTfLineG_[inst] = new TransferFunctionLine(Vec4f(0, 1, 0, 1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
+		pTfLineB_[inst] = new TransferFunctionLine(Vec4f(0, 0, 1, 1), v2iSizeTfEdt_.x() - 1, v2iSizeTfEdt_.y() - 1);
+
+		paChannels_[inst] = new TransferFunctionLine*[4];
+		paChannels_[inst][0] = pTfLineR_[inst];
+		paChannels_[inst][1] = pTfLineG_[inst];
+		paChannels_[inst][2] = pTfLineB_[inst];
+		paChannels_[inst][3] = pTfLineAlpha_[inst];
+
+	}
 
 	ID3DX11Effect* pEffect = NULL;
 	TransferFunctionEditorEffectMap::const_iterator it = s_mapEffect_.find( pd3dDevice_ );
@@ -379,36 +422,41 @@ HRESULT TransferFunctionEditor::onCreateDevice(ID3D11Device* pd3dDevice)
 	pFxSrHistogram_ = pEffect->GetVariableByName("txHistogram_")->AsShaderResource();
 	pFxfExpHistoScale_ = pEffect->GetVariableByName("fExpScaleHisto_")->AsScalar();
 
-
-	if( FAILED(hr = pTfLineAlpha_->onCreateDevice( pd3dDevice_, pEffect )) )
-		return hr;
-
-	if( FAILED(hr = pTfLineR_->onCreateDevice( pd3dDevice_, pEffect )) )
-		return hr;
-
-	if( FAILED(hr = pTfLineG_->onCreateDevice( pd3dDevice_, pEffect )) )
-		return hr;
-
-	if( FAILED(hr = pTfLineB_->onCreateDevice( pd3dDevice_, pEffect )) )
-		return hr;
-
 	D3D11_TEXTURE1D_DESC texDesc;
-	texDesc.MipLevels			= 1;
-	texDesc.ArraySize			= 1;
-	texDesc.Format				= DXGI_FORMAT_R32G32B32A32_FLOAT;
-	texDesc.Usage				= D3D11_USAGE_DEFAULT;
-	texDesc.BindFlags			= D3D11_BIND_SHADER_RESOURCE;
-	texDesc.CPUAccessFlags		= 0;
-	texDesc.MiscFlags			= 0;
-	texDesc.Width				= v2iSizeTfEdt_.x();
+	texDesc.MipLevels = 1;
+	texDesc.ArraySize = 1;
+	texDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	texDesc.Usage = D3D11_USAGE_DEFAULT;
+	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	texDesc.CPUAccessFlags = 0;
+	texDesc.MiscFlags = 0;
+	texDesc.Width = v2iSizeTfEdt_.x();
 
-	if( FAILED(hr = pd3dDevice_->CreateTexture1D(&texDesc, NULL, &pTfTex_)) )
-		return hr;
+	pTfTex_.resize(iInstanceCount_);
+	pTfSRV_.resize(iInstanceCount_);
+	for (int inst = 0; inst < iInstanceCount_; ++inst) {
 
-	if( FAILED(hr = pd3dDevice_->CreateShaderResourceView(pTfTex_, NULL, &pTfSRV_)) )
-		return hr;
+		if (FAILED(hr = pTfLineAlpha_[inst]->onCreateDevice(pd3dDevice_, pEffect)))
+			return hr;
 
-	updateTexture();
+		if (FAILED(hr = pTfLineR_[inst]->onCreateDevice(pd3dDevice_, pEffect)))
+			return hr;
+
+		if (FAILED(hr = pTfLineG_[inst]->onCreateDevice(pd3dDevice_, pEffect)))
+			return hr;
+
+		if (FAILED(hr = pTfLineB_[inst]->onCreateDevice(pd3dDevice_, pEffect)))
+			return hr;
+
+		if (FAILED(hr = pd3dDevice_->CreateTexture1D(&texDesc, NULL, &pTfTex_[inst])))
+			return hr;
+
+		if (FAILED(hr = pd3dDevice_->CreateShaderResourceView(pTfTex_[inst], NULL, &pTfSRV_[inst])))
+			return hr;
+
+		updateTexture(inst);
+
+	}
 
 	initUI();
 
@@ -417,8 +465,10 @@ HRESULT TransferFunctionEditor::onCreateDevice(ID3D11Device* pd3dDevice)
 
 void TransferFunctionEditor::onDestroyDevice()
 {
-	SAFE_RELEASE( pTfSRV_ );
-	SAFE_RELEASE( pTfTex_ );
+	for (int inst = 0; inst < iInstanceCount_; ++inst) {
+		SAFE_RELEASE(pTfSRV_[inst]);
+		SAFE_RELEASE(pTfTex_[inst]);
+	}
 
 	if(pTfEdtUi_!=NULL) {
 		TwDeleteBar( pTfEdtUi_ );
@@ -429,10 +479,12 @@ void TransferFunctionEditor::onDestroyDevice()
 	if( it != s_mapEffect_.end() )
 		SAFE_RELEASE_REF( (*it).second );
 
-	SAFE_DELETE( pTfLineAlpha_ );
-	SAFE_DELETE( pTfLineR_ );
-	SAFE_DELETE( pTfLineG_ );
-	SAFE_DELETE( pTfLineB_ );
+	for (int inst = 0; inst < iInstanceCount_; ++inst) {
+		SAFE_DELETE(pTfLineAlpha_[inst]);
+		SAFE_DELETE(pTfLineR_[inst]);
+		SAFE_DELETE(pTfLineG_[inst]);
+		SAFE_DELETE(pTfLineB_[inst]);
+	}
 
 	pd3dDevice_ = NULL;
 }
@@ -454,8 +506,22 @@ void TransferFunctionEditor::initUI()
 	ssDefine << " '" << ssName.str().c_str() << "' color='32 32 128' alpha=196 valueswidth=70 text=light resizable=false iconifiable=false fontresizable=false movable=false refresh=1 label='TransferFunction Editor ' ";
 	TwDefine( ssDefine.str().c_str()  );
 
-	vector<TwEnumVal>	vChannelList;
+	// Instances
+	vector<TwEnumVal>	vInstanceList;
 	TwEnumVal entry;
+	for (unsigned int i = 0; i < iInstanceCount_; i++)
+	{
+		entry.Value = i;
+		entry.Label = vsInstanceNames_[i].c_str();
+		vInstanceList.push_back(entry);
+	}
+	TwType instanceListType = TwDefineEnum("INSTANCELIST", &(vInstanceList[0]), (unsigned int)vInstanceList.size());
+	TwAddVarCB(pTfEdtUi_, "UI_DX11TFEDT_COMBO_SELECTED_INSTANCE", instanceListType, Dx11TfEditorSetVarCallback, Dx11TfEditorGetVarCallback, &(vCallbackClientData_[UI_DX11TFEDT_COMBO_SELECTED_INSTANCE]), " label='Active Instance' ");
+	TwAddSeparator(pTfEdtUi_, "", "");
+
+	// channel data
+
+	vector<TwEnumVal>	vChannelList;
 	string straChannelnames[] = { "Red", "Green", "Blue", "Alpha" };
 
 	for (unsigned int i = 0; i < 4; i++) 
@@ -472,6 +538,8 @@ void TransferFunctionEditor::initUI()
 	TwAddVarCB( pTfEdtUi_, "UI_DX11TFEDT_FLOAT_SCALE_ALPHA",TW_TYPE_FLOAT, Dx11TfEditorSetVarCallback, Dx11TfEditorGetVarCallback, &(vCallbackClientData_[UI_DX11TFEDT_FLOAT_SCALE_ALPHA]),	" label='Scale Alpha' precision=6 min=0.0001 step=0.0001" );
 	TwAddVarCB( pTfEdtUi_, "UI_DX11TFEDT_FLOAT_TFRANGE_MIN",TW_TYPE_FLOAT, Dx11TfEditorSetVarCallback, Dx11TfEditorGetVarCallback, &(vCallbackClientData_[UI_DX11TFEDT_FLOAT_TFRANGE_MIN]),	" label='Range Min' precision=4 step=0.0001" );
 	TwAddVarCB( pTfEdtUi_, "UI_DX11TFEDT_FLOAT_TFRANGE_MAX",TW_TYPE_FLOAT, Dx11TfEditorSetVarCallback, Dx11TfEditorGetVarCallback, &(vCallbackClientData_[UI_DX11TFEDT_FLOAT_TFRANGE_MAX]),	" label='Range Max' precision=4 step=0.0001" );
+
+	// Loading / Saving
 
 	TwAddSeparator(pTfEdtUi_, "", "");
 	TwAddButton( pTfEdtUi_, "UI_DX11TFEDT_BTN_LOAD_TF", Dx11TfEditorButtonCallback, &(vCallbackClientData_[UI_DX11TFEDT_BTN_LOAD_TF]), " label='Load' ");
@@ -498,6 +566,12 @@ void TransferFunctionEditor::onFrameRender( float fTime, float fElapsedTime )
 		return;
 	
 	drawTransferFunction( );
+}
+
+void TransferFunctionEditor::setCurrentInstance(int instance)
+{
+	iCurrentInstance_ = instance;
+	iSelectedControlPoint_ = NONE_PICKED;
 }
 
 //-----------------------------------------------------------------------------
@@ -555,12 +629,12 @@ void TransferFunctionEditor::drawTransferFunction( )
 
 	pFxiSelectedPoint_->SetInt( NONE_PICKED );
 
-	paChannels_[ iaCurrChannelsOrder_[3] ]->draw( );
-	paChannels_[ iaCurrChannelsOrder_[2] ]->draw( );
-	paChannels_[ iaCurrChannelsOrder_[1] ]->draw( );
+	paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][3] ]->draw( );
+	paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][2] ]->draw( );
+	paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][1] ]->draw( );
 
 	pFxiSelectedPoint_->SetInt( iSelectedControlPoint_ );
-	paChannels_[ iaCurrChannelsOrder_[0] ]->draw( );
+	paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->draw( );
 	
 	pImmediateContext->RSSetViewports( cRT, &OldVP );
 	SAFE_RELEASE( pImmediateContext );
@@ -614,56 +688,56 @@ bool TransferFunctionEditor::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam,
 	{
 		case WM_LBUTTONDBLCLK:
 		{	
-			int p = paChannels_[ iaCurrChannelsOrder_[0] ]->getControlPointId( v2iCursorPos_ );
+			int p = paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->getControlPointId( v2iCursorPos_ );
 			if ( p == -1 )
 			{
-				paChannels_[ iaCurrChannelsOrder_[0] ]->addControlPoint( v2iCursorPos_ );
-				iSelectedControlPoint_ = iPickedControlPoint_ = paChannels_[ iaCurrChannelsOrder_[0] ]->getControlPointId( v2iCursorPos_ );
+				paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->addControlPoint( v2iCursorPos_ );
+				iSelectedControlPoint_ = iPickedControlPoint_ = paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->getControlPointId( v2iCursorPos_ );
 			}
 			else
 			{
-				paChannels_[ iaCurrChannelsOrder_[0] ]->deleteControlPoint( p );
+				paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->deleteControlPoint( p );
 				iSelectedControlPoint_ = iPickedControlPoint_ = NONE_PICKED;
 			}
 		
-			updateTexture();
+			updateTexture(iCurrentInstance_);
 			break;
 		}
 
 		case WM_LBUTTONDOWN:
 		{				
-			iPickedControlPoint_ = paChannels_[ iaCurrChannelsOrder_[0] ]->getControlPointId( v2iCursorPos_ );
+			iPickedControlPoint_ = paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->getControlPointId( v2iCursorPos_ );
 
 			if( iPickedControlPoint_ == NONE_PICKED )
 			{
-				if( paChannels_[ iaCurrChannelsOrder_[1] ]->liesOnTheLine( v2iCursorPos_ ) )
+				if( paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][1] ]->liesOnTheLine( v2iCursorPos_ ) )
 				{
-					int ind = iaCurrChannelsOrder_[1];
-					iaCurrChannelsOrder_[1] = iaCurrChannelsOrder_[0];
-					iaCurrChannelsOrder_[0] = ind;
+					int ind = iaCurrChannelsOrder_[iCurrentInstance_][1];
+					iaCurrChannelsOrder_[iCurrentInstance_][1] = iaCurrChannelsOrder_[iCurrentInstance_][0];
+					iaCurrChannelsOrder_[iCurrentInstance_][0] = ind;
 
-					iPickedControlPoint_ = paChannels_[ ind ]->getControlPointId( v2iCursorPos_ );
+					iPickedControlPoint_ = paChannels_[iCurrentInstance_][ ind ]->getControlPointId( v2iCursorPos_ );
 				}
 				else 
-				if( paChannels_[ iaCurrChannelsOrder_[2] ]->liesOnTheLine( v2iCursorPos_ ) )
+				if( paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][2] ]->liesOnTheLine( v2iCursorPos_ ) )
 				{								
-					int ind = iaCurrChannelsOrder_[2];
-					iaCurrChannelsOrder_[2] = iaCurrChannelsOrder_[1];
-					iaCurrChannelsOrder_[1] = iaCurrChannelsOrder_[0];
-					iaCurrChannelsOrder_[0] = ind;
+					int ind = iaCurrChannelsOrder_[iCurrentInstance_][2];
+					iaCurrChannelsOrder_[iCurrentInstance_][2] = iaCurrChannelsOrder_[iCurrentInstance_][1];
+					iaCurrChannelsOrder_[iCurrentInstance_][1] = iaCurrChannelsOrder_[iCurrentInstance_][0];
+					iaCurrChannelsOrder_[iCurrentInstance_][0] = ind;
 
-					iPickedControlPoint_ = paChannels_[ ind ]->getControlPointId( v2iCursorPos_ );
+					iPickedControlPoint_ = paChannels_[iCurrentInstance_][ ind ]->getControlPointId( v2iCursorPos_ );
 				}
 				else 
-				if( paChannels_[ iaCurrChannelsOrder_[3] ]->liesOnTheLine( v2iCursorPos_ ) )
+				if( paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][3] ]->liesOnTheLine( v2iCursorPos_ ) )
 				{				
-					int ind = iaCurrChannelsOrder_[3];
-					iaCurrChannelsOrder_[3] = iaCurrChannelsOrder_[2];
-					iaCurrChannelsOrder_[2] = iaCurrChannelsOrder_[1];
-					iaCurrChannelsOrder_[1] = iaCurrChannelsOrder_[0];
-					iaCurrChannelsOrder_[0] = ind;
+					int ind = iaCurrChannelsOrder_[iCurrentInstance_][3];
+					iaCurrChannelsOrder_[iCurrentInstance_][3] = iaCurrChannelsOrder_[iCurrentInstance_][2];
+					iaCurrChannelsOrder_[iCurrentInstance_][2] = iaCurrChannelsOrder_[iCurrentInstance_][1];
+					iaCurrChannelsOrder_[iCurrentInstance_][1] = iaCurrChannelsOrder_[iCurrentInstance_][0];
+					iaCurrChannelsOrder_[iCurrentInstance_][0] = ind;
 
-					iPickedControlPoint_ = paChannels_[ ind ]->getControlPointId( v2iCursorPos_ );
+					iPickedControlPoint_ = paChannels_[iCurrentInstance_][ ind ]->getControlPointId( v2iCursorPos_ );
 				}
 			}
 
@@ -680,8 +754,8 @@ bool TransferFunctionEditor::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam,
 		case WM_MOUSEMOVE:
 		if ( iPickedControlPoint_ != NONE_PICKED )
 		{
-			paChannels_[ iaCurrChannelsOrder_[0] ]->moveControlPoint( iPickedControlPoint_, v2iCursorPos_ );
-			updateTexture();
+			paChannels_[iCurrentInstance_][ iaCurrChannelsOrder_[iCurrentInstance_][0] ]->moveControlPoint( iPickedControlPoint_, v2iCursorPos_ );
+			updateTexture(iCurrentInstance_);
 		}
 		break;
 	}
@@ -694,14 +768,14 @@ bool TransferFunctionEditor::handleMessages(HWND hWnd, UINT uMsg, WPARAM wParam,
 //  Update the transfer function texture on the GPU
 //-----------------------------------------------------------------------------
 void
-TransferFunctionEditor::updateTexture()
+TransferFunctionEditor::updateTexture(int inst)
 {		
 	iTimestamp_++;
 
-	pTfLineR_	 ->fillArray( pTexData_, v2iSizeTfEdt_.x(), 0 );
-	pTfLineG_	 ->fillArray( pTexData_, v2iSizeTfEdt_.x(), 1 );
-	pTfLineB_	 ->fillArray( pTexData_, v2iSizeTfEdt_.x(), 2 );
-	pTfLineAlpha_->fillArray( pTexData_, v2iSizeTfEdt_.x(), 3 );
+	pTfLineR_[inst]	->fillArray( pTexData_[inst], v2iSizeTfEdt_.x(), 0 );
+	pTfLineG_[inst]	->fillArray( pTexData_[inst], v2iSizeTfEdt_.x(), 1 );
+	pTfLineB_[inst] ->fillArray( pTexData_[inst], v2iSizeTfEdt_.x(), 2 );
+	pTfLineAlpha_[inst]->fillArray( pTexData_[inst], v2iSizeTfEdt_.x(), 3 );
 
 	// update Texture
 	UINT srcRowPitch = v2iSizeTfEdt_.x()*4*sizeof(float);
@@ -711,9 +785,9 @@ TransferFunctionEditor::updateTexture()
 	pd3dDevice_->GetImmediateContext( &pImmediateContext );
 	assert( pImmediateContext != NULL );
 
-	pImmediateContext->UpdateSubresource( pTfTex_, 0, &box, pTexData_, srcRowPitch, 0 );
+	pImmediateContext->UpdateSubresource( pTfTex_[inst], 0, &box, pTexData_[inst], srcRowPitch, 0 );
 
-	bTransferFunctionTexChanged_ = true;
+	bTransferFunctionTexChanged_[inst] = true;
 
 	SAFE_RELEASE( pImmediateContext );
 }
@@ -765,7 +839,7 @@ static bool GetFilenameDialog(const wstring& lpstrTitle, const WCHAR* lpstrFilte
 }
 
 
-void TransferFunctionEditor::saveTransferFunction()
+void TransferFunctionEditor::saveTransferFunction(int inst)
 {
 	wstring wstrPathName;
 	if(GetFilenameDialog( L"Load TF", L"*.tf\0*.tf", wstrPathName, true ))
@@ -777,21 +851,21 @@ void TransferFunctionEditor::saveTransferFunction()
 			wstrPathName += ext;
 		}
 		std::ofstream file(wstrPathName, std::ios_base::binary);
-		saveTransferFunction(&file);
+		saveTransferFunction(inst, &file);
 	}
 }
 
-void TransferFunctionEditor::loadTransferFunction()
+void TransferFunctionEditor::loadTransferFunction(int inst)
 {
 	wstring wstrPathName;
 	if(GetFilenameDialog( L"Save TF", L"*.tf\0*.tf", wstrPathName, false ))
 	{
 		std::ifstream file(wstrPathName, std::ios_base::binary);
-		loadTransferFunction(&file);
+		loadTransferFunction(inst, &file);
 	}
 }
 
-void TransferFunctionEditor::saveTransferFunction(std::ofstream* binary_file)
+void TransferFunctionEditor::saveTransferFunction(int inst, std::ofstream* binary_file)
 {	
 	if( ! binary_file->is_open() )	
 		return;
@@ -800,7 +874,7 @@ void TransferFunctionEditor::saveTransferFunction(std::ofstream* binary_file)
 
 	for( int ch = 0; ch < 4; ch++)
 	{
-		pCp = paChannels_[ch]->getFirstPoint();
+		pCp = paChannels_[inst][ch]->getFirstPoint();
 
 		int count = 1;
 		for (TransferFunctionLine::sControlPoint *pTmp = pCp; pTmp->pNext_ != NULL; pTmp = pTmp->pNext_)
@@ -817,24 +891,24 @@ void TransferFunctionEditor::saveTransferFunction(std::ofstream* binary_file)
 	}
 
 	// write the order out
-	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[0])), sizeof(int));
-	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[1])), sizeof(int));
-	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[2])), sizeof(int));
-	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[3])), sizeof(int));
+	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][0])), sizeof(int));
+	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][1])), sizeof(int));
+	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][2])), sizeof(int));
+	binary_file->write(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][3])), sizeof(int));
 
 	// write other params: alpha scale and range
-	binary_file->write(reinterpret_cast<const char*>(&fAlphaScale_), sizeof(fAlphaScale_));
-	binary_file->write(reinterpret_cast<const char*>(&v2fTfRangeMinMax_), sizeof(v2fTfRangeMinMax_));
+	binary_file->write(reinterpret_cast<const char*>(&fAlphaScale_[inst]), sizeof(float));
+	binary_file->write(reinterpret_cast<const char*>(&v2fTfRangeMinMax_[inst]), sizeof(Vec2f));
 }
 
-void TransferFunctionEditor::loadTransferFunction(std::ifstream* binary_file)
+void TransferFunctionEditor::loadTransferFunction(int inst, std::ifstream* binary_file)
 {
 	if ( ! binary_file->is_open() )
 		return;
 
 	for( int ch = 0; ch < 4; ch++ )
 	{
-		paChannels_[ch]->reset();
+		paChannels_[inst][ch]->reset();
 
 		int iNumPoints;
 		binary_file->read(reinterpret_cast<char *>(&iNumPoints), sizeof(iNumPoints));
@@ -846,113 +920,113 @@ void TransferFunctionEditor::loadTransferFunction(std::ifstream* binary_file)
 		v2iPoint.x() = static_cast<int>(v.x() * (v2iSizeTfEdt_.x()-1));
 		v2iPoint.y() = static_cast<int>(v.y() * (v2iSizeTfEdt_.y()-1));
 		
-		paChannels_[ch]->moveControlPoint( 0, v2iPoint );
+		paChannels_[inst][ch]->moveControlPoint( 0, v2iPoint );
 
 		for (int i = 1; i < iNumPoints-1; i++)
 		{
 			binary_file->read(reinterpret_cast<char *>(&v),sizeof(Vec2f));
 			v2iPoint.x() = static_cast<int>(v.x() * (v2iSizeTfEdt_.x()-1));
 			v2iPoint.y() = static_cast<int>(v.y() * (v2iSizeTfEdt_.y()-1));
-			paChannels_[ch]->addControlPoint( v2iPoint );
+			paChannels_[inst][ch]->addControlPoint( v2iPoint );
 		}
 
 		binary_file->read(reinterpret_cast<char *>(&v),sizeof(Vec2f));
 		v2iPoint.x() = static_cast<int>(v.x() * (v2iSizeTfEdt_.x()-1));
 		v2iPoint.y() = static_cast<int>(v.y() * (v2iSizeTfEdt_.y()-1));
 		
-		paChannels_[ch]->moveControlPoint( iNumPoints-1, v2iPoint );
+		paChannels_[inst][ch]->moveControlPoint( iNumPoints-1, v2iPoint );
 	}
 
-	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[0])), sizeof(int));
-	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[1])), sizeof(int));
-	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[2])), sizeof(int));
-	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[3])), sizeof(int));
+	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][0])), sizeof(int));
+	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][1])), sizeof(int));
+	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][2])), sizeof(int));
+	binary_file->read(reinterpret_cast<char *>(&(iaCurrChannelsOrder_[inst][3])), sizeof(int));
 
 	// read other params: alpha scale and range
-	binary_file->read(reinterpret_cast<char*>(&fAlphaScale_), sizeof(fAlphaScale_));
-	binary_file->read(reinterpret_cast<char*>(&v2fTfRangeMinMax_), sizeof(v2fTfRangeMinMax_));	
+	binary_file->read(reinterpret_cast<char*>(&fAlphaScale_[inst]), sizeof(float));
+	binary_file->read(reinterpret_cast<char*>(&v2fTfRangeMinMax_[inst]), sizeof(Vec2f));
 
-	this->updateTexture();
+	this->updateTexture(inst);
 }
 
 
 
-void TransferFunctionEditor::bringChannelToTop( int ch )
+void TransferFunctionEditor::bringChannelToTop(int inst, int ch )
 {
-	if( iaCurrChannelsOrder_[0] == ch ) 
+	if( iaCurrChannelsOrder_[inst][0] == ch ) 
 		return;
 
-	if( iaCurrChannelsOrder_[1] == ch )
+	if( iaCurrChannelsOrder_[inst][1] == ch )
 	{
-		iaCurrChannelsOrder_[1] = iaCurrChannelsOrder_[0];
+		iaCurrChannelsOrder_[inst][1] = iaCurrChannelsOrder_[inst][0];
 	}
 	else
-	if( iaCurrChannelsOrder_[2] == ch )
+	if( iaCurrChannelsOrder_[inst][2] == ch )
 	{
-		iaCurrChannelsOrder_[2] = iaCurrChannelsOrder_[1];
-		iaCurrChannelsOrder_[1] = iaCurrChannelsOrder_[0];
+		iaCurrChannelsOrder_[inst][2] = iaCurrChannelsOrder_[inst][1];
+		iaCurrChannelsOrder_[inst][1] = iaCurrChannelsOrder_[inst][0];
 	}
 	else
-	if( iaCurrChannelsOrder_[3] == ch )
+	if( iaCurrChannelsOrder_[inst][3] == ch )
 	{
-		iaCurrChannelsOrder_[3] = iaCurrChannelsOrder_[2];
-		iaCurrChannelsOrder_[2] = iaCurrChannelsOrder_[1];
-		iaCurrChannelsOrder_[1] = iaCurrChannelsOrder_[0];
+		iaCurrChannelsOrder_[inst][3] = iaCurrChannelsOrder_[inst][2];
+		iaCurrChannelsOrder_[inst][2] = iaCurrChannelsOrder_[inst][1];
+		iaCurrChannelsOrder_[inst][1] = iaCurrChannelsOrder_[inst][0];
 	}
 
-	iaCurrChannelsOrder_[0] = ch;
+	iaCurrChannelsOrder_[inst][0] = ch;
 
 	iSelectedControlPoint_ = NONE_PICKED;
 }
 
 
 
-void TransferFunctionEditor::reset( )
+void TransferFunctionEditor::reset(int inst )
 {
-	paChannels_[ iaCurrChannelsOrder_[0] ]->reset();
-	paChannels_[ iaCurrChannelsOrder_[1] ]->reset();
-	paChannels_[ iaCurrChannelsOrder_[2] ]->reset();
-	paChannels_[ iaCurrChannelsOrder_[3] ]->reset();
+	paChannels_[inst][ iaCurrChannelsOrder_[inst][0] ]->reset();
+	paChannels_[inst][ iaCurrChannelsOrder_[inst][1] ]->reset();
+	paChannels_[inst][ iaCurrChannelsOrder_[inst][2] ]->reset();
+	paChannels_[inst][ iaCurrChannelsOrder_[inst][3] ]->reset();
 
 	iSelectedControlPoint_ = NONE_PICKED;
 
-	updateTexture();
+	updateTexture(inst);
 }
 
 
 
-void TransferFunctionEditor::moveSelectedControlPoint( float fPos, int iDim )
+void TransferFunctionEditor::moveSelectedControlPoint(int inst, float fPos, int iDim )
 {
 	if (iSelectedControlPoint_ == NONE_PICKED) return;
 
 	fPos = max(0.0f, min(fPos, 1.0f));
 
-    Vec2i v2iPosition = paChannels_[ iaCurrChannelsOrder_[0] ]->getControlPoint( iSelectedControlPoint_ );
+    Vec2i v2iPosition = paChannels_[inst][ iaCurrChannelsOrder_[inst][0] ]->getControlPoint( iSelectedControlPoint_ );
 
 	if(iDim == 0)
 	{
 		v2iPosition.x() = static_cast<int>( fPos * v2iSizeTfEdt_.x() );
-		paChannels_[ iaCurrChannelsOrder_[0] ]->moveControlPoint( iSelectedControlPoint_, v2iPosition );
+		paChannels_[inst][ iaCurrChannelsOrder_[inst][0] ]->moveControlPoint( iSelectedControlPoint_, v2iPosition );
 	}
 	else if(iDim == 1)
 	{
 		v2iPosition.y() = static_cast<int>( fPos * v2iSizeTfEdt_.y() );
-		paChannels_[ iaCurrChannelsOrder_[0] ]->moveControlPoint( iSelectedControlPoint_, v2iPosition );	
+		paChannels_[inst][ iaCurrChannelsOrder_[inst][0] ]->moveControlPoint( iSelectedControlPoint_, v2iPosition );
 	}
 
-	updateTexture();
+	updateTexture(inst);
 
 	return;
 }
 
 
 
-float TransferFunctionEditor::getSelectedControlPointCoord( int iDim )
+float TransferFunctionEditor::getSelectedControlPointCoord(int inst, int iDim )
 {
 	if(!isPointSelected())
 		return 0.0f;
 
-    Vec2i v2iPosition = paChannels_[ iaCurrChannelsOrder_[0] ]->getControlPoint( iSelectedControlPoint_ );
+    Vec2i v2iPosition = paChannels_[inst][ iaCurrChannelsOrder_[inst][0] ]->getControlPoint( iSelectedControlPoint_ );
 	float fResult = 0.0f;
 
 	if(iDim == 0)

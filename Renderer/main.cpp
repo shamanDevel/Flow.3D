@@ -246,7 +246,11 @@ uint g_guiFilterRadius[3] = { 0, 0, 0 };
 
 
 //Transfer function editor
-TransferFunctionEditor  g_tfEdt( 400, 200 );
+const int				TF_LINE_MEASURES = 0;
+const int				TF_HEAT_MAP = 1;
+const int				TF_RAYTRACE = 2;
+TransferFunctionEditor  g_tfEdt(400, 250, std::vector<std::string>(
+	{"Measures", "HeatMap", "Raytrace"}));
 int                     g_tfTimestamp = -1;
 cudaGraphicsResource*   g_pTfEdtSRVCuda = nullptr;
 
@@ -351,14 +355,14 @@ bool LoadRenderingParams(const std::string& filename)
 	}
 
 	// forward params to tf editor
-	g_tfEdt.setAlphaScale(g_raycastParams.m_alphaScale);
-	g_tfEdt.setTfRangeMin(g_raycastParams.m_transferFunctionRangeMin);
-	g_tfEdt.setTfRangeMax(g_raycastParams.m_transferFunctionRangeMax);
+	g_tfEdt.setAlphaScale(TF_RAYTRACE, g_raycastParams.m_alphaScale);
+	g_tfEdt.setTfRangeMin(TF_RAYTRACE, g_raycastParams.m_transferFunctionRangeMin);
+	g_tfEdt.setTfRangeMax(TF_RAYTRACE, g_raycastParams.m_transferFunctionRangeMax);
 
 	// load transfer function from separate binary file
 	std::ifstream fileTF(filename + ".tf", std::ios_base::binary);
 	if(fileTF.good()) {
-		g_tfEdt.loadTransferFunction(&fileTF);
+		g_tfEdt.loadTransferFunction(TF_RAYTRACE, &fileTF);
 		fileTF.close();
 	}
 
@@ -404,7 +408,7 @@ bool SaveRenderingParams(const std::string& filename)
 	config.Write(filename);
 
 	std::ofstream fileTF(filename + ".tf", std::ios_base::binary);
-	g_tfEdt.saveTransferFunction(&fileTF);
+	g_tfEdt.saveTransferFunction(TF_RAYTRACE, &fileTF);
 	fileTF.close();
 
 	return true;
@@ -1958,9 +1962,9 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 	if(FAILED(hr = g_tfEdt.onCreateDevice( pd3dDevice ))) {
 		return hr;
 	}
-	g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV();
-	g_heatMapParams.m_pTransferFunction = g_tfEdt.getSRV();
-	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(), cudaGraphicsRegisterFlagsNone));
+	g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV(TF_LINE_MEASURES);
+	g_heatMapParams.m_pTransferFunction = g_tfEdt.getSRV(TF_HEAT_MAP);
+	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(TF_RAYTRACE), cudaGraphicsRegisterFlagsNone));
 
 	//TracingBenchmark bench;
 	//bench.RunBenchmark(g_particleTraceParams, 64, 2048, 5, 0);
@@ -2233,14 +2237,14 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 
 
 	// Get raycast params from the TF Editor's UI
-	g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale();
-	g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin();
-	g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax();
-	g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin();
-	g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax();
-	g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale();
-	g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin();
-	g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax();
+	g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale(TF_RAYTRACE);
+	g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin(TF_RAYTRACE);
+	g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax(TF_RAYTRACE);
+	g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin(TF_LINE_MEASURES);
+	g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax(TF_LINE_MEASURES);
+	g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale(TF_HEAT_MAP);
+	g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin(TF_HEAT_MAP);
+	g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax(TF_HEAT_MAP);
 
 	static FilterParams filterParamsPrev;
 	bool filterParamsChanged = (g_filterParams != filterParamsPrev);

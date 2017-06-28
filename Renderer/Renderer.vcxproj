@@ -137,16 +137,16 @@ exit 1</Command>
       <AdditionalOptions>--gpu-architecture=compute_30 --gpu-code=compute_30,sm_52 %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\\" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
-if errorlevel 4 exit 1
-robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
-if errorlevel 4 exit 2
-robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
-if errorlevel 4 exit 3
+      <Command>#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\\" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
+#if errorlevel 4 exit 1
+#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
+#if errorlevel 4 exit 2
+#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
+#if errorlevel 4 exit 3
 #robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Release" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
 #if errorlevel 4 exit 4
-robocopy "C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" D3DCompiler_*.dll /XX /NJH /NJS /NP
-if errorlevel 4 exit 5
+#robocopy "C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" D3DCompiler_*.dll /XX /NJH /NJS /NP
+#if errorlevel 4 exit 5
 exit 0
 :error
 exit 1
