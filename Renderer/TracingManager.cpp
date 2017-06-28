@@ -532,6 +532,8 @@ bool TracingManager::TraceParticlesIteratively()
 	if (m_verbose) {
 		printf("TPF: %f\n", tpf);
 	}
+	//clamp tpf to prevent extreme large steps when the simulation is slow
+	tpf = std::min(tpf, 0.1); //10fps
 
 	// integrate
 	m_timerIntegrateCPU.Start();

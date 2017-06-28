@@ -358,6 +358,7 @@ int main(int argc, char* argv[])
 					//normalize size to one
 					float maxGridSize = (gridSpacing * tum3D::Vec3f(volumeSize)).maximum();
 					gridSpacing /= maxGridSize;
+					//gridSpacing *= 2.0f;
 					spacingDefined = true;
 				}
 			}
