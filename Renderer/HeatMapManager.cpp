@@ -459,6 +459,6 @@ void HeatMapManager::CopyToRenderTexture(HeatMap::Channel_ptr channel, int slot)
 
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_textures[slot].cudaResource));
 
-	std::cout << "Heat map copied to DirectX" << std::endl;
+	//std::cout << "Heat map copied to DirectX" << std::endl;
 }
 

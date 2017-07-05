@@ -80,8 +80,8 @@ __device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& b
 	c_volumeInfo.getBrickBox(brickIndex, brickBoxMin, brickBoxMax);
 	c_volumeInfo.computeWorld2Tex(brickBoxMin, world2texOffset, world2texScale);
 	// brick slots are stacked in y direction (x direction is different time steps!)
-	world2texOffset.y += slotIndex.x * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.x;
-	world2texOffset.z += slotIndex.y * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.y;
+	world2texOffset.y += slotIndex.x * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.y;
+	world2texOffset.z += slotIndex.y * c_volumeInfo.brickSizeVoxelsWithOverlap / world2texScale.z;
 
 	return true;
 }

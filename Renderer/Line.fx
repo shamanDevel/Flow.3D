@@ -572,8 +572,9 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 	float2 xTransform = float2(1, 0);
 	float2 yTransform = float2(0, 1);
 	if (g_bTubeRadiusFromVelocity) {
+		// the +0.000001 are needed to prevent NaN's if the velocity is zero
 		float3 inVel = input[0].vel;
-		float speed = length(inVel);
+		float speed = length(inVel) + 0.00001;
 		inVel /= speed;
 
 		float4 velScreen = mul(g_mWorldViewRotation, float4(inVel, 0.0));
@@ -581,7 +582,7 @@ void gsParticle(in point ParticleGSIn input[1], inout TriangleStream<ParticlePSI
 		float sx = shear * length(velScreen.xy);
 		float sy = 1 / sqrt(shear);
 		sx = max(sx, sy);
-		float alpha = atan2(velScreen.y, velScreen.x);
+		float alpha = atan2(velScreen.y + 0.00001, velScreen.x);
 		
 		float cosAlpha = cos(alpha);
 		float sinAlpha = sin(alpha);

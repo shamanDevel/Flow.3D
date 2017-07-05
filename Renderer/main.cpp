@@ -2287,7 +2287,9 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	heatMapParamsPrev = g_heatMapParams;
 	g_heatMapManager.SetParams(g_heatMapParams);
 	if (debugHeatMapPrint) {
+#if 0
 		g_heatMapManager.DebugPrintParams();
+#endif
 	}
 	if (heatMapDoubleRedraw && !g_redraw) {
 		//Hack: For some reasons, the heat map manager only applies changes after the second rendering
@@ -2695,21 +2697,6 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		pd3dImmediateContext->OMSetRenderTargets(1, &pRTV, DXUTGetD3D11DepthStencilView());
 	}
 
-	/*
-	//Not needed anymore
-
-	//-----------------------------------------------------------
-	// RESTART RENDERING IF PARTICLES ARE ENABLED
-	//-----------------------------------------------------------
-
-	if (renderingUpdated && renderingFinished) {
-		if (LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
-			g_retrace = true;
-			std::cout << "Particle mode -> start again" << std::endl;
-		}
-	}
-
-	*/
 
 	//-----------------------------------------------------------
 	// MISCELANOUS TASKS (Screenshots, ...)

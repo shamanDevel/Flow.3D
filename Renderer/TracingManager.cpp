@@ -540,6 +540,8 @@ bool TracingManager::TraceParticlesIteratively()
 	m_timerIntegrate.StartNextTimer();
 	//cudaSafeCall(cudaDeviceSynchronize());
 	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_traceParams, seed, tpf * 100);
+
+	// seed many particles
 	if (m_seedManyParticles && LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
 		//only for line mode 'PARTICLES (new seeds)' it makes sense to seed more particles
 		static const int particlesToSeed = 20;

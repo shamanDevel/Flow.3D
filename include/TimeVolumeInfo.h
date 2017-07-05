@@ -55,7 +55,9 @@ public:
 
 	tum3D::Vec3i GetContainingBrickSpatialIndex(const tum3D::Vec3f& posWorld) const;
 
+	//TODO: is this correct to have a different velocity scale factor for the three dimensions?
 	tum3D::Vec3f GetPhysicalToWorldFactor() const { return 2.0f / (float(GetVolumeSize().maximum()) * GetGridSpacing()); }
+
 	float GetVoxelToWorldFactor()    const { return 2.0f / float(GetVolumeSize().maximum()); }
 
 	bool IsCompressed() const { return m_compression != COMPRESSION_NONE; }

@@ -3,8 +3,8 @@
 
 
 HeatMapParams::HeatMapParams()
-	: m_enableRecording(true)
-	, m_enableRendering(true)
+	: m_enableRecording(false)
+	, m_enableRendering(false)
 	, m_autoReset(true)
 	, m_normalizationMode(eHeatMapNormalizationMode::NORMALIZATION_MAX)
 	, m_stepSize(0.01)

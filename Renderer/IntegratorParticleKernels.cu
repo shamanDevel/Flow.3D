@@ -33,6 +33,10 @@ __global__ void integrateParticlesKernel(double tpf)
 	if (index >= c_lineInfo.lineCount * c_lineInfo.lineLengthMax)
 		return;
 
+	int lineIndex = index / c_lineInfo.lineLengthMax;
+	float deltaTime = c_lineInfo.pCheckpoints[lineIndex].DeltaT * tpf;
+	if (deltaTime == 0) return;
+
 	//get vertex
 	LineVertex vertex = c_lineInfo.pVertices[index];
 
@@ -53,16 +57,32 @@ __global__ void integrateParticlesKernel(double tpf)
 	float3 world2texScale;
 	if (!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		//no brick found, this should not happen
+		printf("i=%d: pos=(%5.3f,%5.3f,%5.3f) no brick found\n", index, vertex.Position.x, vertex.Position.y, vertex.Position.z);
 		c_lineInfo.pVertices[index].Time = -1;
 		return;
 	}
 
 	// get velocity at initial position
-	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+	float3 tmpTexPos = w2t(vertex.Position);
+	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, tmpTexPos);
 	vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
-	int lineIndex = index / c_lineInfo.lineLengthMax;
-	float deltaTime = c_lineInfo.pCheckpoints[lineIndex].DeltaT * tpf;
+#if 0
+	if (length(vertex.Velocity) < 0.00001) {
+		printf("i=%d: zero velocity! pos=(%+5.3f,%+5.3f,%+5.3f) brick w2tOffset=(%+5.3f,%+5.3f,%+5.3f), s2tScale=(%5.3f,%5.3f,%5.3f), texPos=(%5.3f,%5.3f,%5.3f)\n",
+			index, vertex.Position.x, vertex.Position.y, vertex.Position.z,
+			world2texOffset.x, world2texOffset.y, world2texOffset.z,
+			world2texScale.x, world2texScale.y, world2texScale.z,
+			tmpTexPos.x, tmpTexPos.y, tmpTexPos.z);
+	}
+	else {
+		printf("i=%d: non-null-vel!  pos=(%+5.3f,%+5.3f,%+5.3f) brick w2tOffset=(%+5.3f,%+5.3f,%+5.3f), s2tScale=(%5.3f,%5.3f,%5.3f), texPos=(%5.3f,%5.3f,%5.3f)\n",
+			index, vertex.Position.x, vertex.Position.y, vertex.Position.z,
+			world2texOffset.x, world2texOffset.y, world2texOffset.z,
+			world2texScale.x, world2texScale.y, world2texScale.z,
+			tmpTexPos.x, tmpTexPos.y, tmpTexPos.z);
+	}
+#endif
 
 	uint step = 0;
 
@@ -91,7 +111,6 @@ __global__ void integrateParticlesKernel(double tpf)
 			c_volumeInfo.velocityScale);
 		++step;
 		if (stepAccepted) {
-
 			// if we artificially limited deltaTime earlier, reset it now
 			// (if we didn't, the new deltaTime is larger than the backup anyway)
 			deltaTime = fmax(deltaTime, deltaTimeBak);
@@ -132,10 +151,11 @@ __global__ void seedParticlesKernel(int particleEntry)
 		return;
 
 	//set initial position
-	LineVertex* pVertices = c_lineInfo.pVertices + lineIndex * c_lineInfo.vertexStride + particleEntry;
-	pVertices->Position = c_lineInfo.pCheckpoints[lineIndex].Position;
-	pVertices->SeedPosition = pVertices->Position;
-	pVertices->Time = 0.001;
+	LineVertex vertex = {0};
+	vertex.Position = c_lineInfo.pCheckpoints[lineIndex].Position;
+	vertex.SeedPosition = vertex.Position;
+	vertex.Time = 0.001;
+	c_lineInfo.pVertices[lineIndex * c_lineInfo.vertexStride + particleEntry] = vertex;
 }
 
 __global__ void initParticlesKernel()
