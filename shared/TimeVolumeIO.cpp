@@ -717,7 +717,7 @@ void TimeVolumeIO::UpdateAsyncIO(bool blockingRead)
 			DWORD dwNumberOfBytesRead;
 			if (GetOverlappedResult(m_loadingSlots[i].hFile, &m_loadingSlots[i].overlapped, &dwNumberOfBytesRead, blockingRead))
 			{
-#ifdef DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
 				cout << "Finished loading brick [" << m_loadingSlots[i].pBrick->m_spatialIndex[0] << ", " << 
 					m_loadingSlots[i].pBrick->m_spatialIndex[1] << ", " <<
 					m_loadingSlots[i].pBrick->m_spatialIndex[2] << "] from timestep " << 
@@ -807,7 +807,7 @@ void TimeVolumeIO::UpdateAsyncIO(bool blockingRead)
 		ReadFile(m_loadingSlots[i].hFile, m_loadingSlots[i].pBrick->m_pData, (DWORD)m_loadingSlots[i].pBrick->m_bytesizePadded,
 			&dwNumberOfBytesRead, &m_loadingSlots[i].overlapped);
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(_DEBUG)
 		cout << "Starting loading of brick [" << m_loadingSlots[i].pBrick->m_spatialIndex[0] << ", " << 
 				m_loadingSlots[i].pBrick->m_spatialIndex[1] << ", " <<
 				m_loadingSlots[i].pBrick->m_spatialIndex[2] << "] from timestep " << 

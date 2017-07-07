@@ -1462,6 +1462,10 @@ bool TracingManager::UploadWholeTimestep(int timestep, bool forcePurgeFinished)
 		if (!brickIsLoaded) {
 			//add to loading queue
 			m_bricksToLoad.push_back(&m_pVolume->GetBrick(timestep, linearBrickIndex));
+			if (m_verbose)
+			{
+				printf("TracingManager::UploadWholeTimestep: brick %u is not loaded\n", linearBrickIndex);
+			}
 		}
 
 		if (!brickIsLoaded && m_traceParams.m_waitForDisk)
