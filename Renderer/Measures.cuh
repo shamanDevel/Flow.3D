@@ -9,6 +9,9 @@
 #include "MatrixMath.cuh"
 
 
+//compile-time switches are not needed -> turn them off
+#define USE_COMPILE_TIME_SWITCHES 0
+
 
 /******************************************************************************
 ** Helper functions
@@ -53,6 +56,8 @@ __device__ float getPVA(const float3x3 &J);
 /*************************************************************************************************************************************
 ** Scalar measure (of the velocity field, its gradient and derived tensors)
 *************************************************************************************************************************************/
+
+#if USE_COMPILE_TIME_SWITCHES==1
 
 // compile time switched versions
 template <eMeasure M>
@@ -122,6 +127,8 @@ __device__ inline float getMeasureFromJac(const float3x3& jacobian)
 	}
 }
 
+#endif
+
 // runtime switched versions
 __device__ inline float getMeasureFromRaw(eMeasure measure, const float4 vel4)
 {
@@ -187,7 +194,7 @@ __device__ inline float getMeasureFromJac(eMeasure measure, const float3x3& jaco
 	}
 }
 
-
+#if USE_COMPILE_TIME_SWITCHES==1
 
 // interface function - compile time switched
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C>
@@ -280,7 +287,6 @@ struct getMeasureFromVolume_Impl<M, F, MEASURE_COMPUTE_ONTHEFLY>
 	}
 };
 
-
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C>
 __device__ inline float getMeasure(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float h3, float measureScale)
 {
@@ -288,6 +294,7 @@ __device__ inline float getMeasure(texture<float4, cudaTextureType3D, cudaReadMo
 }
 
 
+#endif
 
 // interface function - runtime switched
 template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>

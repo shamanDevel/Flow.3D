@@ -1496,6 +1496,13 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		strFilterModes << "," << GetTextureFilterModeName(eTextureFilterMode(i));
 	TwType twFilterMode = TwDefineEnumFromString("EnumTextureFilterMode", strFilterModes.str().c_str());
 
+	//Raycaster only supports the first two modes, linear and cubic
+	std::ostringstream strFilterModes2;
+	strFilterModes2 << GetTextureFilterModeName(eTextureFilterMode(0));
+	for (uint i = 1; i < 2; i++)
+		strFilterModes2 << "," << GetTextureFilterModeName(eTextureFilterMode(i));
+	TwType twFilterMode2 = TwDefineEnumFromString("EnumTextureFilterMode2", strFilterModes2.str().c_str());
+
 	std::ostringstream strRaycastModes;
 	strRaycastModes << GetRaycastModeName(eRaycastMode(0));
 	for(uint i = 1; i < RAYCAST_MODE_COUNT; i++)
@@ -1590,7 +1597,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 	TwAddVarRW(g_pTwBarMain, "Source",			twMeasureComputeMode,&g_raycastParams.m_measureComputeMode,		"label='Measure Computation' group=RayCast");
 
-	TwAddVarRW(g_pTwBarMain, "Interpolation",	twFilterMode,		&g_raycastParams.m_textureFilterMode,		"label='Interpolation' group=RayCast");
+	TwAddVarRW(g_pTwBarMain, "Interpolation",	twFilterMode2,		&g_raycastParams.m_textureFilterMode,		"label='Interpolation' group=RayCast");
 	TwAddVarRW(g_pTwBarMain, "VisMode",			twRaycastMode,		&g_raycastParams.m_raycastMode,				"label='Raycast Mode' group=RayCast");
 	TwAddVarCB(g_pTwBarMain, "Measure1",		twMeasureMode,		SetMeasure1, GetMeasure1, nullptr,			"label='Measure 1' group=RayCast");
 	TwAddVarRW(g_pTwBarMain, "MeasureScale1",	TW_TYPE_FLOAT,		&g_raycastParams.m_measureScale1,			"label='Measure 1 Scale' step=0.01 precision=6 group=RayCast");
