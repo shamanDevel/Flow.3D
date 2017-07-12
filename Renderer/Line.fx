@@ -151,6 +151,13 @@ SamplerState SamplerLinear
 	AddressV = Clamp;
 };
 
+SamplerState SamplerNearest
+{
+	Filter = MIN_MAG_MIP_POINT;
+	AddressU = Clamp;
+	AddressV = Clamp;
+};
+
 // ]
 
 
@@ -196,7 +203,7 @@ float4 getColor(LineVertex input)
 		float2 sp = input.seedPos.xy;
 		float2 texCoord = (sp.xy + g_vHalfSizeWorld.xy) / (2*g_vHalfSizeWorld.xy);
 		texCoord.y = 1 - texCoord.y;
-		color = g_seedColors.SampleLevel(SamplerLinear, texCoord, 0);
+		color = g_seedColors.SampleLevel(SamplerNearest, texCoord, 0);
 	}
 	else if (g_iColorMode == 3) {
 		//color by measure
