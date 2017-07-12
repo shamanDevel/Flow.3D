@@ -11,7 +11,11 @@
 #define cudaSafeCall(err)       __cudaSafeCall      (err, __FILE__, __LINE__)
 #define cudaSafeCallNoSync(err) __cudaSafeCallNoSync(err, __FILE__, __LINE__)
 #define cudaCheckMsg(msg)       __cudaGetLastError  (msg, __FILE__, __LINE__)
-
+#ifdef _DEBUG
+#define cudaSafeKernelCall(call) {call; __cudaSafeKernelCall(#call, __FILE__, __LINE__);}
+#else
+#define cudaSafeKernelCall(call) call;
+#endif
 
 #ifdef _DEBUG
 #define CHECK_ERROR(err) (cudaSuccess != err || cudaSuccess != (err = cudaDeviceSynchronize()))
@@ -33,6 +37,17 @@ inline void __cudaSafeCallNoSync(cudaError err, const char* file, const int line
 {
 	if(cudaSuccess != err) {
 		fprintf(stderr, "%s(%i) : cudaSafeCallNoSync() Runtime API error : %s.\n", file, line, cudaGetErrorString(err));
+#ifdef _DEBUG
+		__debugbreak();
+#endif
+	}
+}
+
+inline void __cudaSafeKernelCall(const char* call, const char* file, const int line)
+{
+	cudaError_t err = cudaGetLastError();
+	if (CHECK_ERROR(err)) {
+		fprintf(stderr, "%s(%i) : cudaSafeKernelCall() Runtime API error : %s.\n kernel call: %s\n", file, line, cudaGetErrorString(err), call);
 #ifdef _DEBUG
 		__debugbreak();
 #endif

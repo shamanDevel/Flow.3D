@@ -224,9 +224,9 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 	//fill channels
 	for (unsigned int id : picked) {
 		HeatMap::Channel_ptr channel = m_pHeatMap->getChannel(id);
-		heatmapKernelFillChannel(channel->getCudaBuffer(), dpVB, dpIB, pLineBuffer->m_indexCountTotal,
+		cudaSafeKernelCall(heatmapKernelFillChannel(channel->getCudaBuffer(), dpVB, dpIB, pLineBuffer->m_indexCountTotal,
 			m_resolution, m_worldOffset, m_worldToGrid,
-			m_seedTexCuda, make_int2(m_params.m_recordTexture.m_width, m_params.m_recordTexture.m_height), id);
+			m_seedTexCuda, make_int2(m_params.m_recordTexture.m_width, m_params.m_recordTexture.m_height), id));
 	}
 
 	//release resources

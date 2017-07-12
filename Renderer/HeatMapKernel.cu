@@ -22,6 +22,10 @@ __global__ void heatmapFillChannelKernel(uint* channel,
 	float3 position = vertices[indices[index]].Position;
 	float3 gridPositionF = (position + worldOffset) * worldToGrid;
 	int3 gridPosition = make_int3(gridPositionF);
+	if (gridPosition.x < 0 || gridPosition.y < 0 || gridPosition.z < 0
+		|| gridPosition.x >= size.x || gridPosition.y >= size.y || gridPosition.z >= size.z) {
+		return;
+	}
 	
 	if (seedTexture != NULL && seedPicked > 0) {
 		//get position
