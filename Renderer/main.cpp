@@ -2391,7 +2391,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	// start particle tracing if required
 	float timeSinceTraceUpdate = float(curTime - g_lastTraceParamsUpdate) / float(CLOCKS_PER_SEC);
 	bool traceDelayPassed = (timeSinceTraceUpdate >= g_startWorkingDelay);
-	bool traceStartNow = !s_isFiltering && g_particleRenderParams.m_linesEnabled && traceDelayPassed;
+	//bool traceStartNow = !s_isFiltering && g_particleRenderParams.m_linesEnabled && traceDelayPassed; //TODO: enable tracing also when rendering is disabled?
+	bool traceStartNow = !s_isFiltering && traceDelayPassed;
 	if(g_retrace && traceStartNow)
 	{
 		g_renderingManager.CancelRendering();
