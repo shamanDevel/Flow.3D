@@ -88,6 +88,7 @@ Vec2f            g_mouseScreenPosition;
 FilterParams         g_filterParams;
 RaycastParams        g_raycastParams;
 ParticleTraceParams  g_particleTraceParams;
+bool                 g_particleTracingPaused = false;
 ParticleRenderParams g_particleRenderParams;
 HeatMapParams        g_heatMapParams;
 
@@ -1635,10 +1636,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 
 	// particle params
-	TwAddVarRW(g_pTwBarMain, "CPUTrace",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_cpuTracing,		"label='CPU Tracing' group=ParticleTrace");
-	TwAddVarCB(g_pTwBarMain, "CPUThreads",		TW_TYPE_UINT32,		SetNumOMPThreads, GetNumOMPThreads, nullptr,"label='# CPU Threads' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "ShowSeedBox",		TW_TYPE_BOOLCPP,	&g_bRenderSeedBox,							"label='Show Seed Box (Green)' group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "CPUTrace",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_cpuTracing,		"label='CPU Tracing' group=ParticleTraceAdvanced");
+	TwAddVarCB(g_pTwBarMain, "CPUThreads",		TW_TYPE_UINT32,		SetNumOMPThreads, GetNumOMPThreads, nullptr, "label='# CPU Threads' group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "BrickSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetBrickSlotCountMax(),	"label='Max Brick Slot Count' group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "TimeSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetTimeSlotCountMax(),	"label='Max Time Slot Count' group=ParticleTraceAdvanced");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
@@ -1700,6 +1701,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwDefine("Main/ParticleTraceAdvanced label='Advanced Settings' group=ParticleTrace opened=false");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 	TwAddButton(g_pTwBarMain, "Retrace", Retrace, nullptr, "label='Retrace' group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "TracingPaused", TW_TYPE_BOOLCPP, &g_particleTracingPaused, "label='Paused (SPACE)' group=ParticleTrace key=SPACE");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
 
 	// IO
@@ -2432,7 +2434,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	g_volume.UnloadLRUBricks();
 
 	//Check if tracing is done and if so, start rendering
-	if(s_isTracing)
+	if(s_isTracing && !g_particleTracingPaused)
 	{
 		//std::cout << "Trace" << std::endl;
 		bool finished = g_tracingManager.Trace();
