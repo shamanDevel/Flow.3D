@@ -77,7 +77,7 @@ void HeatMapManager::Release()
 
 	ReleaseRenderTextures();
 
-	std::cout << "HeatMapMaanger released" << std::endl;
+	std::cout << "HeatMapManager released" << std::endl;
 }
 
 void HeatMapManager::SetParams(const HeatMapParams & params)
