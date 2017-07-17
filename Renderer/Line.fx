@@ -160,7 +160,9 @@ SamplerState SamplerNearest
 
 // ]
 
-
+// Must match the definition in TracingCommon.h
+// and in LineEffect.cpp
+#define MAX_RECORDED_CELLS 4
 struct LineVertex
 {
 	float3   pos     : POSITION;
@@ -172,6 +174,8 @@ struct LineVertex
 	float    heat    : HEAT;
 	float3   heatCurrent : HEAT_CURRENT;
 	float3x3 jac     : JACOBIAN;
+	uint     recordedCellIndices[MAX_RECORDED_CELLS] : RECORDED_CELL_INDICES;
+	float    timeInCell[MAX_RECORDED_CELLS] : TIME_IN_CELL;
 };
 
 struct BallVertex

@@ -510,6 +510,9 @@
     <ClInclude Include="HeatMapNormalizationMode.h">
       <Filter>Enums</Filter>
     </ClInclude>
+    <ClInclude Include="IntegratorTimeInCell.cuh">
+      <Filter>ParticleTracing</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -588,6 +591,9 @@
     <CudaCompile Include="RenderingManager.cu" />
     <CudaCompile Include="HeatMapKernel.cu">
       <Filter>HeatMap</Filter>
+    </CudaCompile>
+    <CudaCompile Include="IntegratorTimeInCell.cu">
+      <Filter>ParticleTracing</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

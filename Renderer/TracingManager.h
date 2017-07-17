@@ -36,6 +36,7 @@
 #include "GPUResources.h"
 #include "CompressVolume.h"
 
+#include "IntegratorTimeInCell.cuh"
 
 class TracingManager
 {
@@ -346,6 +347,8 @@ private:
 	std::unordered_set<uint> m_bricksLoaded; // 4D linear brick index: timestep * brickCount + brickIndex
 	Stats                    m_stats;
 
+	// for cell time tracking
+	CellTextureGPU m_cellTextureGPU;
 
 	bool m_verbose;
 };

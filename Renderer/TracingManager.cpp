@@ -189,6 +189,11 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	//create initial checkpoints
 	float spawnTime = GetLineSpawnTime();
 	CreateInitialCheckpoints(spawnTime);
+	//and upload the seed texture (if available)
+	if (traceParams.m_seedTexture.m_colors != NULL) {
+		IntegratorTimeInCell::Upload(m_cellTextureGPU, traceParams.m_seedTexture.m_colors,
+			traceParams.m_seedTexture.m_width, traceParams.m_seedTexture.m_height);
+	}
 
 	// compute last timestep that will be needed for integration
 	m_timestepMax = GetLineFloorTimestepIndex(spawnTime);
@@ -1685,6 +1690,8 @@ void TracingManager::ReleaseResources()
 
 	ReleaseParamDependentResources();
 	ReleaseVolumeDependentResources();
+
+	IntegratorTimeInCell::Free(m_cellTextureGPU);
 }
 
 void TracingManager::UpdateBricksToDo()

@@ -36,6 +36,8 @@ struct LineCheckpoint
 	uint StepsAccepted;
 };
 
+//must match the definition in Line.fx
+#define MAX_RECORDED_CELLS 4
 struct LineVertex
 {
 	float3   Position;
@@ -47,6 +49,8 @@ struct LineVertex
 	float    Heat;
 	float3   HeatCurrent;
 	float3x3 Jacobian;
+	uint     RecordedCellIndices[MAX_RECORDED_CELLS];
+	float    TimeInCell[MAX_RECORDED_CELLS];
 };
 
 struct LineInfo

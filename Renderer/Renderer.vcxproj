@@ -220,6 +220,7 @@ exit 1
     <CudaCompile Include="HeatMapKernel.cu">
       <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateRelocatableDeviceCode>
     </CudaCompile>
+    <CudaCompile Include="IntegratorTimeInCell.cu" />
     <CudaCompile Include="RenderingManager.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
@@ -303,6 +304,7 @@ exit 1
     <ClInclude Include="IntegratorKernels.h" />
     <ClInclude Include="IntegratorKernelsCPU.h" />
     <ClInclude Include="IntegratorParticleKernels.h" />
+    <ClInclude Include="IntegratorTimeInCell.cuh" />
     <ClInclude Include="LineBuffers.h" />
     <ClInclude Include="LineColorMode.h" />
     <ClInclude Include="LineEffect.h" />
