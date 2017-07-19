@@ -1695,9 +1695,6 @@ void RenderingManager::SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceCont
 		cudaSafeCall(cudaFree(depth));
 		cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pVBCuda));
 	}
-	else {
-		
-	}
 
 	//release resources
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pIBCuda));

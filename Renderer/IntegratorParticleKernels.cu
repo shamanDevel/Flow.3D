@@ -154,7 +154,7 @@ __global__ void seedParticlesKernel(int particleEntry)
 	LineVertex vertex = {0};
 	vertex.Position = c_lineInfo.pCheckpoints[lineIndex].Position;
 	vertex.SeedPosition = vertex.Position;
-	vertex.Time = 0.001;
+	vertex.Time = 0;
 	c_lineInfo.pVertices[lineIndex * c_lineInfo.vertexStride + particleEntry] = vertex;
 }
 
