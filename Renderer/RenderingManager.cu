@@ -972,12 +972,19 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 
 	// render opaque stuff immediately
 	RenderBoxes(true, false);
+	bool linesRendered = false;
 	if(m_particleRenderParams.m_linesEnabled)
 	{
 		for(size_t i = 0; i < pLineBuffers.size(); i++)
 		{
 			RenderLines(pLineBuffers[i], true, false);
+			if (pLineBuffers[i]->m_indexCountTotal >= 0) linesRendered = true;
 		}
+	}
+	if (!linesRendered &&
+		m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr) {
+		PrepareRenderSlice();
+		ExtraRenderSlice();
 	}
 	for(size_t i = 0; i < pBallBuffers.size(); i++)
 	{
@@ -1417,26 +1424,7 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 		&& m_particleRenderParams.m_pSliceTexture != nullptr;
 	tum3D::Vec4f clipPlane;
 	if (renderSlice) {
-		Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
-		tum3D::Vec3f normal(0, 0, 1);
-		tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
-		tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
-		m_pQuadEffect->SetParameters(m_particleRenderParams.m_pSliceTexture,
-			center, normal, size, m_particleRenderParams.m_sliceAlpha);
-		clipPlane.set(normal.x(), normal.y(), normal.z(), -m_particleRenderParams.m_slicePosition);
-		//test if we have to flip the clip plane if the camera is at the wrong side
-		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
-		Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
-		Mat4f viewproj = proj * view;
-		Vec4f v1; v1 = viewproj.multVec(Vec4f(-1, -1, center.z(), 1), v1); v1 /= v1.w();
-		Vec4f v2; v2 = viewproj.multVec(Vec4f(+1, -1, center.z(), 1), v2); v2 /= v2.w();
-		Vec4f v3; v3 = viewproj.multVec(Vec4f(-1, +1, center.z(), 1), v3); v3 /= v3.w();
-		Vec2f dir1 = v2.xy() - v1.xy();
-		Vec2f dir2 = v3.xy() - v1.xy();
-		if (dir1.x()*dir2.y() - dir1.y()*dir2.x() > 0) {
-			//camera is at the wrong side, flip clip
-			clipPlane = -clipPlane;
-		}
+		clipPlane = PrepareRenderSlice();
 	}
 
 	//Check if particles should be rendered
@@ -1543,6 +1531,118 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 	pContext->Release();
 }
 
+
+tum3D::Vec4f RenderingManager::PrepareRenderSlice()
+{
+	tum3D::Vec4f clipPlane;
+	Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
+	tum3D::Vec3f normal(0, 0, 1);
+	tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
+	tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
+	m_pQuadEffect->SetParameters(m_particleRenderParams.m_pSliceTexture,
+		center, normal, size, m_particleRenderParams.m_sliceAlpha);
+	clipPlane.set(normal.x(), normal.y(), normal.z(), -m_particleRenderParams.m_slicePosition);
+	//test if we have to flip the clip plane if the camera is at the wrong side
+	Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+	Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
+	Mat4f viewproj = proj * view;
+	Vec4f v1; v1 = viewproj.multVec(Vec4f(-1, -1, center.z(), 1), v1); v1 /= v1.w();
+	Vec4f v2; v2 = viewproj.multVec(Vec4f(+1, -1, center.z(), 1), v2); v2 /= v2.w();
+	Vec4f v3; v3 = viewproj.multVec(Vec4f(-1, +1, center.z(), 1), v3); v3 /= v3.w();
+	Vec2f dir1 = v2.xy() - v1.xy();
+	Vec2f dir2 = v3.xy() - v1.xy();
+	if (dir1.x()*dir2.y() - dir1.y()*dir2.x() > 0) {
+		//camera is at the wrong side, flip clip
+		clipPlane = -clipPlane;
+	}
+	return clipPlane;
+}
+
+void RenderingManager::ExtraRenderSlice()
+{
+	ID3D11DeviceContext* pContext = nullptr;
+	m_pDevice->GetImmediateContext(&pContext);
+
+	// build viewport
+	D3D11_VIEWPORT viewport = {};
+	viewport.TopLeftX = float(0);
+	viewport.TopLeftY = float(0);
+	viewport.Width = float(m_projectionParams.GetImageWidth(m_range));
+	viewport.Height = float(m_projectionParams.m_imageHeight);
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+
+	// save viewports and render targets
+	uint oldViewportCount = D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE;
+	D3D11_VIEWPORT oldViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
+	pContext->RSGetViewports(&oldViewportCount, oldViewports);
+	ID3D11RenderTargetView* ppOldRTVs[D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT];
+	ID3D11DepthStencilView* pOldDSV;
+	pContext->OMGetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, &pOldDSV);
+
+	// set transparent offscreen target
+	float clearColor[4] = { 0, 0, 0, 0.0f };
+	pContext->ClearRenderTargetView(m_pTransparentRTV, clearColor);
+	pContext->OMSetRenderTargets(1, &m_pTransparentRTV, m_pDepthDSV);
+
+	//render
+	if (m_stereoParams.m_stereoEnabled)
+	{
+		Mat4f viewLeft = m_viewParams.BuildViewMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance);
+		Mat4f viewRight = m_viewParams.BuildViewMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance);
+		Mat4f projLeft = m_projectionParams.BuildProjectionMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance, m_range);
+		Mat4f projRight = m_projectionParams.BuildProjectionMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance, m_range);
+
+		viewport.Height /= 2.0f;
+		m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext, false);
+		m_pQuadEffect->DrawTexture(projRight * viewRight, pContext, false);
+	}
+	else
+	{
+		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+		Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
+
+		pContext->RSSetViewports(1, &viewport);
+
+		m_pQuadEffect->DrawTexture(proj * view, pContext, false);
+	}
+
+	// set our final render target
+	pContext->OMSetRenderTargets(1, &m_pOpaqueRTV, m_pDepthDSV);
+
+	// render transparent texture to final output
+	Vec2f screenMin(-1.0f, -1.0f);
+	Vec2f screenMax(1.0f, 1.0f);
+	m_pScreenEffect->m_pvScreenMinVariable->SetFloatVector(screenMin);
+	m_pScreenEffect->m_pvScreenMaxVariable->SetFloatVector(screenMax);
+	Vec2f texCoordMin(0.0f, 0.0f);
+	Vec2f texCoordMax(1.0f, 1.0f);
+	m_pScreenEffect->m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
+	m_pScreenEffect->m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
+	pContext->IASetInputLayout(NULL);
+	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	m_pScreenEffect->m_pTexVariable->SetResource(m_pTransparentSRV);
+	//if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ADDITIVE) {
+	m_pScreenEffect->m_pTechnique->GetPassByIndex(2)->Apply(0, pContext);
+	//}
+	//else if (m_particleRenderParams.m_particleRenderMode == PARTICLE_RENDER_ORDER_INDEPENDENT) {
+	//m_pScreenEffect->m_pTechnique->GetPassByIndex(3)->Apply(0, pContext);
+	//}
+	pContext->Draw(4, 0);
+
+	// restore viewports and render targets
+	pContext->OMSetRenderTargets(D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT, ppOldRTVs, pOldDSV);
+	pContext->RSSetViewports(oldViewportCount, oldViewports);
+	for (uint i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+	{
+		SAFE_RELEASE(ppOldRTVs[i]);
+	}
+	SAFE_RELEASE(pOldDSV);
+
+	// copy z buffer into CUDA-compatible texture
+	pContext->CopyResource(m_pDepthTexCopy, m_pDepthTex);
+	pContext->Release();
+}
 
 __global__ void FillVertexDepth(const LineVertex* vertices, const uint* indices, float* depthOut, float4 vec, uint maxIndex)
 {

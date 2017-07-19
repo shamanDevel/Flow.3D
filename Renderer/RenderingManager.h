@@ -136,6 +136,14 @@ private:
 	void RenderParticles(const LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext, 
 		D3D11_VIEWPORT viewport, const tum3D::Vec4f* clipPlane = NULL, bool drawSlice = false);
 
+	//Prepares the slice renderer: computes the clip plane and sets the parameters
+	//Returns the clip plane
+	tum3D::Vec4f PrepareRenderSlice();
+	//Renders the slice if no lines are drawn.
+	//When lines are drawn, slice rendering is done in the line/particle rendering 
+	// to allow correct alpha blending
+	void ExtraRenderSlice();
+
 	void SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext);
 	
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
