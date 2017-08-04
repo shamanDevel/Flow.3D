@@ -186,7 +186,7 @@ struct BallVertex
 
 
 float3 getVorticity(float3x3 jacobian);
-float getMeasure(float3 vel, float3x3 jac, float4 heat);
+float4 getMeasure(LineVertex input);
 //Implementation of the above two functions
 #include "Measures.fxh"
 
@@ -211,11 +211,7 @@ float4 getColor(LineVertex input)
 	}
 	else if (g_iColorMode == 3) {
 		//color by measure
-		float value = getMeasure(g_iMeasureMode, input.vel, input.jac, float4(input.heatCurrent, input.heat)) * g_fMeasureScale;
-		//float value = heat.w;
-		value = (value - g_vTfRange.x) / (g_vTfRange.y - g_vTfRange.x);
-		color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
-		//color = float4(heat.w, heat.w, heat.w, 1);
+		color = getMeasure(input);
 	}
 
 	return color;

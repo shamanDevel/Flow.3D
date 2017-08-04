@@ -4,6 +4,17 @@ static const float PI = 3.14159265f;
 
 // Helper
 
+float4 convertIntToRgb(uint i)
+{
+	float4 color;
+	color.x = (i & 0xff) / 256.0;
+	color.y = ((i >> 8) & 0xff) / 256.0f;
+	color.z = ((i >> 16) & 0xff) / 256.0f;
+	//color.w = ((i > 24) & 0xff) / 256.0f;
+	color.w = 1;
+	return color;
+}
+
 float3 getVorticity(float3x3 jacobian)
 {
 	return float3(jacobian[2][1] - jacobian[1][2], jacobian[0][2] - jacobian[2][0], jacobian[1][0] - jacobian[0][1]);
@@ -204,7 +215,7 @@ float getSquareRateOfStrain(float3x3 J)
 
 // Switch for the measure
 
-float getMeasure(int measure, float3 vel, float3x3 jac, float4 heat)
+float getMeasureFloat(int measure, float3 vel, float3x3 jac, float4 heat)
 {
 	//TODO
 	switch (measure)
@@ -244,6 +255,25 @@ float getMeasure(int measure, float3 vel, float3x3 jac, float4 heat)
 		return getHeatCurrent(vel, heat).y;
 	case 16: //MEASURE_HEAT_CURRENT_Z
 		return getHeatCurrent(vel, heat).z;
+	case 19: //MEASURE_TIME_IN_CURRENT_CELL
+		break;
 	}
 	return 0.0;
+}
+
+float4 getMeasure(LineVertex input)
+{
+	switch (g_iMeasureMode) {
+	case 17: //MEASURE_CURRENT_CELL
+	{
+		return convertIntToRgb(input.recordedCellIndices[0]);
+	}
+	case 18: //MEASURE_LONGEST_CELL
+		break;
+	}
+
+	float value = getMeasureFloat(g_iMeasureMode, input.vel, input.jac, float4(input.heatCurrent, input.heat)) * g_fMeasureScale;
+	value = (value - g_vTfRange.x) / (g_vTfRange.y - g_vTfRange.x);
+	float4 color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
+	return color;
 }

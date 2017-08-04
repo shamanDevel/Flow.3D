@@ -20,6 +20,9 @@ static const std::string g_measureNames[MEASURE_COUNT + 1] =
 	"Heat Current.X",
 	"Heat Current.Y",
 	"Heat Current.Z",
+	"Current Cell",
+	"Longest Cell",
+	"Time in current cell",
 	"Unknown"
 };
 

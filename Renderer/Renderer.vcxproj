@@ -399,6 +399,7 @@ exit 1
     </FxCompile>
     <FxCompile Include="Measures.fxh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="ProgressBar.fx">
       <FileType>Document</FileType>
