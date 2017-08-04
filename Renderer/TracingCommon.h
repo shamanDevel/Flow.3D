@@ -38,6 +38,7 @@ struct LineCheckpoint
 
 //must match the definition in Line.fx
 #define MAX_RECORDED_CELLS 4
+//And must be at least 2
 struct LineVertex
 {
 	float3   Position;
@@ -51,6 +52,16 @@ struct LineVertex
 	float3x3 Jacobian;
 	uint     RecordedCellIndices[MAX_RECORDED_CELLS];
 	float    TimeInCell[MAX_RECORDED_CELLS];
+	/*
+	Semantic of the indices:
+	0: current cell, time in the current cell
+	1:  -          , time outside of the current cell
+	 (the borders are noisy, so only change the current cell when the particle is
+	  outside of the current cell for longer some threshold)
+	2: time and id of the cell where the particle remained longest
+	3: time and id of the cell where the particle remained second longest
+	4-X: time of the n-2 longest
+	*/
 };
 
 struct LineInfo

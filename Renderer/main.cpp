@@ -1685,6 +1685,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddButton(g_pTwBarMain, "SeedManyParticles", [](void* data) {
 		g_tracingManager.SeedManyParticles();
 	}, NULL, "label='Seed many particles' group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "CellChangeThreshold", TW_TYPE_FLOAT,  &g_particleTraceParams.m_cellChangeThreshold, "label='Cell Change Time Threshold' min=0 precision=5 step=0.001 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectErrorTol",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectErrorTolerance,"label='Advection Error Tolerance (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMin",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMin,	"label='Advection Delta T Min' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMax",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMax,	"label='Advection Delta T Max' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
