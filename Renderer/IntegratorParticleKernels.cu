@@ -8,6 +8,7 @@
 #include "TextureFilterMode.h"
 #include "TracingCommon.h"
 #include "VolumeInfoGPU.h"
+#include "IntegratorTimeInCell.cuh"
 
 #include "Advect.cuh"
 #include "Coords.cuh"
@@ -138,6 +139,9 @@ __global__ void integrateParticlesKernel(double tpf)
 	vertex.Heat = vel4.w;
 	vertex.HeatCurrent = gradT;
 
+	//compute time-in-cell measures
+	IntegratorTimeInCell::processParticle(&vertex, deltaTime);
+
 	//write vertex back
 	c_lineInfo.pVertices[index] = vertex;
 }
@@ -166,8 +170,10 @@ __global__ void initParticlesKernel()
 		return;
 
 	//set time to <0 -> they are marked invalid
-	c_lineInfo.pVertices[index].Time = -1;
-	c_lineInfo.pVertices[index].LineID = index / c_lineInfo.lineLengthMax;
+	LineVertex v = {};
+	v.Time = -1;
+	v.LineID = index / c_lineInfo.lineLengthMax;
+	c_lineInfo.pVertices[index] = v;
 }
 
 

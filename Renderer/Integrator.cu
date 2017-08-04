@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <iostream>
 
 #include <thrust/device_ptr.h>
 #include <thrust/transform_scan.h>
@@ -273,6 +274,7 @@ void Integrator::UpdateIntegrationParams(const ParticleTraceParams& params, floa
 		m_integrationParamsGPU.Upload(params.m_cpuTracing);
 		cudaSafeCall(cudaEventRecord(m_integrationParamsUploadEvent));
 		m_integrationParamsCpuTracingPrev = params.m_cpuTracing;
+		std::cout << "Integrator: IntegrationParamsGPU uploaded" << std::endl;
 	}
 }
 

@@ -22,7 +22,7 @@ public:
 	static void Free(CellTextureGPU& info);
 
 	// device code
-	static __device__ void processParticle(LineVertex* vertex);
+	static __device__ void processParticle(LineVertex* vertex, float deltaTime);
 };
 
 
