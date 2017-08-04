@@ -95,6 +95,9 @@ struct ParticleTraceParams
 	//seed from texture
 	SeedTexture m_seedTexture;
 
+	//time that a particle must stay in a cell to change it's current cell
+	float m_cellChangeThreshold;
+
 	//Checks if the changes when comparing with 'old' are enough to completely retrace everything.
 	//This is only important for particle modes. For line modes, this delegates to operator!=
 	//But particles can deal with changes in e.g. the seed box without restarting

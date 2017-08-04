@@ -72,6 +72,7 @@ void ParticleTraceParams::Reset()
 	m_cpuTracing = false;
 
 	m_particlesPerSecond = 5;
+	m_cellChangeThreshold = 0.01f;
 }
 
 
@@ -339,6 +340,7 @@ bool ParticleTraceParams::operator==(const ParticleTraceParams& rhs) const
 	if (m_cpuTracing != rhs.m_cpuTracing) return false;
 	if (m_particlesPerSecond != rhs.m_particlesPerSecond) return false;
 	if (m_seedTexture != rhs.m_seedTexture) return false;
+	if (m_cellChangeThreshold != rhs.m_cellChangeThreshold) return false;
 	return true;
 }
 
