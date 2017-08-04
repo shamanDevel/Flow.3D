@@ -31,6 +31,10 @@ struct IntegrationParamsGPU
 	float outputTimeDiff;
 
 	float3 gridSpacing;
+
+	//time in cell measures
+	bool timeInCellEnabled;
+	float cellChangeThreshold;
 };
 
 

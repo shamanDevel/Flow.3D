@@ -264,6 +264,8 @@ void Integrator::UpdateIntegrationParams(const ParticleTraceParams& params, floa
 	integrationParamsGPU.outputPosDiffSquared = outputPosDiffWorld * outputPosDiffWorld;
 	integrationParamsGPU.outputTimeDiff = params.m_outputTimeDiff;
 	integrationParamsGPU.gridSpacing = make_float3(m_volumeInfo.GetGridSpacing());
+	integrationParamsGPU.cellChangeThreshold = params.m_cellChangeThreshold;
+	integrationParamsGPU.timeInCellEnabled = params.m_seedTexture.m_colors != NULL;
 	if(force || params.m_cpuTracing != m_integrationParamsCpuTracingPrev || memcmp(&m_integrationParamsGPU, &integrationParamsGPU, sizeof(m_integrationParamsGPU)) != 0)
 	{
 		cudaSafeCall(cudaEventSynchronize(m_integrationParamsUploadEvent));
