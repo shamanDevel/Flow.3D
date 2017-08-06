@@ -63,4 +63,14 @@ __device__ void IntegratorTimeInCell::processParticle(LineVertex * vertex, float
 			vertex->TimeInCell[1] = 0;
 		} //else: stay still in the same cell to prevent noise
 	}
+
+	//check for longest cell
+	if (vertex->TimeInCell[0] > vertex->TimeInCell[2]) {
+		//longest cell changed
+		vertex->TimeInCell[2] = vertex->TimeInCell[0];
+		vertex->RecordedCellIndices[2] = vertex->RecordedCellIndices[0];
+	}
+
+	//TODO: eventually add second longest cell
+	//similar to above, just with index 3
 }

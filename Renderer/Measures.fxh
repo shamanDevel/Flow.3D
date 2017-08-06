@@ -265,11 +265,9 @@ float4 getMeasure(LineVertex input)
 {
 	switch (g_iMeasureMode) {
 	case 17: //MEASURE_CURRENT_CELL
-	{
 		return convertIntToRgb(input.recordedCellIndices[0]);
-	}
 	case 18: //MEASURE_LONGEST_CELL
-		break;
+		return convertIntToRgb(input.recordedCellIndices[2]);
 	}
 
 	float value = getMeasureFloat(g_iMeasureMode, input) * g_fMeasureScale;

@@ -42,7 +42,7 @@ void ParticleTraceParams::Reset()
 
 	m_filterMode    = TEXTURE_FILTER_CATROM;
 
-	m_lineMode      = LINE_PARTICLE_STREAM; //LINE_STREAM
+	m_lineMode = LINE_STREAM;
 
 	m_lineCount     = 1024;
 	m_lineLengthMax = 1024;
