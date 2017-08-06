@@ -34,9 +34,6 @@ void IntegratorTimeInCell::Free(CellTextureGPU & info)
 
 __device__ void IntegratorTimeInCell::processParticle(LineVertex * vertex, float deltaTime)
 {
-	static const int CURRENT_CELL_INDEX = 0;	//for some reasons, when the shader calls RecordedCellIndices[0],
-	static const int THRESHOLD_CELL_INDEX = 1;	// the value at index 1 is read. So lets use index 1 for now instead of 0
-	
 	if (!c_integrationParams.timeInCellEnabled) {
 		return; //no seed texture
 	}
@@ -46,9 +43,24 @@ __device__ void IntegratorTimeInCell::processParticle(LineVertex * vertex, float
 	float texX = posInVolume.x;
 	float texY = 1 - posInVolume.y;
 	uint32 cell = tex2D(g_cellTexture, texX, texY);
-	//printf("pos=(%5.3f, %5.3f, %5.3f), cell=%x\n", vertex->Position.x, vertex->Position.y, vertex->Position.z, cell);
-	//vertex->RecordedCellIndices[0] = cell;
-	//vertex->RecordedCellIndices[1] = cell;
-	//vertex->RecordedCellIndices[2] = cell;
-	vertex->RecordedCellIndices[3] = cell;
+	uint32 currentCell = vertex->RecordedCellIndices[0];
+	if (currentCell == cell) {
+		//increase time
+		vertex->TimeInCell[0] += deltaTime;
+	}
+	else if (currentCell == 0) {
+		//no previous cell
+		vertex->RecordedCellIndices[0] = cell;
+		vertex->TimeInCell[0] = deltaTime;
+	}
+	else {
+		//outside of the current cell
+		vertex->TimeInCell[1] += deltaTime;
+		if (vertex->TimeInCell[1] > c_integrationParams.cellChangeThreshold) {
+			//we are there long enough, switch cell
+			vertex->RecordedCellIndices[0] = cell;
+			vertex->TimeInCell[0] = vertex->TimeInCell[1];
+			vertex->TimeInCell[1] = 0;
+		} //else: stay still in the same cell to prevent noise
+	}
 }

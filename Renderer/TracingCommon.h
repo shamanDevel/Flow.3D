@@ -47,11 +47,11 @@ struct LineVertex
 	float3   Velocity;
 	uint     LineID;
 	float3   SeedPosition;
+	uint     RecordedCellIndices[MAX_RECORDED_CELLS];
+	float    TimeInCell[MAX_RECORDED_CELLS];
 	float    Heat;
 	float3   HeatCurrent;
 	float3x3 Jacobian;
-	uint     RecordedCellIndices[MAX_RECORDED_CELLS];
-	float    TimeInCell[MAX_RECORDED_CELLS];
 	/*
 	Semantic of the indices:
 	0: current cell, time in the current cell

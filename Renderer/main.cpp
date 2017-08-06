@@ -2738,6 +2738,17 @@ NoVolumeLoaded:
 	pd3dImmediateContext->Draw(4, 0);
 
 
+	// Draw Transfer function
+	if (g_bRenderUI)
+	{
+		g_tfEdt.setVisible(
+			(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
+			|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE)
+			|| (g_heatMapParams.m_enableRendering));
+		//Draw Transfer function editor
+		g_tfEdt.onFrameRender((float)fTime, fElapsedTime);
+	}
+
 	// save screenshot before drawing progress bar and gui
 	if(g_saveScreenshot) {
 		std::wstring filenameW = tum3d::FindNextSequenceNameEX(L"screenshot", L"png", CSysTools::GetExePath());
@@ -2969,11 +2980,6 @@ NoVolumeLoaded:
 	// GUI
 	if(g_bRenderUI)
 	{
-		g_tfEdt.setVisible(
-			(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
-			|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE)
-		    || (g_heatMapParams.m_enableRendering));
-
 		// switch to dark text for bright backgrounds
 		if(Luminance(g_backgroundColor.xyz()) > 0.7f) {
 			TwDefine("Main text=dark");
@@ -2986,9 +2992,6 @@ NoVolumeLoaded:
 		TwRefreshBar(g_pTwBarMain);
 		TwRefreshBar(g_pTwBarImageSequence);
 		TwDraw();
-
-		//Draw Transfer function editor
-		g_tfEdt.onFrameRender( (float)fTime, fElapsedTime );
 	}
 }
 

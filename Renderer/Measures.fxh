@@ -215,48 +215,48 @@ float getSquareRateOfStrain(float3x3 J)
 
 // Switch for the measure
 
-float getMeasureFloat(int measure, float3 vel, float3x3 jac, float4 heat)
+float getMeasureFloat(int measure, LineVertex input)
 {
 	//TODO
 	switch (measure)
 	{
 	case 0: //MEASURE_VELOCITY
-		return length(vel.xyz);
+		return length(input.vel.xyz);
 	case 1: //MEASURE_VELOCITY_Z
-		return vel.z;
+		return input.vel.z;
 	case 2: //MEASURE_TEMPERATURE
-		return heat.w;
+		return input.heat;
 	case 3: //MEASURE_VORTICITY
-		return length(getVorticity(jac));
+		return length(getVorticity(input.jac));
 	case 4: //MEASURE_LAMBDA2
-		return getLambda2(jac);
+		return getLambda2(input.jac);
 	case 5: //MEASURE_QHUNT
-		return getQHunt(jac);
+		return getQHunt(input.jac);
 	case 6: //MEASURE_DELTACHONG
-		return getDeltaChong(jac);
+		return getDeltaChong(input.jac);
 	case 7: //MEASURE_ENSTROPHY_PRODUCTION
-		return getEnstrophyProduction(jac);
+		return getEnstrophyProduction(input.jac);
 	case 8: //MEASURE_STRAIN_PRODUCTION
-		return getStrainProduction(jac);
+		return getStrainProduction(input.jac);
 	case 9: //MEASURE_SQUARE_ROTATION
-		return getSquareRotation(jac);
+		return getSquareRotation(input.jac);
 	case 10: //MEASURE_SQUARE_RATE_OF_STRAIN
-		return getSquareRateOfStrain(jac);
+		return getSquareRateOfStrain(input.jac);
 	case 11: //MEASURE_TRACE_JJT
-		return TraceAAT(jac);
+		return TraceAAT(input.jac);
 	case 12: //MEASURE_PVA
 		//not implemented yet
 		break;
 	case 13: //MEASURE_HEAT_CURRENT
-		return length(getHeatCurrent(vel, heat));
+		return length(getHeatCurrent(input.vel, float4(input.heatCurrent, input.heat)));
 	case 14: //MEASURE_HEAT_CURRENT_X
-		return getHeatCurrent(vel, heat).x;
+		return getHeatCurrent(input.vel, float4(input.heatCurrent, input.heat)).x;
 	case 15: //MEASURE_HEAT_CURRENT_Y
-		return getHeatCurrent(vel, heat).y;
+		return getHeatCurrent(input.vel, float4(input.heatCurrent, input.heat)).y;
 	case 16: //MEASURE_HEAT_CURRENT_Z
-		return getHeatCurrent(vel, heat).z;
+		return getHeatCurrent(input.vel, float4(input.heatCurrent, input.heat)).z;
 	case 19: //MEASURE_TIME_IN_CURRENT_CELL
-		break;
+		return input.timeInCell[0];
 	}
 	return 0.0;
 }
@@ -272,7 +272,7 @@ float4 getMeasure(LineVertex input)
 		break;
 	}
 
-	float value = getMeasureFloat(g_iMeasureMode, input.vel, input.jac, float4(input.heatCurrent, input.heat)) * g_fMeasureScale;
+	float value = getMeasureFloat(g_iMeasureMode, input) * g_fMeasureScale;
 	value = (value - g_vTfRange.x) / (g_vTfRange.y - g_vTfRange.x);
 	float4 color = g_transferFunction.SampleLevel(SamplerLinear, value, 0);
 	return color;
