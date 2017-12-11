@@ -28,6 +28,8 @@ public:
 	ID3DX11EffectShaderResourceVariable*	m_pHeatMap2;
 	ID3DX11EffectShaderResourceVariable*	m_pTransferFunction;
 	ID3DX11EffectShaderResourceVariable*	m_pDepthTexture;
+	ID3DX11EffectScalarVariable*			m_pfIsoValue;
+	ID3DX11EffectVectorVariable*			m_pvTextureGridSpacing;
 
 	// *** Techniques ***
 

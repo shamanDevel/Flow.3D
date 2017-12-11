@@ -308,6 +308,7 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 	HeatMap::Channel_ptr channels[2];
 	int validChannelCount = 0;
 	for (int i = 0; i < 2; ++i) {
+		if (i > 1 && m_params.m_renderedChannels[1] == m_params.m_renderedChannels[0]) continue;
 		channels[validChannelCount] = m_pHeatMap->getChannel(m_params.m_renderedChannels[i]);
 		if (channels[validChannelCount] != nullptr)
 			validChannelCount++;
@@ -365,15 +366,29 @@ void HeatMapManager::Render(Mat4f viewProjMat, ProjectionParams projParams,
 		frustum[2] / nearFrustum, //bottom
 		frustum[3] / nearFrustum); //top
 	m_pShader->m_pvViewport->SetFloatVector(viewport);
-	if (validChannelCount>1)
-		m_pShader->m_pTechnique->GetPassByIndex(1)->Apply(0, pContext);
-	else
-		m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
+	std::cout << "Valid Channel Count: " << validChannelCount << std::endl;
+	if (!m_params.m_isosurface) {
+		//dvr
+		if (validChannelCount > 1)
+			m_pShader->m_pTechnique->GetPassByIndex(1)->Apply(0, pContext);
+		else
+			m_pShader->m_pTechnique->GetPassByIndex(0)->Apply(0, pContext);
+	}
+	else {
+		//isosurface
+		if (validChannelCount > 1)
+			m_pShader->m_pTechnique->GetPassByIndex(3)->Apply(0, pContext);
+		else
+			m_pShader->m_pTechnique->GetPassByIndex(2)->Apply(0, pContext);
+	}
 
 	//tracing settings
 	m_pShader->m_pfStepSizeWorld->SetFloat(m_params.m_stepSize);
 	m_pShader->m_pfDensityScale->SetFloat(m_params.m_densityScale * m_normalizationFactor);
 	m_pShader->m_pfAlphaScale->SetFloat(m_params.m_tfAlphaScale);
+	m_pShader->m_pfIsoValue->SetFloat(m_params.m_isovalue);
+	Vec4f textureGridSpacing(1.0 / m_resolution.x, 1.0 / m_resolution.y, 1.0 / m_resolution.z, 1.0);
+	m_pShader->m_pvTextureGridSpacing->SetFloatVector(textureGridSpacing);
 
 	pContext->Draw(4, 0);
 

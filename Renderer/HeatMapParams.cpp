@@ -13,6 +13,8 @@ HeatMapParams::HeatMapParams()
 	, m_tfRangeMin(0)
 	, m_tfRangeMax(1)
 	, m_pTransferFunction(NULL)
+	, m_isosurface(0)
+	, m_isovalue(0.5)
 {
 	m_renderedChannels[0] = 0;
 	m_renderedChannels[1] = 0;
@@ -48,5 +50,7 @@ bool HeatMapParams::HasChangesForRedrawing(const HeatMapParams& other)
 	if (m_pTransferFunction != other.m_pTransferFunction) return true;
 	if (m_renderedChannels[0] != other.m_renderedChannels[0]) return true;
 	if (m_renderedChannels[1] != other.m_renderedChannels[1]) return true;
+	if (m_isosurface != other.m_isosurface) return true;
+	if (m_isovalue != other.m_isovalue) return true;
 	return false;
 }
