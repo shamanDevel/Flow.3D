@@ -31,6 +31,9 @@ public:
 	float m_tfRangeMax;
 	ID3D11ShaderResourceView* m_pTransferFunction;
 
+	bool m_isosurface;
+	float m_isovalue;
+
 	bool HasChangesForRetracing(const HeatMapParams& other, const ParticleTraceParams& traceParams);
 	bool HasChangesForRedrawing(const HeatMapParams& other);
 };

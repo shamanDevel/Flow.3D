@@ -24,6 +24,8 @@ HRESULT HeatMapRaytracerEffect::GetVariables()
 	V_RETURN( GetScalarVariable("g_fStepSizeWorld", m_pfStepSizeWorld) );
 	V_RETURN( GetScalarVariable("g_fDensityScale", m_pfDensityScale) );
 	V_RETURN(GetScalarVariable("g_fAlphaScale", m_pfAlphaScale));
+	V_RETURN(GetScalarVariable("g_fIsoValue", m_pfIsoValue));
+	V_RETURN(GetVectorVariable("g_vTextureSpacing", m_pvTextureGridSpacing));
 	V_RETURN( GetShaderResourceVariable("g_heatMap1", m_pHeatMap1) );
 	V_RETURN(GetShaderResourceVariable("g_heatMap2", m_pHeatMap2));
 	V_RETURN( GetShaderResourceVariable("g_transferFunction", m_pTransferFunction) );

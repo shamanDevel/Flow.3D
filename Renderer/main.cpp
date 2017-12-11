@@ -1775,6 +1775,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		"label='First displayed channel (1)' group='Heat Map'");
 	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel2", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[1],
 		"label='Second displayed channel (2)' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableIsosurface", TW_TYPE_BOOLCPP, &g_heatMapParams.m_isosurface,
+		"label='Isosurface Rendering' group='Heat Map'");
+	TwAddVarRW(g_pTwBarMain, "HeatMap_Isovalue", TW_TYPE_FLOAT, &g_heatMapParams.m_isovalue,
+		"label='Isovalue' min=0 max=1 step=0.001 group='Heat Map'");
 
 	// bounding boxes
 	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
