@@ -68,6 +68,11 @@ __global__ void integrateParticlesKernel(double tpf)
 	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, tmpTexPos);
 	vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
+	if (dot(vertex.Velocity, vertex.Velocity) < c_integrationParams.minVelocitySquared) {
+		c_lineInfo.pVertices[index].Time = -1;
+		return;
+	}
+
 #if 0
 	if (length(vertex.Velocity) < 0.00001) {
 		printf("i=%d: zero velocity! pos=(%+5.3f,%+5.3f,%+5.3f) brick w2tOffset=(%+5.3f,%+5.3f,%+5.3f), s2tScale=(%5.3f,%5.3f,%5.3f), texPos=(%5.3f,%5.3f,%5.3f)\n",

@@ -47,6 +47,7 @@ void ParticleTraceParams::Reset()
 	m_lineCount     = 1024;
 	m_lineLengthMax = 1024;
 	m_lineAgeMax    = 512;
+	m_minVelocity   = 0;
 
 	m_advectDeltaT         = 0.005f;
 	m_advectErrorTolerance = 0.01f;
@@ -87,56 +88,60 @@ void ParticleTraceParams::ApplyConfig(const ConfigFile& config)
 		if(section.GetName() == "ParticleTraceParams")
 		{
 			// this is our section - parse entries
-			for(size_t e = 0; e < section.GetEntries().size(); e++) {
+			for (size_t e = 0; e < section.GetEntries().size(); e++) {
 				const ConfigEntry& entry = section.GetEntries()[e];
 
 				std::string entryName = entry.GetName();
 
-				if(entryName == "SeedBoxMin")
+				if (entryName == "SeedBoxMin")
 				{
 					entry.GetAsVec3f(m_seedBoxMin);
 				}
-				else if(entryName == "SeedBoxSize")
+				else if (entryName == "SeedBoxSize")
 				{
 					entry.GetAsVec3f(m_seedBoxSize);
 				}
-				else if(entryName == "AdvectMode")
+				else if (entryName == "AdvectMode")
 				{
 					std::string val;
 					entry.GetAsString(val);
 					m_advectMode = GetAdvectModeFromName(val);
 				}
-				else if(entryName == "EnableDenseOutput")
+				else if (entryName == "EnableDenseOutput")
 				{
 					entry.GetAsBool(m_enableDenseOutput);
 				}
-				else if(entryName == "FilterMode")
+				else if (entryName == "FilterMode")
 				{
 					std::string val;
 					entry.GetAsString(val);
 					m_filterMode = GetTextureFilterModeFromName(val);
 				}
-				else if(entryName == "LineMode")
+				else if (entryName == "LineMode")
 				{
 					std::string val;
 					entry.GetAsString(val);
 					m_lineMode = GetLineModeFromName(val);
 				}
-				else if(entryName == "LineCount")
+				else if (entryName == "LineCount")
 				{
 					int val;
 					entry.GetAsInt(val);
 					m_lineCount = uint(max(val, 0));
 				}
-				else if(entryName == "LineLengthMax")
+				else if (entryName == "LineLengthMax")
 				{
 					int val;
 					entry.GetAsInt(val);
 					m_lineLengthMax = uint(max(val, 0));
 				}
-				else if(entryName == "LineAgeMax")
+				else if (entryName == "LineAgeMax")
 				{
 					entry.GetAsFloat(m_lineAgeMax);
+				}
+				else if (entryName == "MinVelocity")
+				{
+					entry.GetAsFloat(m_minVelocity);
 				}
 				else if(entryName == "AdvectDeltaT" || entryName == "LineDeltaT")
 				{
@@ -226,7 +231,8 @@ void ParticleTraceParams::WriteConfig(ConfigFile& config, bool skipBatchParams) 
 	if(!skipBatchParams) section.AddEntry(ConfigEntry("LineMode", GetLineModeName(m_lineMode)));
 	section.AddEntry(ConfigEntry("LineCount", int(m_lineCount)));
 	section.AddEntry(ConfigEntry("LineLengthMax", int(m_lineLengthMax)));
-	section.AddEntry(ConfigEntry("LineAgeMax", m_lineAgeMax));
+	section.AddEntry(ConfigEntry("LineAgeMax", m_lineAgeMax)); 
+	section.AddEntry(ConfigEntry("MinVelocity", m_minVelocity));
 	if(!skipBatchParams) section.AddEntry(ConfigEntry("AdvectDeltaT", m_advectDeltaT));
 	if(!skipBatchParams) section.AddEntry(ConfigEntry("AdvectErrorTolerance", m_advectErrorTolerance));
 	section.AddEntry(ConfigEntry("AdvectDeltaTMin", m_advectDeltaTMin));
@@ -323,6 +329,7 @@ bool ParticleTraceParams::operator==(const ParticleTraceParams& rhs) const
 	if (m_lineCount != rhs.m_lineCount) return false;
 	if (m_lineLengthMax != rhs.m_lineLengthMax) return false;
 	if (m_lineAgeMax != rhs.m_lineAgeMax) return false;
+	if (m_minVelocity != rhs.m_minVelocity) return false;
 	if (m_advectDeltaT != rhs.m_advectDeltaT) return false;
 	if (m_advectErrorTolerance != rhs.m_advectErrorTolerance) return false;
 	if (m_advectDeltaTMin != rhs.m_advectDeltaTMin) return false;

@@ -54,6 +54,7 @@ struct ParticleTraceParams
 	uint  m_lineCount;
 	uint  m_lineLengthMax;
 	float m_lineAgeMax;
+	float m_minVelocity;
 
 	float m_advectDeltaT; // for fixed integrators
 	float m_advectErrorTolerance; // for adaptive integrators; relative to grid spacing

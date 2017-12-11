@@ -184,12 +184,9 @@ float4 psRaytrace(float4 screenPos : SV_Position, float2 texCoord : TEXCOORD, un
 		if (twoChannels) {
 			float density1 = g_heatMap1.SampleLevel(SamplerLinear, posTex, 0);
 			float density2 = g_heatMap2.SampleLevel(SamplerLinear, posTex, 0);
-			alpha = (density1 + density2);
-			density1 /= alpha;
-			density2 /= alpha;
+			alpha = density1 + density2;
+			color = g_transferFunction.SampleLevel(SamplerLinear, density1 / alpha, 0);
 			alpha *= g_fDensityScale;
-			density = (density1 + 1 - density2) / 2;
-			color = g_transferFunction.SampleLevel(SamplerLinear, density, 0);
 			color.a = alpha; //force alpha,
 		}
 		else {

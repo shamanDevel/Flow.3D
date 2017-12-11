@@ -83,6 +83,10 @@ __global__ void integrateSimpleParticlesKernel(
 					// semi-HACK: update velocity from new brick (can be different to previous one because of lossy compression)
 					//            this avoids excessively small time steps at some brick boundaries
 					velocity = c_volumeInfo.velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
+
+					if (dot(velocity, velocity) < c_integrationParams.minVelocitySquared) {
+						break;
+					}
 				}
 			}
 		}

@@ -256,6 +256,7 @@ void Integrator::UpdateIntegrationParams(const ParticleTraceParams& params, floa
 	// upload new params only if something changed
 	IntegrationParamsGPU integrationParamsGPU;
 	integrationParamsGPU.timeMax = timeMax;
+	integrationParamsGPU.minVelocitySquared = params.m_minVelocity*params.m_minVelocity;
 	integrationParamsGPU.toleranceSquared = toleranceWorld * toleranceWorld;
 	integrationParamsGPU.deltaTimeMin = params.m_advectDeltaTMin;
 	integrationParamsGPU.deltaTimeMax = params.m_advectDeltaTMax;

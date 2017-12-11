@@ -575,10 +575,10 @@ bool OpenVolumeFile(const std::string& filename, ID3D11Device* pDevice)
 
 
 	int32 timestepMax = g_volume.GetTimestepCount() - 1;
-	float timgSpacing = g_volume.GetTimeSpacing();
-	float timeMax = timgSpacing * float(timestepMax);
+	float timeSpacing = g_volume.GetTimeSpacing();
+	float timeMax = timeSpacing * float(timestepMax);
 	TwSetParam(g_pTwBarMain, "Time", "max", TW_PARAM_FLOAT, 1, &timeMax);
-	TwSetParam(g_pTwBarMain, "Time", "step", TW_PARAM_FLOAT, 1, &timgSpacing);
+	TwSetParam(g_pTwBarMain, "Time", "step", TW_PARAM_FLOAT, 1, &timeSpacing);
 	TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &timestepMax);
 
 
@@ -1680,6 +1680,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "LineCount",		TW_TYPE_UINT32,		&g_particleTraceParams.m_lineCount,			"label='Line Count' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' min=2 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=2 step=0.1 group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "MinVelocity",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_minVelocity,		"label='Min Velocity' min=0 precision=2 step=0.01 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "ParticlesPerSecond",TW_TYPE_FLOAT,	&g_particleTraceParams.m_particlesPerSecond,"label='Particles per second' min=0 step=0.01 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
 	TwAddButton(g_pTwBarMain, "SeedManyParticles", [](void* data) {
@@ -1748,7 +1749,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.01 group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.001 group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "SliceAlpha",      TW_TYPE_FLOAT,      &g_particleRenderParams.m_sliceAlpha,       "label='Slice Transparency' step=0.01 min=0 max=1 group=ParticleRender");
 	TwDefine("Main/ParticleRender label='Rendering'");
 

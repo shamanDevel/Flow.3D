@@ -16,6 +16,7 @@ struct IntegrationParamsGPU
 
 
 	float timeMax; // age for stream lines, spawntime + age for path lines
+	float minVelocitySquared; // tracers below this velocity will be discarded as they are assumed to be stuck
 
 	float toleranceSquared;
 
