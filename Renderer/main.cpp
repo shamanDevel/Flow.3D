@@ -3146,7 +3146,7 @@ void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
 				break;
 			}
 			case VK_F6 :
-			case VK_F9 :
+			//case VK_F9 :
 			{
 				LoadRenderingParams("quicksave.cfg");
 				break;
