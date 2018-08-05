@@ -3,12 +3,8 @@
 //
 // Helper functions for Direct3D programming.
 //
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=320437
 //--------------------------------------------------------------------------------------
@@ -69,13 +65,19 @@ void DXUTEnableXInput( _In_ bool bEnable );
 
 
 //--------------------------------------------------------------------------------------
+// Takes a screen shot of a 32bit D3D11 back buffer and saves the images to a BMP or DDS file
+//--------------------------------------------------------------------------------------
+
+HRESULT DXUTSnapD3D11Screenshot( _In_z_ LPCWSTR szFileName, _In_ bool usedds = true );
+
+//--------------------------------------------------------------------------------------
 // Performs timer operations
 // Use DXUTGetGlobalTimer() to get the global instance
 //--------------------------------------------------------------------------------------
 class CDXUTTimer
 {
 public:
-    CDXUTTimer();
+    CDXUTTimer() ;
 
     void            Reset(); // resets the timer
     void            Start(); // starts the timer
@@ -94,7 +96,6 @@ public:
 protected:
     LARGE_INTEGER   GetAdjustedCurrentTime() const;
 
-    bool m_bUsingQPF;
     bool m_bTimerStopped;
     LONGLONG m_llQPFTicksPerSec;
 
@@ -154,12 +155,13 @@ BOOL WINAPI DXUT_Dynamic_D3DPERF_QueryRepeatFrame( void );
 void WINAPI DXUT_Dynamic_D3DPERF_SetOptions( _In_ DWORD dwOptions );
 DWORD WINAPI DXUT_Dynamic_D3DPERF_GetStatus();
 HRESULT WINAPI DXUT_Dynamic_CreateDXGIFactory1( _In_ REFIID rInterface, _Out_ void** ppOut );
+HRESULT WINAPI DXUT_Dynamic_DXGIGetDebugInterface( _In_ REFIID rInterface, _Out_ void** ppOut );
 
 HRESULT WINAPI DXUT_Dynamic_D3D11CreateDevice( _In_opt_ IDXGIAdapter* pAdapter,
                                                _In_ D3D_DRIVER_TYPE DriverType,
                                                _In_opt_ HMODULE Software,
                                                _In_ UINT32 Flags,
-                                               _In_reads_(FeatureLevels) D3D_FEATURE_LEVEL* pFeatureLevels,
+                                               _In_reads_(FeatureLevels) const D3D_FEATURE_LEVEL* pFeatureLevels,
                                                _In_ UINT FeatureLevels,
                                                _In_ UINT32 SDKVersion,
                                                _Deref_out_ ID3D11Device** ppDevice,

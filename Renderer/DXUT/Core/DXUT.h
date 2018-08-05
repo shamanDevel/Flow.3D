@@ -1,12 +1,8 @@
 //--------------------------------------------------------------------------------------
 // File: DXUT.h
 //
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=320437
 //--------------------------------------------------------------------------------------
@@ -31,8 +27,12 @@
 #define _WIN32_WINNT   0x0600
 #endif
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) && !defined(DXGI_1_2_FORMATS)
-#define DXGI_1_2_FORMATS
+#if defined(USE_DIRECT3D11_4) && !defined(USE_DIRECT3D11_3)
+#define USE_DIRECT3D11_3
+#endif
+
+#if (_WIN32_WINNT >= 0x0A00) && !defined(USE_DIRECT3D11_3)
+#define USE_DIRECT3D11_3
 #endif
 
 // #define DXUT_AUTOLIB to automatically include the libs needed for DXUT 
@@ -47,9 +47,10 @@
 #pragma warning( disable : 4481 )
 
 // Standard Windows includes
-#ifndef NOMINMAX
+#if !defined(NOMINMAX)
 #define NOMINMAX
 #endif
+
 #include <windows.h>
 #include <initguid.h>
 #include <assert.h>
@@ -70,17 +71,23 @@
 #include <d3dcommon.h>
 #include <dxgi.h>
 #include <d3d11_1.h>
+#include <d3d11_2.h>
 #include <d3dcompiler.h>
+
+#ifdef USE_DIRECT3D11_3
+#include <d3d11_3.h>
+#endif
+
+#ifdef USE_DIRECT3D11_4
+#include <d3d11_4.h>
+#endif
 
 // DirectXMath includes
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 
 // WIC includes
-#pragma warning(push)
-#pragma warning(disable : 4005)
 #include <wincodec.h>
-#pragma warning(pop)
 
 // XInput includes
 #include <xinput.h>
@@ -124,33 +131,7 @@
     ((DWORD)((((a)&0xff)<<24)|(((r)&0xff)<<16)|(((g)&0xff)<<8)|((b)&0xff)))
 #endif
 
-#define DXUT_VERSION 1103
-
-//--------------------------------------------------------------------------------------
-// SAL2 fixups for VS 2010
-//--------------------------------------------------------------------------------------
-
-#if defined(_MSC_VER) && (_MSC_VER<1610) && !defined(_In_reads_)
-#define _Analysis_assume_(exp)
-#define _In_reads_(exp)
-#define _In_reads_opt_(exp)
-#define _Out_writes_(exp)
-#define _In_reads_bytes_(exp)
-#define _Out_writes_bytes_(exp)
-#define _COM_Outptr_
-#define _Outptr_
-#define _Outptr_opt_
-#define _Outptr_result_z_
-#define _Outptr_opt_result_maybenull_
-#define _Acquires_lock_(exp)
-#define _Releases_lock_(exp)
-#define _Inexpressible_(exp)
-#endif
-
-#ifndef _Use_decl_annotations_
-#define _Use_decl_annotations_
-#endif
-
+#define DXUT_VERSION 1121
 
 //--------------------------------------------------------------------------------------
 // Structs
@@ -250,11 +231,10 @@ HRESULT WINAPI DXUTCreateWindow( _In_z_ const WCHAR* strWindowTitle = L"Direct3D
 HRESULT WINAPI DXUTSetWindow( _In_ HWND hWndFocus, _In_ HWND hWndDeviceFullScreen, _In_ HWND hWndDeviceWindowed, _In_ bool bHandleMessages = true );
 LRESULT CALLBACK DXUTStaticWndProc( _In_ HWND hWnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam );
 
-// Choose either DXUTCreateDevice or DXUTSetD3D*Device or DXUTCreateD3DDeviceFromSettings
+// Choose either DXUTCreateDevice or DXUTCreateD3DDeviceFromSettings
 
 HRESULT WINAPI DXUTCreateDevice(_In_ D3D_FEATURE_LEVEL reqFL, _In_ bool bWindowed= true, _In_ int nSuggestedWidth =0,_In_  int nSuggestedHeight =0 );
 HRESULT WINAPI DXUTCreateDeviceFromSettings( _In_ DXUTDeviceSettings* pDeviceSettings, _In_ bool bClipWindowToSingleAdapter = true );
-HRESULT WINAPI DXUTSetD3D11Device( _In_ ID3D11Device* pd3dDevice, _In_ IDXGISwapChain* pSwapChain );
 
 // Choose either DXUTMainLoop or implement your own main loop 
 HRESULT WINAPI DXUTMainLoop( _In_opt_ HACCEL hAccel = nullptr );
@@ -288,18 +268,33 @@ bool    WINAPI DXUTGetMSAASwapChainCreated();
 // State Retrieval  
 //--------------------------------------------------------------------------------------
 
-// Direct3D 11
-IDXGIFactory1*           WINAPI DXUTGetDXGIFactory(); // Does not addref unlike typical Get* APIs
-IDXGISwapChain*          WINAPI DXUTGetDXGISwapChain(); // Does not addref unlike typical Get* APIs
+// Direct3D 11.x (These do not addref unlike typical Get* APIs)
+IDXGIFactory1*           WINAPI DXUTGetDXGIFactory(); 
+IDXGISwapChain*          WINAPI DXUTGetDXGISwapChain();
 const DXGI_SURFACE_DESC* WINAPI DXUTGetDXGIBackBufferSurfaceDesc();
-ID3D11Device*            WINAPI DXUTGetD3D11Device(); // Does not addref unlike typical Get* APIs
-ID3D11DeviceContext*     WINAPI DXUTGetD3D11DeviceContext(); // Does not addref unlike typical Get* APIs
-ID3D11Device1*           WINAPI DXUTGetD3D11Device1(); // Does not addref unlike typical Get* APIs
-ID3D11DeviceContext1*	 WINAPI DXUTGetD3D11DeviceContext1(); // Does not addref unlike typical Get* APIs
 HRESULT                  WINAPI DXUTSetupD3D11Views( _In_ ID3D11DeviceContext* pd3dDeviceContext ); // Supports immediate or deferred context
 D3D_FEATURE_LEVEL        WINAPI DXUTGetD3D11DeviceFeatureLevel(); // Returns the D3D11 devices current feature level
-ID3D11RenderTargetView*  WINAPI DXUTGetD3D11RenderTargetView(); // Does not addref unlike typical Get* APIs
-ID3D11DepthStencilView*  WINAPI DXUTGetD3D11DepthStencilView(); // Does not addref unlike typical Get* APIs
+ID3D11RenderTargetView*  WINAPI DXUTGetD3D11RenderTargetView();
+ID3D11DepthStencilView*  WINAPI DXUTGetD3D11DepthStencilView();
+
+ID3D11Device*            WINAPI DXUTGetD3D11Device();
+ID3D11DeviceContext*     WINAPI DXUTGetD3D11DeviceContext();
+
+ID3D11Device1*           WINAPI DXUTGetD3D11Device1();
+ID3D11DeviceContext1*	 WINAPI DXUTGetD3D11DeviceContext1();
+
+ID3D11Device2*           WINAPI DXUTGetD3D11Device2();
+ID3D11DeviceContext2*	 WINAPI DXUTGetD3D11DeviceContext2();
+
+#ifdef USE_DIRECT3D11_3
+ID3D11Device3*           WINAPI DXUTGetD3D11Device3();
+ID3D11DeviceContext3*	 WINAPI DXUTGetD3D11DeviceContext3();
+#endif
+
+#ifdef USE_DIRECT3D11_4
+ID3D11Device4*           WINAPI DXUTGetD3D11Device4();
+ID3D11DeviceContext4*	 WINAPI DXUTGetD3D11DeviceContext4();
+#endif
 
 // General
 DXUTDeviceSettings WINAPI DXUTGetDeviceSettings(); 

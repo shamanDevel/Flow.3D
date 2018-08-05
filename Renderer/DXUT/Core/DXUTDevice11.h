@@ -3,12 +3,8 @@
 //
 // Enumerates D3D adapters, devices, modes, etc.
 //
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=320437
 //--------------------------------------------------------------------------------------
@@ -81,7 +77,7 @@ private:
     friend HRESULT WINAPI DXUTCreateD3D11Enumeration();
 
     // Use DXUTGetD3D11Enumeration() to access global instance
-    CD3D11Enumeration();
+    CD3D11Enumeration() ;
 
     bool m_bHasEnumerated;
     LPDXUTCALLBACKISD3D11DEVICEACCEPTABLE m_IsD3D11DeviceAcceptableFunc;
@@ -106,7 +102,7 @@ private:
     void ClearAdapterInfoList();
 };
 
-CD3D11Enumeration* WINAPI DXUTGetD3D11Enumeration(_In_ bool bForceEnumerate = false, _In_ bool EnumerateAllAdapterFormats = false, _In_ D3D_FEATURE_LEVEL forceFL = ((D3D_FEATURE_LEVEL )0)  );
+CD3D11Enumeration* WINAPI DXUTGetD3D11Enumeration(_In_ bool bForceEnumerate = false, _In_ bool EnumerateAllAdapterFormats = true, _In_ D3D_FEATURE_LEVEL forceFL = ((D3D_FEATURE_LEVEL )0)  );
 
 
 #define DXGI_MAX_DEVICE_IDENTIFIER_STRING 128
@@ -120,12 +116,15 @@ class CD3D11EnumAdapterInfo
     const CD3D11EnumAdapterInfo &operator = ( const CD3D11EnumAdapterInfo &rhs );
 
 public:
-    CD3D11EnumAdapterInfo() :
+    CD3D11EnumAdapterInfo()  :
         AdapterOrdinal( 0 ),
+        AdapterDesc{},
+        szUniqueDescription{},
         m_pAdapter( nullptr ),
         bAdapterUnavailable(false)
     {
        *szUniqueDescription = 0;
+       memset( &AdapterDesc, 0, sizeof(AdapterDesc) );
     }
     ~CD3D11EnumAdapterInfo();
 
@@ -148,10 +147,12 @@ class CD3D11EnumOutputInfo
     const CD3D11EnumOutputInfo &operator = ( const CD3D11EnumOutputInfo &rhs );
 
 public:
-    CD3D11EnumOutputInfo() :
-        AdapterOrdinal( 0 ),
-        Output( 0 ),
-        m_pOutput( nullptr ) {}
+    CD3D11EnumOutputInfo()  :
+        AdapterOrdinal(0),
+        Output(0),
+        m_pOutput(nullptr),
+        Desc{}
+    {}
     ~CD3D11EnumOutputInfo();
 
     UINT AdapterOrdinal;
@@ -200,6 +201,17 @@ struct CD3D11EnumDeviceSettingsCombo
     CD3D11EnumAdapterInfo* pAdapterInfo;
     CD3D11EnumDeviceInfo* pDeviceInfo;
     CD3D11EnumOutputInfo* pOutputInfo;
+
+    CD3D11EnumDeviceSettingsCombo()  :
+        AdapterOrdinal(0),
+        DeviceType(D3D_DRIVER_TYPE_UNKNOWN),
+        BackBufferFormat(DXGI_FORMAT_UNKNOWN),
+        Windowed(FALSE),
+        Output(0),
+        pAdapterInfo(nullptr),
+        pDeviceInfo(nullptr),
+        pOutputInfo(nullptr)
+    { }
 };
 
 float   DXUTRankD3D11DeviceCombo( _In_ CD3D11EnumDeviceSettingsCombo* pDeviceSettingsCombo, 

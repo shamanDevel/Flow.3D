@@ -53,7 +53,7 @@
       </PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>
       </PrecompiledHeaderOutputFile>
-      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_DEBUG;DEBUG;PROFILE;_WINDOWS;_LIB;USE_DIRECT3D11_0;_WIN32_WINNT=0x0600;_CRT_STDIO_ARBITRARY_WIDE_SPECIFIERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <ProgramDataBaseFileName>$(IntDir)Renderer_vc$(PlatformToolsetVersion).pdb</ProgramDataBaseFileName>
     </ClCompile>
@@ -127,8 +127,9 @@ exit 1
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_52</CodeGeneration>
-      <PtxAsOptionV>true</PtxAsOptionV>
+      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <PtxAsOptionV>
+      </PtxAsOptionV>
       <Optimization>O2</Optimization>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
@@ -186,11 +187,13 @@ exit 1
     <ClCompile Include="Box.cpp" />
     <ClCompile Include="BoxEffect.cpp" />
     <ClCompile Include="BoxUtils.cpp" />
-    <ClCompile Include="DirectXTK\Src\WICTextureLoader.cpp" />
+    <ClCompile Include="DXUT\Core\DDSTextureLoader.cpp" />
     <ClCompile Include="DXUT\Core\dxerr.cpp" />
     <ClCompile Include="DXUT\Core\DXUT.cpp" />
     <ClCompile Include="DXUT\Core\DXUTDevice11.cpp" />
     <ClCompile Include="DXUT\Core\DXUTmisc.cpp" />
+    <ClCompile Include="DXUT\Core\ScreenGrab.cpp" />
+    <ClCompile Include="DXUT\Core\WICTextureLoader.cpp" />
     <ClCompile Include="Effect.cpp" />
     <ClCompile Include="FilteredVolume.cpp" />
     <ClCompile Include="FilteringManager.cpp" />
@@ -282,11 +285,13 @@ exit 1
     <ClInclude Include="ClearCudaArray.h" />
     <ClInclude Include="cudaTum3D.h" />
     <ClInclude Include="cutil_math.h" />
-    <ClInclude Include="DirectXTK\Inc\WICTextureLoader.h" />
+    <ClInclude Include="DXUT\Core\DDSTextureLoader.h" />
     <ClInclude Include="DXUT\Core\dxerr.h" />
     <ClInclude Include="DXUT\Core\DXUT.h" />
     <ClInclude Include="DXUT\Core\DXUTDevice11.h" />
     <ClInclude Include="DXUT\Core\DXUTmisc.h" />
+    <ClInclude Include="DXUT\Core\ScreenGrab.h" />
+    <ClInclude Include="DXUT\Core\WICTextureLoader.h" />
     <ClInclude Include="Effect.h" />
     <ClInclude Include="FilteredVolume.h" />
     <ClInclude Include="FilteringManager.h" />
