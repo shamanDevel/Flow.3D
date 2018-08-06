@@ -8,7 +8,12 @@
 *.opendb
 *.pdb
 
-**/Debug/**
-**/Release/**
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+
+!dll/Debug
+!dll/Release
 
 Thumbs.db

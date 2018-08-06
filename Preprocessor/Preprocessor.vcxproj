@@ -78,7 +78,8 @@ exit 0
 exit 1</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Copy *.dll files to target dir</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -106,7 +107,8 @@ exit 1</Command>
       </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>Copy *.dll files to target dir</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

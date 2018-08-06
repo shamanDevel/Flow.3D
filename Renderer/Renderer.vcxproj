@@ -65,7 +65,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_50,sm_50</CodeGeneration>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
       <PtxAsOptionV>true</PtxAsOptionV>
@@ -74,21 +74,14 @@
       <GPUDebugInfo>false</GPUDebugInfo>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\\" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
-#if errorlevel 4 exit 1
-#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
-#if errorlevel 4 exit 2
-#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
-#if errorlevel 4 exit 3
-#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Release" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
-#if errorlevel 4 exit 4
-#robocopy "C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" D3DCompiler_*.dll /XX /NJH /NJS /NP
-#if errorlevel 4 exit 5
-exit 0
-:error
-exit 1
-:VCEnd
-:VCEnd</Command>
+      <Command>@echo $(SolutionDir)dll\$(ConfigurationName)\
+xcopy /y /d  "$(SolutionDir)dll\$(ConfigurationName)\*.dll" "$(TargetDir)"
+
+@echo $(ProjectDir)
+xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
+
+@echo $(ProjectDir)TransferFunctionEditor\
+xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copying .fx and .dll files to output dir</Message>
@@ -127,34 +120,26 @@ exit 1
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <PtxAsOptionV>
       </PtxAsOptionV>
       <Optimization>O2</Optimization>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <GenerateLineInfo>true</GenerateLineInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
-      <AdditionalOptions>--gpu-architecture=compute_30 --gpu-code=compute_30,sm_52 %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\\" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
-#if errorlevel 4 exit 1
-#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\Renderer\TransferFunctionEditor" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.fx /XX /NJH /NJS /NP
-#if errorlevel 4 exit 2
-#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
-#if errorlevel 4 exit 3
-#robocopy "D:\Research\Projects\TurbulenceVisualisation\gitrepo\dll\Release" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" *.dll /XX /NJH /NJS /NP
-#if errorlevel 4 exit 4
-#robocopy "C:\Program Files (x86)\Windows Kits\8.1\redist\d3d\x64" "D:\Research\Projects\TurbulenceVisualisation\gitrepo\x64\Release\\" D3DCompiler_*.dll /XX /NJH /NJS /NP
-#if errorlevel 4 exit 5
-exit 0
-:error
-exit 1
-:VCEnd
-:VCEnd</Command>
+      <Command>@echo $(SolutionDir)dll\$(ConfigurationName)\
+xcopy /y /d  "$(SolutionDir)dll\$(ConfigurationName)\*.dll" "$(TargetDir)"
+
+@echo $(ProjectDir)
+xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
+
+@echo $(ProjectDir)TransferFunctionEditor\
+xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copying .fx and .dll files to output dir</Message>
