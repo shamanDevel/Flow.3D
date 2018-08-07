@@ -90,7 +90,7 @@ void GPUResources::destroy()
 }
 
 
-byte* GPUResources::getByteBuffer(size_t bytes)
+cudaCompress::byte* GPUResources::getByteBuffer(size_t bytes)
 {
 	assert(m_bufferOffset + bytes <= m_config.bufferSize);
 	if(m_bufferOffset + bytes > m_config.bufferSize) {
@@ -98,7 +98,7 @@ byte* GPUResources::getByteBuffer(size_t bytes)
 		return nullptr;
 	}
 
-	byte* dpResult = m_dpBuffer + m_bufferOffset;
+	cudaCompress::byte* dpResult = m_dpBuffer + m_bufferOffset;
 	m_allocatedSizes.push_back(bytes);
 	m_bufferOffset += getAlignedSize(bytes, 128);
 
@@ -120,9 +120,9 @@ void GPUResources::releaseBuffer()
 	assert(m_bufferOffset % 128 == 0);
 }
 
-void GPUResources::releaseBuffers(uint bufferCount)
+void GPUResources::releaseBuffers(cudaCompress::uint bufferCount)
 {
-	for(uint i = 0; i < bufferCount; i++) {
+	for (cudaCompress::uint i = 0; i < bufferCount; i++) {
 		releaseBuffer();
 	}
 }

@@ -8,13 +8,13 @@
 #include <cudaCompress/Instance.h>
 
 
-inline size_t getAlignedSize(size_t size, uint numBytes = 128)
+inline size_t getAlignedSize(size_t size, cudaCompress::uint numBytes = 128)
 {
 	return (size + numBytes - 1) / numBytes * numBytes;
 }
 
 template<typename T>
-inline void align(T*& pData, uint numBytes = 128)
+inline void align(T*& pData, cudaCompress::uint numBytes = 128)
 {
 	pData = (T*)getAlignedSize(size_t(pData), numBytes);
 }
@@ -35,10 +35,10 @@ public:
 
 		int cudaDevice; // set to -1 (default) to use the current one
 
-		uint blockCountMax;
-		uint elemCountPerBlockMax;
-		uint offsetIntervalMin;
-		uint log2HuffmanDistinctSymbolCountMax;
+		cudaCompress::uint blockCountMax;
+		cudaCompress::uint elemCountPerBlockMax;
+		cudaCompress::uint offsetIntervalMin;
+		cudaCompress::uint log2HuffmanDistinctSymbolCountMax;
 
 		size_t bufferSize;
 
@@ -56,18 +56,18 @@ public:
 
 
 	// get a buffer of the specified size in GPU memory
-	byte* getByteBuffer(size_t bytes);
+	cudaCompress::byte* getByteBuffer(size_t bytes);
 	template<typename T>
 	T* getBuffer(size_t count) { return (T*)getByteBuffer(count * sizeof(T)); }
 	// release the last buffer(s) returned from getBuffer
 	void releaseBuffer();
-	void releaseBuffers(uint bufferCount);
+	void releaseBuffers(cudaCompress::uint bufferCount);
 
 
 private:
 	Config m_config;
 
-	byte* m_dpBuffer;
+	cudaCompress::byte* m_dpBuffer;
 
 	size_t m_bufferOffset;
 	std::vector<size_t> m_allocatedSizes;

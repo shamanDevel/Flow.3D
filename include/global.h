@@ -25,6 +25,8 @@ typedef uint64_t	uint64;
 template<typename T>
 T clamp(T val, T min, T max)
 {
+	uint32_t;
+
 	return val < min ? min : (val > max ? max : val);
 }
 
