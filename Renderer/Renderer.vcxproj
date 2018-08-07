@@ -68,10 +68,10 @@
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
-      <PtxAsOptionV>true</PtxAsOptionV>
+      <PtxAsOptionV>false</PtxAsOptionV>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
-      <GenerateLineInfo>true</GenerateLineInfo>
-      <GPUDebugInfo>false</GPUDebugInfo>
+      <GenerateLineInfo>false</GenerateLineInfo>
+      <GPUDebugInfo>true</GPUDebugInfo>
     </CudaCompile>
     <PostBuildEvent>
       <Command>@echo $(SolutionDir)dll\$(ConfigurationName)\
@@ -121,8 +121,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
-      <PtxAsOptionV>
-      </PtxAsOptionV>
+      <PtxAsOptionV>false</PtxAsOptionV>
       <Optimization>InheritFromHost</Optimization>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
