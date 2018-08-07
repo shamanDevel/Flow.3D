@@ -17,7 +17,7 @@
 #include <AntTweakBar/AntTweakBar.h>
 #include <D3DX11Effect/d3dx11effect.h>
 
-#include <cudaCompress/Init.h>
+#include <cudaCompress/Instance.h>
 
 #include <SysTools.h>
 #include <CSysTools.h>

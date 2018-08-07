@@ -419,7 +419,7 @@ void decompressVolumeFloat(GPUResources& shared, CompressVolumeResources& resour
 
 	uint elemCount = sizeX * sizeY * sizeZ;
 	uint elemCountPerBlockMax = blockSizeMaxX * blockSizeMaxY * blockSizeMaxZ;
-	uint pad = WARP_SIZE * cudaCompress::getInstanceOffsetIntervalMin(shared.m_pCuCompInstance);
+	uint pad = WARP_SIZE * cudaCompress::getInstanceCodingBlockSize(shared.m_pCuCompInstance);
 	uint elemCountPerBlockMaxPadded = (elemCountPerBlockMax + pad - 1) / pad * pad;
 
 
@@ -526,7 +526,7 @@ void decompressVolumeFloatMultiChannel(GPUResources& shared, CompressVolumeResou
 
 	uint elemCount = sizeX * sizeY * sizeZ;
 	uint elemCountPerBlockMax = blockSizeMaxX * blockSizeMaxY * blockSizeMaxZ;
-	uint pad = WARP_SIZE * cudaCompress::getInstanceOffsetIntervalMin(shared.m_pCuCompInstance);
+	uint pad = WARP_SIZE * cudaCompress::getInstanceCodingBlockSize(shared.m_pCuCompInstance);
 	uint elemCountPerBlockMaxPadded = (elemCountPerBlockMax + pad - 1) / pad * pad;
 
 
@@ -765,7 +765,7 @@ bool decompressVolumeFloatQuantFirst(GPUResources& shared, CompressVolumeResourc
 
 	uint elemCount = sizeX * sizeY * sizeZ;
 	uint elemCountPerBlockMax = blockSizeMaxX * blockSizeMaxY * blockSizeMaxZ;
-	uint pad = WARP_SIZE * cudaCompress::getInstanceOffsetIntervalMin(shared.m_pCuCompInstance);
+	uint pad = WARP_SIZE * cudaCompress::getInstanceCodingBlockSize(shared.m_pCuCompInstance);
 	uint elemCountPerBlockMaxPadded = (elemCountPerBlockMax + pad - 1) / pad * pad;
 
 
@@ -870,7 +870,7 @@ bool decompressVolumeFloatQuantFirstMultiChannel(GPUResources& shared, CompressV
 
 	uint elemCount = sizeX * sizeY * sizeZ;
 	uint elemCountPerBlockMax = blockSizeMaxX * blockSizeMaxY * blockSizeMaxZ;
-	uint pad = WARP_SIZE * cudaCompress::getInstanceOffsetIntervalMin(shared.m_pCuCompInstance);
+	uint pad = WARP_SIZE * cudaCompress::getInstanceCodingBlockSize(shared.m_pCuCompInstance);
 	uint elemCountPerBlockMaxPadded = (elemCountPerBlockMax + pad - 1) / pad * pad;
 
 

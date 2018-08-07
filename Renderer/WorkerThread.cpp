@@ -4,7 +4,7 @@
 
 #include <cuda_runtime.h>
 
-#include <cudaCompress/Init.h>
+#include <cudaCompress/Instance.h>
 
 #include "cudaUtil.h"
 
