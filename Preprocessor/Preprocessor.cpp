@@ -10,7 +10,7 @@
 
 #include <tclap/CmdLine.h>
 #include <Json\Json.h>
-#include <cudaCompress/Init.h>
+#include <cudaCompress/Instance.h>
 #include <cudaUtil.h>
 
 #include "Utils.h"

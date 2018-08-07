@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <cudaCompress/global.h>
-#include <cudaCompress/Init.h>
+#include <cudaCompress/Instance.h>
 
 
 inline size_t getAlignedSize(size_t size, uint numBytes = 128)

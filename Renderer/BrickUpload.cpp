@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include <cuda_runtime.h>
-#include <cudaCompress/Init.h>
+#include <cudaCompress/Instance.h>
 
 #include <cudaUtil.h>
 
@@ -35,7 +35,7 @@ void UploadBrick(GPUResources* pShared, CompressVolumeResources* pRes,
 	else if(volumeInfo.GetCompressionType() == COMPRESSION_FIXEDQUANT || volumeInfo.GetCompressionType() == COMPRESSION_FIXEDQUANT_QF)
 	{
 		const int subbandCount = 7;
-		int channelsPerPass = cudaCompress::getInstanceBlockCountMax(pShared->m_pCuCompInstance) / subbandCount;
+		int channelsPerPass = cudaCompress::getInstanceStreamCountMax(pShared->m_pCuCompInstance) / subbandCount;
 
 		for(int channel0 = 0; channel0 < volumeInfo.GetChannelCount(); channel0 += channelsPerPass)
 		{
