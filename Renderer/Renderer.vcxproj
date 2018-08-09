@@ -207,6 +207,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <CudaCompile Include="HeatMapKernel.cu">
       <GenerateRelocatableDeviceCode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateRelocatableDeviceCode>
     </CudaCompile>
+    <CudaCompile Include="IntegratorKernelFTLE.cu" />
     <CudaCompile Include="IntegratorTimeInCell.cu" />
     <CudaCompile Include="RenderingManager.cu">
       <FileType>CppCode</FileType>

@@ -240,6 +240,8 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	return true;
 }
 
+#define GRID
+
 void TracingManager::CreateInitialCheckpoints(float spawnTime)
 {
 	// create initial checkpoints
@@ -254,10 +256,29 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 		float gridSpacingWorld = 2.0f / float(m_pVolume->GetVolumeSize().maximum());
 		seedBoxMin -= 0.5f * gridSpacingWorld;
 	}
-	
+
+#ifdef GRID
+
+	int n = std::floor(std::sqrt(m_traceParams.m_lineCount));
+
+#endif
+
+
 	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
 	{
-		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked.empty()) {
+
+#ifdef GRID
+
+		uint ii = i % n;
+		uint jj = std::floor(i / (float)n);
+
+		m_checkpoints[i].Position = make_float3(seedBoxMin.x + seedBoxSize.x * ii / (float)n,
+			seedBoxMin.y + seedBoxSize.y * jj / (float)n,
+			seedBoxMin.z);
+#else
+
+		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked.empty())
+		{
 			//seed directly from the seed box
 			m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
 		}
@@ -283,8 +304,10 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 			}
 		}
 
+#endif
+
 		/*if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
-			printf("WARNING: seed %i is outside of domain!\n", i);*/
+		printf("WARNING: seed %i is outside of domain!\n", i);*/
 		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
 		m_checkpoints[i].Time = spawnTime;
 		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);

@@ -607,6 +607,9 @@
     <CudaCompile Include="IntegratorTimeInCell.cu">
       <Filter>ParticleTracing</Filter>
     </CudaCompile>
+    <CudaCompile Include="IntegratorKernelFTLE.cu">
+      <Filter>ParticleTracing</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="RaycasterKernelHelpers.cui">
