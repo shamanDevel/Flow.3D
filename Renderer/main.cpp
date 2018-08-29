@@ -23,7 +23,6 @@
 #include <CSysTools.h>
 #include <cudaUtil.h>
 #include <Vec.h>
-using namespace tum3D;
 
 #include "TransferFunctionEditor/TransferFunctionEditor.h"
 
@@ -59,19 +58,84 @@ using namespace tum3D;
 
 #include "WorkerThread.h"
 
-
 #include "FlowGraph.h"
+
 //#include "TracingBenchmark.h"
+//#if 0
+//#include <vld.h>
+//#endif
 
-#if 0
-#include <vld.h>
-#endif
+using namespace tum3D;
 
+#pragma region Definitions
 
+struct MyCudaDevice
+{
+	MyCudaDevice(int device, float computePower, float memoryPower)
+		: device(device), computePower(computePower), memoryPower(memoryPower), pThread(nullptr) {}
 
-// ============================================================
-// Variables and stuff
-// ============================================================
+	int device;
+	float computePower;
+	float memoryPower;
+
+	Range1D range;
+
+	WorkerThread* pThread;
+};
+
+// image sequence settings/state
+struct ImageSequence
+{
+	ImageSequence()
+		: FrameCount(100)
+		, AngleInc(0.0f), ViewDistInc(0.0f), FramesPerTimestep(1)
+		, Record(false), FromRenderBuffer(false)
+		, BaseRotationQuat(0.0f, 0.0f, 0.0f, 0.0f), BaseTimestep(0)
+		, Running(false), FrameCur(0) {}
+
+	//TODO move into params struct:
+	int32 FrameCount;
+	float AngleInc;
+	float ViewDistInc;
+	int32 FramesPerTimestep;
+
+	bool  Record;
+	bool  FromRenderBuffer;
+
+	Vec4f BaseRotationQuat;
+	int32 BaseTimestep;
+	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+	bool  Running;
+	int32 FrameCur;
+} g_imageSequence;
+
+// batch tracing settings/state
+struct BatchTrace
+{
+	BatchTrace()
+		: WriteLinebufs(false), Running(false), FileCur(0), StepCur(0), ExitAfterFinishing(false) {}
+
+	std::vector<std::string> VolumeFiles;
+
+	std::string OutPath;
+	bool WriteLinebufs;
+
+	bool Running;
+	uint FileCur;
+	uint StepCur;
+
+	std::ofstream FileStats;
+	std::ofstream FileTimings;
+
+	std::vector<float> Timings;
+
+	bool ExitAfterFinishing;
+} g_batchTrace;
+
+#pragma endregion
+
+#pragma region GlobalVariables
 
 Vec2i            g_windowSize(0, 0);
 float            g_renderBufferSizeFactor = 2.0f;
@@ -97,22 +161,6 @@ BatchTraceParams g_batchTraceParams;
 
 TimeVolume       g_volume(0.8f);
 FlowGraph        g_flowGraph;
-
-
-
-struct MyCudaDevice
-{
-	MyCudaDevice(int device, float computePower, float memoryPower)
-		: device(device), computePower(computePower), memoryPower(memoryPower), pThread(nullptr) {}
-
-	int device;
-	float computePower;
-	float memoryPower;
-
-	Range1D range;
-
-	WorkerThread* pThread;
-};
 
 // the thread at g_primaryCudaDeviceIndex will not be started!
 std::vector<MyCudaDevice> g_cudaDevices;
@@ -153,7 +201,6 @@ ScreenEffect			g_screenEffect;
 ProgressBarEffect		g_progressBarEffect;
 
 
-
 Vec4f		g_backgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 bool		g_showPreview = true;
@@ -168,68 +215,13 @@ bool		g_redraw = true;
 bool		g_retrace = true;
 
 
-
 TimerCPU	g_timerTracing;
 TimerCPU	g_timerRendering;
-
 
 
 // flag to indicate to the render callback to save a screenshot next time it is called
 bool g_saveScreenshot = false;
 bool g_saveRenderBufferScreenshot = false;
-
-
-// image sequence settings/state
-struct ImageSequence
-{
-	ImageSequence()
-		: FrameCount(100)
-		, AngleInc(0.0f), ViewDistInc(0.0f), FramesPerTimestep(1)
-		, Record(false), FromRenderBuffer(false)
-		, BaseRotationQuat(0.0f, 0.0f, 0.0f, 0.0f), BaseTimestep(0)
-		, Running(false), FrameCur(0) {}
-
-	//TODO move into params struct:
-	int32 FrameCount;
-	float AngleInc;
-	float ViewDistInc;
-	int32 FramesPerTimestep;
-
-	bool  Record;
-	bool  FromRenderBuffer;
-
-	Vec4f BaseRotationQuat;
-	int32 BaseTimestep;
-	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-	bool  Running;
-	int32 FrameCur;
-} g_imageSequence;
-
-
-// batch tracing settings/state
-struct BatchTrace
-{
-	BatchTrace()
-		: WriteLinebufs(false), Running(false), FileCur(0), StepCur(0), ExitAfterFinishing(false) {}
-
-	std::vector<std::string> VolumeFiles;
-
-	std::string OutPath;
-	bool WriteLinebufs;
-
-	bool Running;
-	uint FileCur;
-	uint StepCur;
-
-	std::ofstream FileStats;
-	std::ofstream FileTimings;
-
-	std::vector<float> Timings;
-
-	bool ExitAfterFinishing;
-} g_batchTrace;
-
 
 
 // GUI
@@ -259,13 +251,9 @@ cudaGraphicsResource*   g_pTfEdtSRVCuda = nullptr;
 // OpenMP thread count (because omp_get_num_threads is stupid)
 uint g_threadCount = 0;
 
+#pragma endregion
 
-
-
-
-// ============================================================
-// Utility
-// ============================================================
+#pragma region Utility
 
 std::string toString(float val)
 {
@@ -800,7 +788,6 @@ void ShutdownCudaDevices()
 }
 
 
-
 void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4f& matInv, Vec3f& vecWorldX, Vec3f& vecWorldY)
 {
 	Vec4f transformedX = matInv * Vec4f(vecViewX, 0.0f);
@@ -831,10 +818,9 @@ void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4
 	normalize(vecWorldY);
 }
 
-// ============================================================
-// GUI
-// ============================================================
+#pragma endregion
 
+#pragma region GUI
 
 void TW_CALL Redraw(void *clientData)
 {
@@ -1416,6 +1402,7 @@ void TW_CALL LoadSliceTexture(void *clientData)
 		SAFE_RELEASE(tmp);
 	}
 }
+
 void TW_CALL LoadColorTexture(void *clientData)
 {
 	std::string filename;
@@ -1568,7 +1555,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	g_pTwBarMain = TwNewBar("Main");
 	std::ostringstream ss;
 	int iHeight = max(static_cast<int>(uiBBHeight)-40, 200);
-	ss << "Main label='Main' size='260 " << iHeight << "' position='10 10' text=light";
+	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light";
 	TwDefine(ss.str().c_str());
 
 	// "global" params: data set and timestep
@@ -1634,6 +1621,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 	TwDefine("Main/RayCast label='Ray Casting' opened=false");
 
+
+	// FTLE
+	TwAddVarRW(g_pTwBarMain, "Verbose", TW_TYPE_BOOLCPP, &g_tracingManager.GetVerbose(), "label='Verbose' group=FTLE");
+	TwAddVarCB(g_pTwBarMain, "Separation Distance", TW_TYPE_FLOAT, SetTimeSpacing, GetTimeSpacing, nullptr, "label='Separation Distance' min=0.0000001 step=0.0000001 precision=7 group=FTLE");
 
 	// particle params
 	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
@@ -1867,13 +1858,9 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddButton(g_pTwBarBatchTrace, "StartBatch", StartBatchTracingChooseFiles, nullptr, "label='Start'");
 	TwAddButton(g_pTwBarBatchTrace, "StopBatch", StopBatchTracing, nullptr, "label='Stop'");
 }
+#pragma endregion
 
-
-
-// ============================================================
-// DXUT Callbacks
-// ============================================================
-
+#pragma region DXUTCallbacks
 
 //--------------------------------------------------------------------------------------
 // Reject any D3D11 devices that aren't acceptable by returning false
@@ -3474,14 +3461,9 @@ void CALLBACK OnFrameMove( double dTime, float fElapsedTime, void* pUserContext 
 	}
 }
 
+#pragma endregion
 
-
-
-
-
-// ============================================================
-// Init / Exit / Main
-// ============================================================
+#pragma region InitExitMain
 
 bool InitApp()
 {
@@ -3640,3 +3622,5 @@ int main(int argc, char* argv[])
 
 	return DXUTGetExitCode();
 }
+
+#pragma endregion

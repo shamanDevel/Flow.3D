@@ -222,6 +222,9 @@ private:
 
 	//Creates the initial checkpoints / seeds
 	void CreateInitialCheckpoints(float spawnTime);
+	void CreateInitialCheckpointsRegularGrid(float3 seedBoxMin, float3 seedBoxSize);
+	void CreateInitialCheckpointsRandom(float3 seedBoxMin, float3 seedBoxSize);
+	void CreateInitialCheckpointsFTLE(float3 seedBoxMin, float3 seedBoxSize);
 	//Sets the delta-t for the checkpoints
 	void SetCheckpointTimeStep(float deltaT);
 

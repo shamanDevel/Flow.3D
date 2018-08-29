@@ -51,6 +51,14 @@ struct ParticleTraceParams
 
 	eLineMode m_lineMode;
 
+	enum eSeedPattern
+	{
+		RANDOM = 0,
+		REGULAR_GRID,
+		FTLE = 0xFFFFFFFF
+	};
+	eSeedPattern m_seedPattern;
+
 	uint  m_lineCount;
 	uint  m_lineLengthMax;
 	float m_lineAgeMax;

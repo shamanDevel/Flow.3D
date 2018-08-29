@@ -240,16 +240,14 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	return true;
 }
 
-#define GRID
-
 void TracingManager::CreateInitialCheckpoints(float spawnTime)
 {
-	// create initial checkpoints
+	m_checkpoints.resize(m_traceParams.m_lineCount);
+
+
 	float3 seedBoxMin = make_float3(m_traceParams.m_seedBoxMin);
 	float3 seedBoxSize = make_float3(m_traceParams.m_seedBoxSize);
 
-	// create random seed positions
-	m_checkpoints.resize(m_traceParams.m_lineCount);
 	if (m_traceParams.m_upsampledVolumeHack)
 	{
 		// upsampled volume is offset by half a grid spacing...
@@ -257,32 +255,137 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 		seedBoxMin -= 0.5f * gridSpacingWorld;
 	}
 
-#ifdef GRID
 
-	int n = std::floor(std::sqrt(m_traceParams.m_lineCount));
+	switch (m_traceParams.m_seedPattern)
+	{
+	case ParticleTraceParams::eSeedPattern::REGULAR_GRID:
+		CreateInitialCheckpointsRegularGrid(seedBoxMin, seedBoxSize);
+		break;
+	case ParticleTraceParams::eSeedPattern::FTLE:
+		CreateInitialCheckpointsFTLE(seedBoxMin, seedBoxSize);
+		break;
+	case ParticleTraceParams::eSeedPattern::RANDOM:
+		CreateInitialCheckpointsRandom(seedBoxMin, seedBoxSize);
+		break;
+	default:
+		CreateInitialCheckpointsRandom(seedBoxMin, seedBoxSize);
+		break;
+	}
 
-#endif
-
+	// create initial checkpoints
+	//float3 seedBoxMin = make_float3(m_traceParams.m_seedBoxMin);
+	//float3 seedBoxSize = make_float3(m_traceParams.m_seedBoxSize);
+	//// create random seed positions
+	//if (m_traceParams.m_upsampledVolumeHack)
+	//{
+	//	// upsampled volume is offset by half a grid spacing...
+	//	float gridSpacingWorld = 2.0f / float(m_pVolume->GetVolumeSize().maximum());
+	//	seedBoxMin -= 0.5f * gridSpacingWorld;
+	//}
+//#ifdef GRID
+//
+//	int n = std::floor(std::sqrt(m_traceParams.m_lineCount));
+//
+//#endif
+//
+//
+//	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
+//	{
+//
+//#ifdef GRID
+//
+//		uint ii = i % n;
+//		uint jj = std::floor(i / (float)n);
+//
+//		m_checkpoints[i].Position = make_float3(seedBoxMin.x + seedBoxSize.x * ii / (float)n,
+//			seedBoxMin.y + seedBoxSize.y * jj / (float)n,
+//			seedBoxMin.z);
+//#else
+//
+//		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked.empty())
+//		{
+//			//seed directly from the seed box
+//			m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
+//		}
+//		else {
+//			//sample texture until a point with the same color is found
+//			m_checkpoints[i].Position = make_float3(Vec3f(-10000, -10000, -10000)); //somewhere outside, so that the point is deleted if no sample could be found
+//			for (int j = 0; j < m_numRejections; ++j) {
+//				float3 pos = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
+//				Vec3f posAsVec = Vec3f(&pos.x);
+//				Vec3f posInVolume = (posAsVec + m_pVolume->GetVolumeHalfSizeWorld()) / (2 * m_pVolume->GetVolumeHalfSizeWorld());
+//				int texX = (int)(posInVolume.x() * m_traceParams.m_seedTexture.m_width);
+//				int texY = (int)(posInVolume.y() * m_traceParams.m_seedTexture.m_height);
+//				texY = m_traceParams.m_seedTexture.m_height - texY - 1;
+//				if (texX < 0 || texY < 0 || texX >= m_traceParams.m_seedTexture.m_width || texY >= m_traceParams.m_seedTexture.m_height) {
+//					continue;
+//				}
+//				unsigned int color = m_traceParams.m_seedTexture.m_colors[texX + texY * m_traceParams.m_seedTexture.m_height];
+//				if (m_traceParams.m_seedTexture.m_picked.find(color) != m_traceParams.m_seedTexture.m_picked.end()) {
+//					//we found it
+//					m_checkpoints[i].Position = pos;
+//					break;
+//				}
+//			}
+//		}
+//
+//#endif
+//
+//		/*if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
+//		printf("WARNING: seed %i is outside of domain!\n", i);*/
+//		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
+//		m_checkpoints[i].Time = spawnTime;
+//		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
+//		m_checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
+//
+//		m_checkpoints[i].StepsTotal = 0;
+//		m_checkpoints[i].StepsAccepted = 0;
+//	}
 
 	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
 	{
+		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
+		m_checkpoints[i].Time = spawnTime;
+		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
+		m_checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
 
-#ifdef GRID
+		m_checkpoints[i].StepsTotal = 0;
+		m_checkpoints[i].StepsAccepted = 0;
+	}
 
+	// upload checkpoints
+	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
+	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, m_checkpoints.data(), m_checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+}
+
+
+void TracingManager::CreateInitialCheckpointsRegularGrid(float3 seedBoxMin, float3 seedBoxSize)
+{
+	int n = std::floor(std::sqrt(m_traceParams.m_lineCount));
+
+	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
+	{
 		uint ii = i % n;
 		uint jj = std::floor(i / (float)n);
 
 		m_checkpoints[i].Position = make_float3(seedBoxMin.x + seedBoxSize.x * ii / (float)n,
 			seedBoxMin.y + seedBoxSize.y * jj / (float)n,
 			seedBoxMin.z);
-#else
+	}
+}
+
+void TracingManager::CreateInitialCheckpointsRandom(float3 seedBoxMin, float3 seedBoxSize)
+{
+	for (uint i = 0; i < m_traceParams.m_lineCount; i++)
+	{
 
 		if (m_traceParams.m_seedTexture.m_colors == NULL || m_traceParams.m_seedTexture.m_picked.empty())
 		{
 			//seed directly from the seed box
 			m_checkpoints[i].Position = GetRandomVectorInBox(seedBoxMin, seedBoxSize, m_rng, m_engine);
 		}
-		else {
+		else 
+		{
 			//sample texture until a point with the same color is found
 			m_checkpoints[i].Position = make_float3(Vec3f(-10000, -10000, -10000)); //somewhere outside, so that the point is deleted if no sample could be found
 			for (int j = 0; j < m_numRejections; ++j) {
@@ -303,24 +406,14 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 				}
 			}
 		}
-
-#endif
-
-		/*if (!InsideOfDomain(m_checkpoints[i].Position, Vec3f(1.0f, 1.0f, 1.0f)))
-		printf("WARNING: seed %i is outside of domain!\n", i);*/
-		m_checkpoints[i].SeedPosition = m_checkpoints[i].Position;
-		m_checkpoints[i].Time = spawnTime;
-		m_checkpoints[i].Normal = make_float3(0.0f, 0.0f, 0.0f);
-		m_checkpoints[i].DeltaT = m_traceParams.m_advectDeltaT;
-
-		m_checkpoints[i].StepsTotal = 0;
-		m_checkpoints[i].StepsAccepted = 0;
 	}
-
-	// upload checkpoints
-	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
-	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, m_checkpoints.data(), m_checkpoints.size() * sizeof(LineCheckpoint), copyDir));
 }
+
+void TracingManager::CreateInitialCheckpointsFTLE(float3 seedBoxMin, float3 seedBoxSize)
+{
+
+}
+
 
 void TracingManager::SetCheckpointTimeStep(float deltaT)
 {

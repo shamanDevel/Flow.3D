@@ -44,6 +44,8 @@ void ParticleTraceParams::Reset()
 
 	m_lineMode = LINE_STREAM;
 
+	m_seedPattern = eSeedPattern::RANDOM;
+
 	m_lineCount     = 1024;
 	m_lineLengthMax = 1024;
 	m_lineAgeMax    = 512;
