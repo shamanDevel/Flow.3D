@@ -44,6 +44,10 @@ void ParticleTraceParams::Reset()
 
 	m_lineMode = LINE_STREAM;
 
+	m_ftleEnabled = false;
+	m_ftleSeparationDistance = tum3D::Vec3f(1.0e-7);
+	m_ftleResolution = 1024;
+
 	m_seedPattern = eSeedPattern::RANDOM;
 
 	m_lineCount     = 1024;

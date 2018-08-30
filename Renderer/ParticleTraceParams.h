@@ -51,6 +51,11 @@ struct ParticleTraceParams
 
 	eLineMode m_lineMode;
 
+	// FTLE stuff
+	bool m_ftleEnabled;
+	tum3D::Vec3f m_ftleSeparationDistance;
+	uint m_ftleResolution;
+
 	enum eSeedPattern
 	{
 		RANDOM = 0,

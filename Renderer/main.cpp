@@ -1472,6 +1472,44 @@ void TW_CALL LoadSeedTexture(void *clientData)
 	}
 }
 
+
+void FTLEComputeParticleCount()
+{
+	g_particleTraceParams.m_lineCount = g_particleTraceParams.m_ftleResolution * g_particleTraceParams.m_ftleResolution * 6;
+}
+
+void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
+{
+	g_particleTraceParams.m_ftleEnabled = *reinterpret_cast<const bool*>(value);
+
+	if (g_particleTraceParams.m_ftleEnabled)
+	{
+		TwDefine("Main/LineCount readonly=true");
+		FTLEComputeParticleCount();
+	}
+	else
+		TwDefine("Main/LineCount readonly=false");
+}
+
+void TW_CALL CBGetFTLEEnabled(void *value, void *clientData)
+{
+	*reinterpret_cast<bool*>(value) = g_particleTraceParams.m_ftleEnabled;
+}
+
+void TW_CALL CBSetFTLEResolution(const void *value, void *clientData)
+{
+	g_particleTraceParams.m_ftleResolution = *reinterpret_cast<const uint*>(value);
+
+	if (g_particleTraceParams.m_ftleEnabled)
+		FTLEComputeParticleCount();
+}
+
+void TW_CALL CBGetFTLEResolution(void *value, void *clientData)
+{
+	*reinterpret_cast<uint*>(value) = g_particleTraceParams.m_ftleResolution;
+}
+
+
 void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 {
 	TwInit(TW_DIRECT3D11, pDevice);
@@ -1555,7 +1593,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	g_pTwBarMain = TwNewBar("Main");
 	std::ostringstream ss;
 	int iHeight = max(static_cast<int>(uiBBHeight)-40, 200);
-	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light";
+	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light valueswidth=100";
 	TwDefine(ss.str().c_str());
 
 	// "global" params: data set and timestep
@@ -1623,8 +1661,16 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 
 	// FTLE
-	TwAddVarRW(g_pTwBarMain, "Verbose", TW_TYPE_BOOLCPP, &g_tracingManager.GetVerbose(), "label='Verbose' group=FTLE");
-	TwAddVarCB(g_pTwBarMain, "Separation Distance", TW_TYPE_FLOAT, SetTimeSpacing, GetTimeSpacing, nullptr, "label='Separation Distance' min=0.0000001 step=0.0000001 precision=7 group=FTLE");
+	TwAddVarCB(g_pTwBarMain, "FTLEEnabled", TW_TYPE_BOOLCPP, CBSetFTLEEnabled, CBGetFTLEEnabled, nullptr, "label='Enabled' group=FTLE");
+
+	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
+
+	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000001 step=0.0000001 precision=7 group=FTLESeparationDistance");
+	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.y(), "label='Y' min=0.0000001 step=0.0000001 precision=7 group=FTLESeparationDistance");
+	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceZ", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.z(), "label='Z' min=0.0000001 step=0.0000001 precision=7 group=FTLESeparationDistance");
+	TwDefine("Main/FTLESeparationDistance label='Separation Distance' group=FTLE opened=false");
+
+	
 
 	// particle params
 	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
@@ -3470,7 +3516,6 @@ bool InitApp()
 	return GetCudaDevices();
 }
 
-
 // note: this is called *before* OnD3D11DestroyDevice !!
 void ExitApp()
 {
@@ -3478,11 +3523,9 @@ void ExitApp()
 	ClearCudaDevices();
 }
 
-
 //--------------------------------------------------------------------------------------
 // Initialize everything and go into a render loop
 //--------------------------------------------------------------------------------------
-//#include "TracingTestData.h"
 int main(int argc, char* argv[])
 {
 	// Enable run-time memory check for debug builds.
@@ -3527,8 +3570,9 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 
+
 	DXUTInit( true, true, NULL ); // Parse the command line, show msgboxes on error, no extra command line params
-	DXUTSetIsInGammaCorrectMode( false );
+	DXUTSetIsInGammaCorrectMode( true );
 	DXUTSetCursorSettings( true, true ); // Show the cursor and clip it when in full screen
 	DXUTCreateWindow( L"TurbulenceRenderer" );
 	DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 1280, 1024 );

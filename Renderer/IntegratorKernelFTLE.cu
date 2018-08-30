@@ -34,8 +34,8 @@ __global__ void computeFTLEKernel()
 
 	uint lineLength = c_lineInfo.pVertexCounts[lineIndex];
 
-	//if(lineLength >= c_lineInfo.lineLengthMax)
-	//	return;
+	if(lineLength >= c_lineInfo.lineLengthMax)
+		return;
 
 	LineVertex vertex;
 	// get initial position from checkpoints array
@@ -106,8 +106,8 @@ __global__ void computeFTLEKernel()
 	
 	bool stayedInAvailableBrick = true;
 	while(step			< c_integrationParams.stepCountMax &&
-		  vertex.Time	< brickTimeMax)// &&
-		  //lineLength	< c_lineInfo.lineLengthMax)
+		  vertex.Time	< brickTimeMax &&
+		  lineLength	< c_lineInfo.lineLengthMax)
 	{
 		float deltaTimeBak = deltaTime;
 		// limit deltaTime ..
@@ -194,7 +194,7 @@ __global__ void computeFTLEKernel()
 
 	// if the line is still alive and in an available brick, request it again for next round
 	if(vertex.Time < c_integrationParams.timeMax &&
-	   //lineLength < c_lineInfo.lineLengthMax &&
+	   lineLength < c_lineInfo.lineLengthMax &&
 	   stayedInAvailableBrick)
 	{
 		// find out which brick we're in now
