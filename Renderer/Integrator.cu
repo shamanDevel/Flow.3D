@@ -165,8 +165,10 @@ void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lin
 				}
 				break;
 			case LINE_PATH:
+				integratorKernelPathLines(lineInfo, params.m_advectMode, params.m_filterMode);
+				break;
+			case LINE_PATH_FTLE:
 				integratorKernelComputeFTLE(lineInfo, params.m_advectMode, params.m_filterMode);
-				//integratorKernelPathLines(lineInfo, params.m_advectMode, params.m_filterMode);
 				break;
 		}
 	}

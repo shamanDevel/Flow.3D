@@ -35,7 +35,7 @@
 #include "ScreenEffect.h"
 
 #include "Range.h"
-
+#include "LineMode.h"
 #include "TimeVolume.h"
 
 #include "FilteringManager.h"
@@ -1485,10 +1485,18 @@ void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
 	if (g_particleTraceParams.m_ftleEnabled)
 	{
 		TwDefine("Main/LineCount readonly=true");
+		TwDefine("Main/LineMode readonly=true");
+		TwDefine("Main/LineLengthMax readonly=true");
+		g_particleTraceParams.m_lineMode = LINE_PATH_FTLE;
+		g_particleTraceParams.m_lineLengthMax = 2;
 		FTLEComputeParticleCount();
 	}
 	else
+	{
 		TwDefine("Main/LineCount readonly=false");
+		TwDefine("Main/LineMode readonly=false");
+		TwDefine("Main/LineLengthMax readonly=false");
+	}
 }
 
 void TW_CALL CBGetFTLEEnabled(void *value, void *clientData)

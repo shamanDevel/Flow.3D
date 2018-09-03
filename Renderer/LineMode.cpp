@@ -10,6 +10,7 @@ namespace
 		"Path",
 		"Particle-Stream",
 		"Particles (new seeds)",
+		"Path FTLE",
 		//"Streak",
 		"Unknown"
 	};
@@ -39,6 +40,7 @@ bool LineModeIsTimeDependent(eLineMode mode)
 		case LINE_STREAM:
 			return false;
 
+		case LINE_PATH_FTLE:
 		case LINE_PATH:
 			return true;
 
@@ -54,10 +56,9 @@ bool LineModeIsTimeDependent(eLineMode mode)
 
 bool LineModeIsIterative(eLineMode mode)
 {
-	if (mode == LINE_PARTICLE_STREAM
-		|| mode == LINE_PARTICLES) {
+	if (mode == LINE_PARTICLE_STREAM ||
+		mode == LINE_PARTICLES)
 		return true;
-	}
 	return false;
 }
 

@@ -34,8 +34,8 @@ __global__ void computeFTLEKernel()
 
 	uint lineLength = c_lineInfo.pVertexCounts[lineIndex];
 
-	if(lineLength >= c_lineInfo.lineLengthMax)
-		return;
+	//if(lineLength >= c_lineInfo.lineLengthMax)
+	//	return;
 
 	LineVertex vertex;
 	// get initial position from checkpoints array
@@ -74,7 +74,8 @@ __global__ void computeFTLEKernel()
 	vertex.LineID = lineIndex;
 
 
-	LineVertex* pVertices = c_lineInfo.pVertices + lineIndex * c_lineInfo.vertexStride + lineLength;
+	LineVertex* pVertices = c_lineInfo.pVertices + lineIndex * c_lineInfo.vertexStride;
+	//LineVertex* pVertices = c_lineInfo.pVertices + lineIndex * c_lineInfo.vertexStride + lineLength;
 
 	if(lineLength == 0) {
 		// new line - build normal: arbitrary vector perpendicular to velocity
@@ -88,16 +89,17 @@ __global__ void computeFTLEKernel()
 		vertex.HeatCurrent = gradT;
 
 		// write out initial vertex
-		*pVertices++ = vertex;
-		++lineLength;
+		*(pVertices + 1) = vertex;
+		//++lineLength;
+		lineLength = 1;
 	} else {
 		// existing line - get old normal
 		vertex.Normal = c_lineInfo.pCheckpoints[lineIndex].Normal;
 	}
 
 	// get the last vertex that was written out
-	float3 lastOutPos  = (pVertices - 1)->Position;
-	float  lastOutTime = (pVertices - 1)->Time;
+	float3 lastOutPos  = (pVertices + 1)->Position;
+	float  lastOutTime = (pVertices + 1)->Time;
 
 	float deltaTime = c_lineInfo.pCheckpoints[lineIndex].DeltaT;
 
@@ -106,8 +108,8 @@ __global__ void computeFTLEKernel()
 	
 	bool stayedInAvailableBrick = true;
 	while(step			< c_integrationParams.stepCountMax &&
-		  vertex.Time	< brickTimeMax &&
-		  lineLength	< c_lineInfo.lineLengthMax)
+		  vertex.Time	< brickTimeMax )//&&
+		  //lineLength	< c_lineInfo.lineLengthMax)
 	{
 		float deltaTimeBak = deltaTime;
 		// limit deltaTime ..
@@ -151,8 +153,11 @@ __global__ void computeFTLEKernel()
 				vertex.HeatCurrent = gradT;
 				
 				// write out (intermediate) result
-				*pVertices++ = vertex;
-				++lineLength;
+				*pVertices = *(pVertices + 1);
+				*(pVertices + 1) = vertex;
+				//*pVertices++ = vertex;
+				//++lineLength;
+				lineLength = 2;
 
 				lastOutPos  = vertex.Position;
 				lastOutTime = vertex.Time;
@@ -194,7 +199,7 @@ __global__ void computeFTLEKernel()
 
 	// if the line is still alive and in an available brick, request it again for next round
 	if(vertex.Time < c_integrationParams.timeMax &&
-	   lineLength < c_lineInfo.lineLengthMax &&
+	   //lineLength < c_lineInfo.lineLengthMax &&
 	   stayedInAvailableBrick)
 	{
 		// find out which brick we're in now
