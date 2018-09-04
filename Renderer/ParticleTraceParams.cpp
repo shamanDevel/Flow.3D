@@ -46,7 +46,7 @@ void ParticleTraceParams::Reset()
 
 	m_ftleEnabled = false;
 	m_ftleSeparationDistance = tum3D::Vec3f(1.0e-7);
-	m_ftleResolution = 1024;
+	m_ftleResolution = 64;
 
 	m_seedPattern = eSeedPattern::RANDOM;
 

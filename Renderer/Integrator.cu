@@ -314,8 +314,8 @@ struct LineIndexCount
 
 __global__ void fillLineIndexBufferKernel(uint* pIndices, const uint* pLengths, const uint* pIndexOffsets, uint lineCount, uint lineVertexStride)
 {
-	uint index = blockIdx.x * blockDim.x + threadIdx.x;
-	uint line = blockIdx.y;
+	uint index = blockIdx.y * blockDim.x + threadIdx.x;
+	uint line = blockIdx.x;
 
 	uint lineLength = pLengths[line];
 
@@ -352,7 +352,10 @@ uint Integrator::BuildLineIndexBuffer(const uint* dpLineVertexCounts, uint lineV
 
 	uint indicesPerLine = (lineVertexStride - 1) * 2;
 	uint blockSize = 128;
-	dim3 blockCount((indicesPerLine + blockSize - 1) / blockSize, lineCount);
+	dim3 blockCount(lineCount, (indicesPerLine + blockSize - 1) / blockSize); // Line count must be in the x component (32bit). Y and Z components are 16bit integers.
+
+	//std::cout << "blockCount: " << blockCount.x << "," << blockCount.y << "," << blockCount.z << std::endl;
+	//std::cout << "blockSize: " << blockSize << std::endl;
 
 	fillLineIndexBufferKernel<<<blockCount, blockSize>>>(dpIndices, dpLineVertexCounts, m_dpIndexOffset, lineCount, lineVertexStride);
 	cudaCheckMsg("fillIndexBufferKernel execution failed");
