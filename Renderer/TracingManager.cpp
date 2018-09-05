@@ -368,9 +368,9 @@ void TracingManager::CreateInitialCheckpointsRegularGrid(float3 seedBoxMin, floa
 		uint ii = i % n;
 		uint jj = std::floor(i / (float)n);
 
-		m_checkpoints[i].Position = make_float3(seedBoxMin.x + seedBoxSize.x * ii / (float)n,
-			seedBoxMin.y + seedBoxSize.y * jj / (float)n,
-			seedBoxMin.z);
+		m_checkpoints[i].Position = make_float3(seedBoxMin.x + seedBoxSize.x * ii / (float)n, 
+												seedBoxMin.y + seedBoxSize.y * jj / (float)n, 
+												seedBoxMin.z);
 	}
 }
 
@@ -411,7 +411,31 @@ void TracingManager::CreateInitialCheckpointsRandom(float3 seedBoxMin, float3 se
 
 void TracingManager::CreateInitialCheckpointsFTLE(float3 seedBoxMin, float3 seedBoxSize)
 {
+	assert(m_traceParams.m_lineCount == m_traceParams.m_ftleResolution * m_traceParams.m_ftleResolution * 6);
 
+	int lineIdx = 0;
+
+	for (size_t i = 0; i < m_traceParams.m_ftleResolution; i++)
+	{
+		for (size_t j = 0; j < m_traceParams.m_ftleResolution; j++)
+		{
+			float3 pos = make_float3(	seedBoxMin.x + seedBoxSize.x * (float)i / (float)m_traceParams.m_ftleResolution, 
+										seedBoxMin.y + seedBoxSize.y * (float)j / (float)m_traceParams.m_ftleResolution, 
+										m_traceParams.m_ftleSliceY);
+
+			//for (size_t k = 0; k < 6; k++)
+			//	m_checkpoints[lineIdx++].Position = pos;
+
+			m_checkpoints[lineIdx++].Position = pos + make_float3(m_traceParams.m_ftleSeparationDistance.x(), 0, 0);
+			m_checkpoints[lineIdx++].Position = pos - make_float3(m_traceParams.m_ftleSeparationDistance.x(), 0, 0);
+
+			m_checkpoints[lineIdx++].Position = pos + make_float3(0, m_traceParams.m_ftleSeparationDistance.y(), 0);
+			m_checkpoints[lineIdx++].Position = pos - make_float3(0, m_traceParams.m_ftleSeparationDistance.y(), 0);
+
+			m_checkpoints[lineIdx++].Position = pos + make_float3(0, 0, m_traceParams.m_ftleSeparationDistance.z());
+			m_checkpoints[lineIdx++].Position = pos - make_float3(0, 0, m_traceParams.m_ftleSeparationDistance.z());
+		}
+	}
 }
 
 

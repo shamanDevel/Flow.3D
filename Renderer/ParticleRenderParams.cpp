@@ -3,7 +3,121 @@
 #include <cstring> // for memcmp
 #include <string>
 
+#include <cudaUtil.h>
+#include <cuda_d3d11_interop.h>
+
 using namespace tum3D;
+
+
+
+bool D3D11CudaTexture::IsTextureCreated()
+{
+	return pTexture != nullptr;
+}
+
+bool D3D11CudaTexture::IsRegisteredWithCuda()
+{
+	return cudaResource != nullptr;
+}
+
+bool D3D11CudaTexture::CreateTexture(ID3D11Device* device, int width, int height, int miplevels, int arraysize, DXGI_FORMAT format)
+{
+	if (IsTextureCreated())
+		ReleaseResources();
+
+	this->width = width;
+	this->height = height;
+
+	D3D11_TEXTURE2D_DESC desc;
+	ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
+	desc.Width = width;
+	desc.Height = height;
+	desc.MipLevels = miplevels;
+	desc.ArraySize = arraysize;
+	desc.Format = format;
+	desc.SampleDesc.Count = 1;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	/*size_t size = width * height * 4;
+	float* arr = new float[size];
+
+	for (size_t i = 0; i < size; i++)
+		arr[i] = 0.5;
+
+	D3D11_SUBRESOURCE_DATA data;
+
+	data.pSysMem = arr;
+	data.SysMemPitch = width * 4 * sizeof(float);*/
+
+	if (FAILED(device->CreateTexture2D(&desc, nullptr, &pTexture)))
+	{
+		return false; //return E_FAIL;
+	}
+
+	if (FAILED(device->CreateShaderResourceView(pTexture, nullptr, &pSRView)))
+	{
+		return false; //return E_FAIL;
+	}
+
+	return true;
+}
+
+void D3D11CudaTexture::ReleaseResources()
+{
+	if (IsRegisteredWithCuda())
+		UnregisterCudaResources();
+	
+	if (pTexture)
+	{
+		uint count = pTexture->Release();
+		std::cout << "Count after release: " << count << std::endl;
+	}
+	if (pSRView)
+	{
+		uint count = pSRView->Release();
+		std::cout << "Count after release: " << count << std::endl;
+
+	}
+
+	pSRView = nullptr;
+	pTexture = nullptr;
+
+	width = 0;
+	height = 0;
+#ifndef USEEFFECT
+	offsetInShader = 0;
+#endif
+}
+
+void D3D11CudaTexture::RegisterCUDAResources()
+{
+	// register the Direct3D resources that we'll use
+	// we'll read to and write from g_texture_2d, so don't set any special map flags for it
+	cudaGraphicsD3D11RegisterResource(&cudaResource, pTexture, cudaGraphicsRegisterFlagsNone);
+	cudaCheckMsg("---------- cudaGraphicsD3D11RegisterResource (D3D11CudaTexture) failed");
+	// cuda cannot write into the texture directly : the texture is seen as a cudaArray and can only be mapped as a texture
+	// Create a buffer so that cuda can write into it
+	// pixel fmt is DXGI_FORMAT_R32G32B32A32_FLOAT
+	cudaMallocPitch(&cudaLinearMemory, &pitch, width * sizeof(float) * 4, height);
+	cudaCheckMsg("---------- cudaMallocPitch (D3D11CudaTexture) failed");
+	cudaMemset(cudaLinearMemory, 1, pitch * height);
+}
+
+void D3D11CudaTexture::UnregisterCudaResources()
+{
+	if (!IsRegisteredWithCuda())
+		return;
+
+	cudaGraphicsUnregisterResource(cudaResource);
+	cudaCheckMsg("cudaGraphicsUnregisterResource (D3D11CudaTexture) failed");
+	cudaFree(cudaLinearMemory);
+	cudaCheckMsg("cudaFree (D3D11CudaTexture) failed");
+
+	pitch = 0;
+	cudaResource = nullptr;
+	cudaLinearMemory = nullptr;
+}
 
 
 ParticleRenderParams::ParticleRenderParams()
@@ -47,6 +161,9 @@ void ParticleRenderParams::Reset()
 	m_sliceAlpha = 0.5f;
 
 	m_sortParticles = true;
+
+	m_ftleShowTexture = true;
+	m_ftleTextureAlpha = 1.0f;
 }
 
 void ParticleRenderParams::ApplyConfig(const ConfigFile& config)

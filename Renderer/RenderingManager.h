@@ -107,6 +107,8 @@ public:
 	bool WriteCurTimestepToRaws(TimeVolume& volume, const std::vector<std::string>& filenames);
 	bool WriteCurTimestepToLA3Ds(TimeVolume& volume, const std::vector<std::string>& filenames);
 
+	D3D11CudaTexture	m_ftleTexture;
+
 private:
 	HRESULT CreateScreenDependentResources();
 	void ReleaseScreenDependentResources();
@@ -138,7 +140,7 @@ private:
 
 	//Prepares the slice renderer: computes the clip plane and sets the parameters
 	//Returns the clip plane
-	tum3D::Vec4f PrepareRenderSlice();
+	tum3D::Vec4f PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition);
 	//Renders the slice if no lines are drawn.
 	//When lines are drawn, slice rendering is done in the line/particle rendering 
 	// to allow correct alpha blending
@@ -146,6 +148,8 @@ private:
 
 	void SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext);
 	
+	void ComputeFTLE();
+
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);
 
@@ -153,6 +157,7 @@ private:
 
 	void UpdateTimings();
 
+	void CreateFTLETexture();
 
 	bool          m_isCreated;
 

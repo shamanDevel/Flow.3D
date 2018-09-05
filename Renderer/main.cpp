@@ -1488,11 +1488,14 @@ void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
 		TwDefine("Main/LineMode readonly=true");
 		TwDefine("Main/LineLengthMax readonly=true");
 		g_particleTraceParams.m_lineMode = LINE_PATH_FTLE;
+		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
 		g_particleTraceParams.m_lineLengthMax = 2;
+		g_particleTraceParams.m_lineAgeMax = 0.1f;
 		FTLEComputeParticleCount();
 	}
 	else
 	{
+		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
 		TwDefine("Main/LineCount readonly=false");
 		TwDefine("Main/LineMode readonly=false");
 		TwDefine("Main/LineLengthMax readonly=false");
@@ -1673,9 +1676,11 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
 
-	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000001 step=0.0000001 precision=7 group=FTLESeparationDistance");
-	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.y(), "label='Y' min=0.0000001 step=0.0000001 precision=7 group=FTLESeparationDistance");
-	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceZ", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.z(), "label='Z' min=0.0000001 step=0.0000001 precision=7 group=FTLESeparationDistance");
+	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=3 group=FTLE");
+
+	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
+	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.y(), "label='Y' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
+	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceZ", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.z(), "label='Z' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
 	TwDefine("Main/FTLESeparationDistance label='Separation Distance' group=FTLE opened=false");
 
 	
@@ -1724,7 +1729,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 		NULL, "label='Line Mode' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineCount",		TW_TYPE_UINT32,		&g_particleTraceParams.m_lineCount,			"label='Line Count' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' min=2 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=2 step=0.1 group=ParticleTrace");
+	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=4 step=0.01 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "MinVelocity",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_minVelocity,		"label='Min Velocity' min=0 precision=2 step=0.01 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "ParticlesPerSecond",TW_TYPE_FLOAT,	&g_particleTraceParams.m_particlesPerSecond,"label='Particles per second' min=0 step=0.01 group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
@@ -3088,11 +3093,13 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 
 	cudaSafeCall(cudaDeviceSynchronize());
 	g_volume.SetPageLockBrickData(false);
+	g_renderingManager.m_ftleTexture.UnregisterCudaResources();
 	cudaSafeCallNoSync(cudaDeviceReset());
 
 	//release slice texture
 	SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
 	SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
+	g_renderingManager.m_ftleTexture.ReleaseResources();
 }
 
 

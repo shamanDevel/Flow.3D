@@ -24,9 +24,6 @@ struct LineInfoGPU
 	uint vertexStride;
 
 	uint lineLengthMax;
-
-	// FTLE only
-	SimpleParticleVertex* pLastButOnePos;
 };
 
 

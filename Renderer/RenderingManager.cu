@@ -14,6 +14,8 @@
 #include "ClearCudaArray.h"
 #include "TracingCommon.h"
 
+#include <cmath>
+
 using namespace tum3D;
 
 
@@ -981,11 +983,27 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 			if (pLineBuffers[i]->m_indexCountTotal >= 0) linesRendered = true;
 		}
 	}
-	if (!linesRendered &&
-		m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr) {
-		PrepareRenderSlice();
+
+	if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr) 
+	{
+		PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition);
 		ExtraRenderSlice();
 	}
+
+	if (m_particleTraceParams.m_ftleEnabled)
+	{
+		if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
+			CreateFTLETexture();
+
+		ComputeFTLE();
+
+		if (m_particleRenderParams.m_ftleShowTexture)
+		{
+			PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY);
+			ExtraRenderSlice();
+		}
+	}
+
 	for(size_t i = 0; i < pBallBuffers.size(); i++)
 	{
 		RenderBalls(pBallBuffers[i], ballRadius);
@@ -1424,7 +1442,7 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 		&& m_particleRenderParams.m_pSliceTexture != nullptr;
 	tum3D::Vec4f clipPlane;
 	if (renderSlice) {
-		clipPlane = PrepareRenderSlice();
+		clipPlane = PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition);
 	}
 
 	//Check if particles should be rendered
@@ -1532,16 +1550,17 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 }
 
 
-tum3D::Vec4f RenderingManager::PrepareRenderSlice()
+tum3D::Vec4f RenderingManager::PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition)
 {
 	tum3D::Vec4f clipPlane;
 	Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
 	tum3D::Vec3f normal(0, 0, 1);
 	tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
-	tum3D::Vec3f center(0, 0, m_particleRenderParams.m_slicePosition);
-	m_pQuadEffect->SetParameters(m_particleRenderParams.m_pSliceTexture,
-		center, normal, size, m_particleRenderParams.m_sliceAlpha);
-	clipPlane.set(normal.x(), normal.y(), normal.z(), -m_particleRenderParams.m_slicePosition);
+	tum3D::Vec3f center(0, 0, slicePosition);
+
+	m_pQuadEffect->SetParameters(tex, center, normal, size, alpha);
+
+	clipPlane.set(normal.x(), normal.y(), normal.z(), -slicePosition);
 	//test if we have to flip the clip plane if the camera is at the wrong side
 	Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
 	Mat4f proj = m_projectionParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, m_range);
@@ -1701,6 +1720,96 @@ void RenderingManager::SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceCont
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pIBCuda_sorted));
 }
 
+__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch)
+{
+	int x = blockIdx.x*blockDim.x + threadIdx.x;
+	int y = blockIdx.y*blockDim.y + threadIdx.y;
+	float *pixel;
+
+	// in the case where, due to quantization into grids, we have
+	// more threads than pixels, skip the threads which don't
+	// correspond to valid pixels
+	if (x >= width || y >= height) return;
+
+	// get a pointer to the pixel at (x,y)
+	pixel = (float *)(surface + y*pitch) + 4 * x;
+
+	// populate it
+	float value_x = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*x) / width - 1.0f));
+	float value_y = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*y) / height - 1.0f));
+	pixel[0] = 0.5*pixel[0] + 0.5*pow(value_x, 3.0f); // red
+	pixel[1] = 0.5*pixel[1] + 0.5*pow(value_y, 3.0f); // green
+	pixel[2] = 0.5f + 0.5f*cos(1.0); // blue
+	pixel[3] = 1; // alpha
+}
+
+
+void RenderingManager::CreateFTLETexture()
+{
+	int res = m_particleTraceParams.m_ftleResolution;
+
+	if (m_ftleTexture.IsTextureCreated())
+		m_ftleTexture.ReleaseResources();
+
+	if (!m_ftleTexture.CreateTexture(m_pDevice, res, res, 1, 1, DXGI_FORMAT_R32G32B32A32_FLOAT))
+		std::cerr << "------------ Error: could not create FTLE texture" << std::endl;
+
+	m_ftleTexture.RegisterCUDAResources();
+
+	cudaSafeCall(cudaDeviceSynchronize());
+}
+
+void RenderingManager::ComputeFTLE()
+{
+	if (!m_ftleTexture.IsTextureCreated())
+	{
+		std::cerr << "------------ Texture is not valid." << std::endl;
+		return;
+	}
+	if (!m_ftleTexture.IsRegisteredWithCuda())
+	{
+		std::cerr << "------------ Texture is not registered with cuda" << std::endl;
+		return;
+	}
+
+	int width = m_ftleTexture.width;
+	int height = m_ftleTexture.height;
+
+	// kick off the kernel and send the staging buffer cudaLinearMemory as an argument to allow the kernel to write to it
+	//cuda_texture_2d(m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, t);
+
+
+	cudaError_t error = cudaSuccess;
+
+	dim3 Db = dim3(16, 16);   // block dimensions are fixed to be 256 threads
+	dim3 Dg = dim3((width + Db.x - 1) / Db.x, (height + Db.y - 1) / Db.y);
+
+	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch);
+
+	error = cudaGetLastError();
+
+	if (error != cudaSuccess)
+		printf("ComputeFTLEKernel() failed to launch error = %d\n", error);
+
+	cudaCheckMsg("ComputeFTLEKernel failed");
+
+	// then we want to copy cudaLinearMemory to the D3D texture, via its mapped form : cudaArray
+	cudaSafeCall(cudaGraphicsMapResources(1, &m_ftleTexture.cudaResource));
+
+	cudaArray *cuArray;
+	cudaGraphicsSubResourceGetMappedArray(&cuArray, m_ftleTexture.cudaResource, 0, 0);
+	cudaCheckMsg("cudaGraphicsSubResourceGetMappedArray (cuda_texture_2d) failed");
+	
+	cudaMemcpy2DToArray(
+		cuArray, // dst array
+		0, 0,    // offset
+		m_ftleTexture.cudaLinearMemory, m_ftleTexture.pitch,       // src
+		width * 4 * sizeof(float), height, // extent
+		cudaMemcpyDeviceToDevice); // kind
+	cudaCheckMsg("cudaMemcpy2DToArray failed");
+
+	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_ftleTexture.cudaResource));
+}
 
 void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, 
 	ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport, 

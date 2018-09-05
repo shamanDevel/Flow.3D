@@ -55,6 +55,7 @@ struct ParticleTraceParams
 	bool m_ftleEnabled;
 	tum3D::Vec3f m_ftleSeparationDistance;
 	uint m_ftleResolution;
+	float m_ftleSliceY;
 
 	enum eSeedPattern
 	{
