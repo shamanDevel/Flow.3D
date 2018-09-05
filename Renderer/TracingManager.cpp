@@ -426,14 +426,14 @@ void TracingManager::CreateInitialCheckpointsFTLE(float3 seedBoxMin, float3 seed
 			//for (size_t k = 0; k < 6; k++)
 			//	m_checkpoints[lineIdx++].Position = pos;
 
-			m_checkpoints[lineIdx++].Position = pos + make_float3(m_traceParams.m_ftleSeparationDistance.x(), 0, 0);
 			m_checkpoints[lineIdx++].Position = pos - make_float3(m_traceParams.m_ftleSeparationDistance.x(), 0, 0);
+			m_checkpoints[lineIdx++].Position = pos + make_float3(m_traceParams.m_ftleSeparationDistance.x(), 0, 0);
 
-			m_checkpoints[lineIdx++].Position = pos + make_float3(0, m_traceParams.m_ftleSeparationDistance.y(), 0);
 			m_checkpoints[lineIdx++].Position = pos - make_float3(0, m_traceParams.m_ftleSeparationDistance.y(), 0);
+			m_checkpoints[lineIdx++].Position = pos + make_float3(0, m_traceParams.m_ftleSeparationDistance.y(), 0);
 
-			m_checkpoints[lineIdx++].Position = pos + make_float3(0, 0, m_traceParams.m_ftleSeparationDistance.z());
 			m_checkpoints[lineIdx++].Position = pos - make_float3(0, 0, m_traceParams.m_ftleSeparationDistance.z());
+			m_checkpoints[lineIdx++].Position = pos + make_float3(0, 0, m_traceParams.m_ftleSeparationDistance.z());
 		}
 	}
 }

@@ -118,6 +118,4 @@ __device__ inline float3x3 Transpose3x3(const float3x3 &A)
 
 	return AT;
 }
-
-
 #endif

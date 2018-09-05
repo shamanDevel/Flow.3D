@@ -16,6 +16,11 @@
 
 #include <cmath>
 
+#include "LineInfoGPU.h"
+#include "MatrixMath.cuh"
+
+extern __constant__ LineInfoGPU c_lineInfo;
+
 using namespace tum3D;
 
 
@@ -747,7 +752,7 @@ namespace
 }
 
 
-RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume& volume, const std::vector<FilteredVolume>& filteredVolumes,
+RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, const TimeVolume& volume, const std::vector<FilteredVolume>& filteredVolumes,
 	const ViewParams& viewParams, const StereoParams& stereoParams,
 	bool renderDomainBox, bool renderClipBox, bool renderSeedBox, bool renderBrickBoxes,
 	const ParticleTraceParams& particleTraceParams, const ParticleRenderParams& particleRenderParams,
@@ -995,7 +1000,8 @@ RenderingManager::eRenderState RenderingManager::StartRendering(const TimeVolume
 		if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
 			CreateFTLETexture();
 
-		ComputeFTLE();
+		if (isTracing)
+			ComputeFTLE();
 
 		if (m_particleRenderParams.m_ftleShowTexture)
 		{
@@ -1720,27 +1726,135 @@ void RenderingManager::SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceCont
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &pLineBuffers->m_pIBCuda_sorted));
 }
 
-__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch)
+// normal form: x^3 + Ax^2 + Bx + C = 0
+// adapted from:  http://read.pudn.com/downloads21/sourcecode/graph/71499/gems/Roots3And4.c__.htm   (Jochen Schwarze, in Graphics Gems 1990)
+__device__ float maxRoot(float A, float B, float C)
+{
+	// substitute x = y - A/3 to eliminate quadric term: x^3 +px + q = 0  
+	float sq_A = A * A;
+	float p = 1.0 / 3 * (-1.0 / 3 * sq_A + B);
+	float q = 1.0 / 2 * (2.0 / 27 * A * sq_A - 1.0 / 3 * A * B + C);
+
+	// use Cardano's formula
+	float cb_p = p * p * p;
+	float D = q * q + cb_p;
+
+	if (D == 0)
+	{
+		if (q == 0)  // one triple solution
+		{
+			return -1.0 / 3.0 * A;
+		}
+		else  // one single and one double solution
+		{
+			float u = cbrt(-q);
+			return max(2 * u, -u) - 1.0 / 3.0 * A;
+		}
+	}
+	else
+	{
+		if (D < 0)  // Casus irreducibilis: three real solutions
+		{
+			float phi = 1.0 / 3 * acos(-q / sqrt(-cb_p));
+			float t = 2 * sqrt(-p);
+			return max(max(
+				t * cos(phi),
+				-t * cos(phi + 3.14159265359 / 3)),
+				-t * cos(phi - 3.14159265359 / 3)) - 1.0 / 3.0 * A;
+		}
+		else // one real solution
+		{
+			float sqrt_D = sqrt(D);
+			float u = cbrt(sqrt_D - q);
+			float v = -cbrt(sqrt_D + q);
+			return u + v - 1.0 / 3.0 * A;
+		}
+	}
+}
+
+// Computes the largest eigenvalue of a 3x3 matrix.
+__device__ float LambdaMax(const float3x3 &m)
+{
+	float a = m.m[0].x;  float b = m.m[0].y;  float c = m.m[0].z;
+	float d = m.m[1].x;  float e = m.m[1].y;  float f = m.m[1].z;
+	float g = m.m[2].x;  float h = m.m[2].y;  float i = m.m[2].z;
+
+	// determinant has the following polynomial x*x*x + a2*x*x + a1*x + a0 = 0 = det(P)
+	float a2 = -(i + e + a);
+	float a1 = -(-e*i - a*i + f*h + c*g - a*e + b*d);
+	float a0 = -(a*(e*i - f*h) - b*(d*i - f*g) + c*(d*h - e*g));
+
+	return maxRoot(a2, a1, a0);
+}
+
+__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float time)
 {
 	int x = blockIdx.x*blockDim.x + threadIdx.x;
 	int y = blockIdx.y*blockDim.y + threadIdx.y;
-	float *pixel;
 
 	// in the case where, due to quantization into grids, we have
 	// more threads than pixels, skip the threads which don't
 	// correspond to valid pixels
 	if (x >= width || y >= height) return;
 
-	// get a pointer to the pixel at (x,y)
-	pixel = (float *)(surface + y*pitch) + 4 * x;
+	int index = (x * width + y) * 6;
 
-	// populate it
-	float value_x = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*x) / width - 1.0f));
-	float value_y = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*y) / height - 1.0f));
-	pixel[0] = 0.5*pixel[0] + 0.5*pow(value_x, 3.0f); // red
-	pixel[1] = 0.5*pixel[1] + 0.5*pow(value_y, 3.0f); // green
-	pixel[2] = 0.5f + 0.5f*cos(1.0); // blue
-	pixel[3] = 1; // alpha
+	//assert(index < c_lineInfo.lineCount);
+
+	if (index >= c_lineInfo.lineCount)
+		return;
+
+	float3 posX0 = c_lineInfo.pCheckpoints[index + 0].Position;
+	float3 posX1 = c_lineInfo.pCheckpoints[index + 1].Position;
+
+	float3 posY0 = c_lineInfo.pCheckpoints[index + 2].Position;
+	float3 posY1 = c_lineInfo.pCheckpoints[index + 3].Position;
+
+	float3 posZ0 = c_lineInfo.pCheckpoints[index + 4].Position;
+	float3 posZ1 = c_lineInfo.pCheckpoints[index + 5].Position;
+
+	float3 dx = (posX1 - posX0) / (2.0 * separationDist.x);
+	float3 dy = (posY1 - posY0) / (2.0 * separationDist.y);
+	float3 dz = (posZ1 - posZ0) / (2.0 * separationDist.z);
+
+	// setup Jacobian and Cauchy Green tensor P
+	//float3x3 J = float3x3(dx.x, dy.x, dz.x, dx.y, dy.y, dz.y, dx.z, dy.z, dz.z);
+	float3x3 J; 
+	J.m[0] = make_float3(dx.x, dy.x, dz.x);
+	J.m[1] = make_float3(dx.y, dy.y, dz.y);
+	J.m[2] = make_float3(dx.z, dy.z, dz.z);
+
+	//float3x3 JT = J;	JT.transpose();
+	float3x3 JT;
+	JT.m[0] = make_float3(dx.x, dx.y, dx.z);
+	JT.m[1] = make_float3(dy.x, dy.y, dy.z);
+	JT.m[2] = make_float3(dz.x, dz.y, dz.z);
+
+	//float3x3 P = JT*J;
+	float3x3 P = multMat3x3(JT, J);
+
+	// compute largest eigenvalue and finally the FTLE value
+	float Lmax = LambdaMax(P);
+	//float ftle = 1 / std::abs(t1 - t0) * log(sqrt(Lmax));
+	float ftle = 1.0 / abs(time) * log(sqrt(Lmax));
+
+	ftle *= 0.01;
+
+	// get a pointer to the pixel at (x,y)
+	float* pixel = (float*)(surface + y*pitch) + 4 * x;
+
+	pixel[0] = ftle;
+	pixel[1] = ftle;
+	pixel[2] = ftle;
+	pixel[3] = 1;
+
+	//// populate it
+	//float value_x = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*x) / width - 1.0f));
+	//float value_y = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*y) / height - 1.0f));
+	//pixel[0] = 0.5*pixel[0] + 0.5*pow(value_x, 3.0f); // red
+	//pixel[1] = 0.5*pixel[1] + 0.5*pow(value_y, 3.0f); // green
+	//pixel[2] = 0.5f + 0.5f*cos(1.0); // blue
+	//pixel[3] = 1; // alpha
 }
 
 
@@ -1761,6 +1875,9 @@ void RenderingManager::CreateFTLETexture()
 
 void RenderingManager::ComputeFTLE()
 {
+	std::cout << "ComputeFTLE";
+	std::cout << " Res(" << m_ftleTexture.width << "," << m_ftleTexture.height << ")" << std::endl;
+
 	if (!m_ftleTexture.IsTextureCreated())
 	{
 		std::cerr << "------------ Texture is not valid." << std::endl;
@@ -1781,12 +1898,18 @@ void RenderingManager::ComputeFTLE()
 
 	cudaError_t error = cudaSuccess;
 
-	dim3 Db = dim3(16, 16);   // block dimensions are fixed to be 256 threads
+	dim3 Db = dim3(16, 16, 1);   // block dimensions are fixed to be 256 threads
 	dim3 Dg = dim3((width + Db.x - 1) / Db.x, (height + Db.y - 1) / Db.y);
 
-	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch);
+	cudaSafeCall(cudaDeviceSynchronize());
+
+	float3 separationDist = make_float3(m_particleTraceParams.m_ftleSeparationDistance.x(), m_particleTraceParams.m_ftleSeparationDistance.y(), m_particleTraceParams.m_ftleSeparationDistance.z());
+
+	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, 0.1);
 
 	error = cudaGetLastError();
+
+	cudaSafeCall(cudaDeviceSynchronize());
 
 	if (error != cudaSuccess)
 		printf("ComputeFTLEKernel() failed to launch error = %d\n", error);
@@ -1797,15 +1920,15 @@ void RenderingManager::ComputeFTLE()
 	cudaSafeCall(cudaGraphicsMapResources(1, &m_ftleTexture.cudaResource));
 
 	cudaArray *cuArray;
-	cudaGraphicsSubResourceGetMappedArray(&cuArray, m_ftleTexture.cudaResource, 0, 0);
+	cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&cuArray, m_ftleTexture.cudaResource, 0, 0));
 	cudaCheckMsg("cudaGraphicsSubResourceGetMappedArray (cuda_texture_2d) failed");
 	
-	cudaMemcpy2DToArray(
+	cudaSafeCall(cudaMemcpy2DToArray(
 		cuArray, // dst array
 		0, 0,    // offset
 		m_ftleTexture.cudaLinearMemory, m_ftleTexture.pitch,       // src
 		width * 4 * sizeof(float), height, // extent
-		cudaMemcpyDeviceToDevice); // kind
+		cudaMemcpyDeviceToDevice)); // kind
 	cudaCheckMsg("cudaMemcpy2DToArray failed");
 
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_ftleTexture.cudaResource));

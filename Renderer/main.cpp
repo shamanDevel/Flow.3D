@@ -1677,6 +1677,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
 
 	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=3 group=FTLE");
+	TwAddVarRW(g_pTwBarMain, "FTLESliceAlpha", TW_TYPE_FLOAT, &g_particleRenderParams.m_ftleTextureAlpha, "label='Slice Alpha' min=0 max=1 step=0.01 precision=3 group=FTLE");
 
 	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
 	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.y(), "label='Y' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
@@ -2562,7 +2563,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		{
 			lineBuffers.push_back(pTracedLines);
 		}
-		RenderingManager::eRenderState state = g_renderingManager.StartRendering(
+		RenderingManager::eRenderState state = g_renderingManager.StartRendering(g_tracingManager.IsTracing(),
 			g_volume, g_filteringManager.GetResults(),
 			g_viewParams, g_stereoParams,
 			g_bRenderDomainBox, g_bRenderClipBox, g_bRenderSeedBox, g_bRenderBrickBoxes,

@@ -1,6 +1,7 @@
 #include "LineInfoGPU.h"
 
 #include <cuda_runtime.h>
+#include <iostream>
 
 #include "cudaUtil.h"
 
@@ -17,6 +18,7 @@ void LineInfoGPU::Upload(bool cpuTracing) const
 	}
 	else
 	{
+		std::cout << "LineInfoGPU::Upload" << std::endl;
 		cudaSafeCall(cudaMemcpyToSymbolAsync(c_lineInfo, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
 	}
 }

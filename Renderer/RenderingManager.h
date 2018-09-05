@@ -58,7 +58,7 @@ public:
 		STATE_ERROR
 	};
 
-	eRenderState StartRendering(
+	eRenderState StartRendering( bool isTracing,
 		const TimeVolume& volume, const std::vector<FilteredVolume>& filteredVolumes,
 		const ViewParams& viewParams, const StereoParams& stereoParams,
 		bool renderDomainBox, bool renderClipBox, bool renderSeedBox, bool renderBrickBoxes,

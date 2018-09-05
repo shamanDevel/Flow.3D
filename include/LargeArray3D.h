@@ -918,12 +918,19 @@ void LargeArray3D<T>::CopyTo(void* pDest, unsigned int uiX, unsigned int uiY, un
 								  unsigned int uiWidth, unsigned int uiHeight, unsigned int uiDepth, 
 								  unsigned int uiDestWidth, unsigned int uiDestHeight)
 {
-	assert(pDest != NULL && "LargeArray3D<T>::CopyTo()");
+	/*assert(pDest != NULL && "LargeArray3D<T>::CopyTo()");
 	assert(uiX < m_uiSizeX && "LargeArray3D<T>::CopyTo()");
 	assert(uiY < m_uiSizeY && "LargeArray3D<T>::CopyTo()");
 	assert(uiZ < m_uiSizeZ && "LargeArray3D<T>::CopyTo()");
 	assert(uiDestWidth  == 0 || uiDestWidth  >= uiWidth  && "LargeArray3D<T>::CopyTo()");
-	assert(uiDestHeight == 0 || uiDestHeight >= uiHeight && "LargeArray3D<T>::CopyTo()");
+	assert(uiDestHeight == 0 || uiDestHeight >= uiHeight && "LargeArray3D<T>::CopyTo()");*/
+
+	assert(pDest != NULL);
+	assert(uiX < m_uiSizeX);
+	assert(uiY < m_uiSizeY);
+	assert(uiZ < m_uiSizeZ);
+	assert(uiDestWidth == 0 || uiDestWidth >= uiWidth);
+	assert(uiDestHeight == 0 || uiDestHeight >= uiHeight);
 
 	if (uiDestWidth  == 0)
 		uiDestWidth  = uiWidth;
@@ -967,12 +974,19 @@ void LargeArray3D<T>::CopyFrom(void* pSource, unsigned int uiX, unsigned int uiY
 									unsigned int uiWidth, unsigned int uiHeight, unsigned int uiDepth,
 									unsigned int uiSourceWidth, unsigned int uiSourceHeight)
 {
-	assert(pSource != NULL && "LargeArray3D<T>::CopyFrom()");
+	/*assert(pSource != NULL && "LargeArray3D<T>::CopyFrom()");
 	assert(uiX < m_uiSizeX && "LargeArray3D<T>::CopyFrom()");
 	assert(uiY < m_uiSizeY && "LargeArray3D<T>::CopyFrom()");
 	assert(uiZ < m_uiSizeZ && "LargeArray3D<T>::CopyFrom()");
 	assert(uiSourceWidth  == 0 || uiSourceWidth  >= uiWidth  && "LargeArray3D<T>::CopyFrom()");
-	assert(uiSourceHeight == 0 || uiSourceHeight >= uiHeight && "LargeArray3D<T>::CopyFrom()");
+	assert(uiSourceHeight == 0 || uiSourceHeight >= uiHeight && "LargeArray3D<T>::CopyFrom()");*/
+
+	assert(pSource != NULL);
+	assert(uiX < m_uiSizeX);
+	assert(uiY < m_uiSizeY);
+	assert(uiZ < m_uiSizeZ);
+	assert(uiSourceWidth == 0 || uiSourceWidth >= uiWidth);
+	assert(uiSourceHeight == 0 || uiSourceHeight >= uiHeight);
  
 	if (uiSourceWidth  == 0)
 		uiSourceWidth  = uiWidth;

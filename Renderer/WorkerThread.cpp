@@ -285,7 +285,7 @@ void WorkerThread::TaskRender()
 {
 	std::vector<LineBuffers*> lineBuffers;
 	std::vector<BallBuffers*> ballBuffers;
-	RenderingManager::eRenderState state = m_private.renderingManager.StartRendering(
+	RenderingManager::eRenderState state = m_private.renderingManager.StartRendering(false,
 		*m_pVolume, *m_shared.pFilteredVolumes,
 		m_shared.viewParams, m_shared.stereoParams,
 		false, false, false, false,
