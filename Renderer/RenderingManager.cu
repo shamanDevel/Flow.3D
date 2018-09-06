@@ -991,7 +991,7 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 
 	if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr) 
 	{
-		PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition);
+		PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, m_pVolume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
 		ExtraRenderSlice();
 	}
 
@@ -1005,7 +1005,8 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 
 		if (m_particleRenderParams.m_ftleShowTexture)
 		{
-			PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY);
+			tum3D::Vec2f center(m_particleTraceParams.m_seedBoxMin.x() + m_particleTraceParams.m_seedBoxSize.x() * 0.5f, m_particleTraceParams.m_seedBoxMin.y() + m_particleTraceParams.m_seedBoxSize.y() * 0.5f);
+			PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY, m_particleTraceParams.m_seedBoxSize, center);
 			ExtraRenderSlice();
 		}
 	}
@@ -1448,7 +1449,7 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 		&& m_particleRenderParams.m_pSliceTexture != nullptr;
 	tum3D::Vec4f clipPlane;
 	if (renderSlice) {
-		clipPlane = PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition);
+		clipPlane = PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, m_pVolume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
 	}
 
 	//Check if particles should be rendered
@@ -1556,13 +1557,13 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 }
 
 
-tum3D::Vec4f RenderingManager::PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition)
+tum3D::Vec4f RenderingManager::PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition, tum3D::Vec3f volumeSizeWorld, tum3D::Vec2f centerr)
 {
 	tum3D::Vec4f clipPlane;
-	Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
+	//Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
 	tum3D::Vec3f normal(0, 0, 1);
-	tum3D::Vec2f size(volumeHalfSizeWorld.x() * 2, volumeHalfSizeWorld.y() * 2);
-	tum3D::Vec3f center(0, 0, slicePosition);
+	tum3D::Vec2f size(volumeSizeWorld.x(), volumeSizeWorld.y());
+	tum3D::Vec3f center(centerr.x(), centerr.y(), slicePosition);
 
 	m_pQuadEffect->SetParameters(tex, center, normal, size, alpha);
 
@@ -1619,8 +1620,8 @@ void RenderingManager::ExtraRenderSlice()
 		Mat4f projRight = m_projectionParams.BuildProjectionMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance, m_range);
 
 		viewport.Height /= 2.0f;
-		m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext, false);
-		m_pQuadEffect->DrawTexture(projRight * viewRight, pContext, false);
+		m_pQuadEffect->DrawTexture(projLeft * viewLeft, pContext, true);
+		m_pQuadEffect->DrawTexture(projRight * viewRight, pContext, true);
 	}
 	else
 	{
@@ -1629,7 +1630,7 @@ void RenderingManager::ExtraRenderSlice()
 
 		pContext->RSSetViewports(1, &viewport);
 
-		m_pQuadEffect->DrawTexture(proj * view, pContext, false);
+		m_pQuadEffect->DrawTexture(proj * view, pContext, true);
 	}
 
 	// set our final render target
@@ -1787,7 +1788,7 @@ __device__ float LambdaMax(const float3x3 &m)
 	return maxRoot(a2, a1, a0);
 }
 
-__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float time)
+__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float spawnTime)
 {
 	int x = blockIdx.x*blockDim.x + threadIdx.x;
 	int y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -1803,6 +1804,8 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 
 	if (index >= c_lineInfo.lineCount)
 		return;
+
+	float currTime = c_lineInfo.pCheckpoints[index + 0].Time;
 
 	float3 posX0 = c_lineInfo.pCheckpoints[index + 0].Position;
 	float3 posX1 = c_lineInfo.pCheckpoints[index + 1].Position;
@@ -1836,9 +1839,15 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 	// compute largest eigenvalue and finally the FTLE value
 	float Lmax = LambdaMax(P);
 	//float ftle = 1 / std::abs(t1 - t0) * log(sqrt(Lmax));
-	float ftle = 1.0 / abs(time) * log(sqrt(Lmax));
+	float dt = abs(currTime - spawnTime);
+	float ftle = 0;
+	
+	if(dt > 0)
+		ftle = 1.0 / dt * log(sqrt(Lmax));
 
 	ftle *= 0.01;
+
+	y = height - 1 - y;
 
 	// get a pointer to the pixel at (x,y)
 	float* pixel = (float*)(surface + y*pitch) + 4 * x;
@@ -1905,7 +1914,7 @@ void RenderingManager::ComputeFTLE()
 
 	float3 separationDist = make_float3(m_particleTraceParams.m_ftleSeparationDistance.x(), m_particleTraceParams.m_ftleSeparationDistance.y(), m_particleTraceParams.m_ftleSeparationDistance.z());
 
-	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, 0.1);
+	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, m_pVolume->GetCurTime());
 
 	error = cudaGetLastError();
 

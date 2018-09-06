@@ -140,7 +140,7 @@ private:
 
 	//Prepares the slice renderer: computes the clip plane and sets the parameters
 	//Returns the clip plane
-	tum3D::Vec4f PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition);
+	tum3D::Vec4f PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition, tum3D::Vec3f volumeSizeWorld, tum3D::Vec2f center);
 	//Renders the slice if no lines are drawn.
 	//When lines are drawn, slice rendering is done in the line/particle rendering 
 	// to allow correct alpha blending

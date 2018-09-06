@@ -1676,7 +1676,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 
 	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
 
-	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=3 group=FTLE");
+	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=4 group=FTLE");
 	TwAddVarRW(g_pTwBarMain, "FTLESliceAlpha", TW_TYPE_FLOAT, &g_particleRenderParams.m_ftleTextureAlpha, "label='Slice Alpha' min=0 max=1 step=0.01 precision=3 group=FTLE");
 
 	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
@@ -1778,7 +1778,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "ParticleEnabled",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_linesEnabled,		"label='Enable' group=ParticleRender");
 	//TwAddVarRW(g_pTwBarMain, "LightDirView",	TW_TYPE_DIR3F,		&g_particleRenderParams.m_lightDirView,		"label='Light Dir (View Space)' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "LineRenderMode",	twLineRenderMode,	&g_particleRenderParams.m_lineRenderMode,	"label='Line Render Mode' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "RibbonWidth",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_ribbonWidth,		"label='Ribbon Width' step=0.01 group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "RibbonWidth",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_ribbonWidth,		"label='Ribbon Width' min=0 step=0.01 group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TubeRadius",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_tubeRadius,		"label='Tube Radius' min=0 step=0.01 group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "ParticleSize",    TW_TYPE_FLOAT,      &g_particleRenderParams.m_particleSize,     "label='Particle Size' group=ParticleRender min=0 step=0.01");
 	TwAddVarRW(g_pTwBarMain, "RadiusFromVel",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_tubeRadiusFromVelocity, "label='Display Velocity' group=ParticleRender"); //"label='Tube Radius from Velocity' group=ParticleRender");
