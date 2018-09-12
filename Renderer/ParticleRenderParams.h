@@ -18,6 +18,7 @@
 // Source: cuda 9.2 samples.
 struct D3D11CudaTexture
 {
+	DXGI_FORMAT					format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
 	ID3D11Texture2D				*pTexture = nullptr;
 	ID3D11ShaderResourceView	*pSRView = nullptr;
 	cudaGraphicsResource		*cudaResource = nullptr;
@@ -40,6 +41,12 @@ struct D3D11CudaTexture
 	void RegisterCUDAResources();
 
 	void UnregisterCudaResources();
+
+	bool IsFormatSupported(DXGI_FORMAT format);
+
+	int GetNumberOfComponents(DXGI_FORMAT format);
+
+	int GetNumberOfComponents();
 };
 
 

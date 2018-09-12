@@ -52,16 +52,16 @@ bool TracingBenchmark::RunBenchmark(const ParticleTraceParams& params, uint line
 
 	// alloc buffers and upload seeds to GPU
 	LineCheckpoint* dpCheckpoints = nullptr;
-	cudaSafeCall(cudaMalloc(&dpCheckpoints, seeds.size() * sizeof(LineCheckpoint)));
+	cudaSafeCall(cudaMalloc2(&dpCheckpoints, seeds.size() * sizeof(LineCheckpoint)));
 	cudaSafeCall(cudaMemcpy(dpCheckpoints, seeds.data(), seeds.size() * sizeof(LineCheckpoint), cudaMemcpyHostToDevice));
 
 	uint vertexCountTotal = lineCountMax * params.m_advectStepsPerRound;
 
 	// alloc line buffers
 	LineVertex* dpVertices = nullptr;
-	cudaSafeCall(cudaMalloc(&dpVertices, vertexCountTotal * sizeof(LineVertex)));
+	cudaSafeCall(cudaMalloc2(&dpVertices, vertexCountTotal * sizeof(LineVertex)));
 	uint* dpVertexCounts = nullptr;
-	cudaSafeCall(cudaMalloc(&dpVertexCounts, lineCountMax * sizeof(uint)));
+	cudaSafeCall(cudaMalloc2(&dpVertexCounts, lineCountMax * sizeof(uint)));
 
 	// create and fill brick slot
 	BrickSlot brickSlot;

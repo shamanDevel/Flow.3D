@@ -15,8 +15,8 @@ void BrickRequestsGPU::Allocate(bool cpuTracing, uint brickCount)
 {
 	assert(dpBrickRequestCount == nullptr);
 	assert(dpBrickTimestepMin == nullptr);
-	cudaSafeCall(cudaMalloc(&dpBrickRequestCount, brickCount * sizeof(uint)));
-	cudaSafeCall(cudaMalloc(&dpBrickTimestepMin,  brickCount * sizeof(uint)));
+	cudaSafeCall(cudaMalloc2(&dpBrickRequestCount, brickCount * sizeof(uint)));
+	cudaSafeCall(cudaMalloc2(&dpBrickTimestepMin,  brickCount * sizeof(uint)));
 
 	pBrickRequestCount = new uint[brickCount];
 }

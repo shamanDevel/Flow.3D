@@ -494,9 +494,12 @@ void ReleaseVolumeDependentResources()
 
 HRESULT CreateVolumeDependentResources(ID3D11Device* pDevice)
 {
+	std::cout << "Creating volume dependent reources..." << std::endl;
+
 	ReleaseVolumeDependentResources();
 
-	if(g_volume.IsCompressed()) {
+	if(g_volume.IsCompressed()) 
+	{
 		uint brickSize = g_volume.GetBrickSizeWithOverlap();
 		// do multi-channel decoding only for small bricks; for large bricks, mem usage gets too high
 		uint channelCount = (brickSize <= 128) ? g_volume.GetChannelCount() : 1;
@@ -536,6 +539,8 @@ HRESULT CreateVolumeDependentResources(ID3D11Device* pDevice)
 	}
 
 	g_flowGraph.Init(g_volume);
+
+	std::cout << "Volume dependent reources created." << std::endl;
 
 	return S_OK;
 }
@@ -3559,6 +3564,8 @@ int main(int argc, char* argv[])
 	//	printf("FUBAR\n");
 	//}
 
+	std::cout.precision(3);
+	std::cout << std::fixed;
 
 	// init default number of omp threads
 	g_threadCount = omp_get_num_procs();

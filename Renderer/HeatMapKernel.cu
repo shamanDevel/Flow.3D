@@ -119,7 +119,7 @@ float heatmapKernelFindMedian(uint * channel, int3 size)
 		clip_at_one(), 0, thrust::plus<uint>());
 	if (countNonZeros == 0) return 1;
 	uint* nonZeroEntries;
-	cudaSafeCall(cudaMalloc(&nonZeroEntries, sizeof(uint) * countNonZeros));
+	cudaSafeCall(cudaMalloc2(&nonZeroEntries, sizeof(uint) * countNonZeros));
 	thrust::device_ptr<uint> nonZeroEntriesPtr(nonZeroEntries);
 	thrust::copy_if(thrust::device, thrustChannelPtr, thrustChannelPtr + count, nonZeroEntriesPtr, heatmap_non_zero_pred());
 	//2. sort that array
@@ -132,7 +132,7 @@ float heatmapKernelFindMedian(uint * channel, int3 size)
 	*/
 
 	uint* nonZeroEntries;
-	cudaSafeCall(cudaMalloc(&nonZeroEntries, sizeof(uint) * count));
+	cudaSafeCall(cudaMalloc2(&nonZeroEntries, sizeof(uint) * count));
 	cudaSafeCall(cudaMemcpy(nonZeroEntries, channel, sizeof(uint) * count, cudaMemcpyDeviceToDevice));
 	thrust::device_ptr<uint> nonZeroEntriesPtr(nonZeroEntries);
 	thrust::sort(nonZeroEntriesPtr, nonZeroEntriesPtr + count);

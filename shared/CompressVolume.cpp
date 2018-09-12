@@ -59,12 +59,16 @@ GPUResources::Config CompressVolumeResources::getRequiredResources(uint sizeX, u
 
 bool CompressVolumeResources::create(const GPUResources::Config& config)
 {
+	std::cout << "Creating CompressVolumeResources..." << std::endl;
+
 	size_t uploadSize = config.blockCountMax * g_levelCountMax * sizeof(Symbol32*);
 	cudaSafeCall(cudaMallocHost(&pUpload, uploadSize, cudaHostAllocWriteCombined));
 
 	cudaSafeCall(cudaEventCreateWithFlags(&syncEventUpload, cudaEventDisableTiming));
 	// immediately record to signal that buffers are ready to use (ie first cudaEventSynchronize works)
 	cudaSafeCall(cudaEventRecord(syncEventUpload));
+
+	std::cout << "CompressVolumeResources created." << std::endl;
 
 	return true;
 }

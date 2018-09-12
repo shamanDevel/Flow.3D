@@ -65,6 +65,8 @@ GPUResources::~GPUResources()
 
 bool GPUResources::create(const Config& config)
 {
+	std::cout << "Creating GPUResources..." << std::endl;
+
 	m_config = config;
 
 	assert(m_pCuCompInstance == nullptr);
@@ -75,7 +77,9 @@ bool GPUResources::create(const Config& config)
 
 	//TODO don't use cudaSafeCall, but manually check for out of memory?
 	assert(m_dpBuffer == nullptr);
-	cudaSafeCall(cudaMalloc(&m_dpBuffer, m_config.bufferSize));
+	cudaSafeCall(cudaMalloc2(&m_dpBuffer, m_config.bufferSize));
+
+	std::cout << "GPUResources created." << std::endl;
 
 	return true;
 }
@@ -101,6 +105,8 @@ cudaCompress::byte* GPUResources::getByteBuffer(size_t bytes)
 	cudaCompress::byte* dpResult = m_dpBuffer + m_bufferOffset;
 	m_allocatedSizes.push_back(bytes);
 	m_bufferOffset += getAlignedSize(bytes, 128);
+
+	//std::cout << "GPUResources::bufferOffset: " << (m_bufferOffset / 1024.0f) << "KB" << std::endl;
 
 	return dpResult;
 }

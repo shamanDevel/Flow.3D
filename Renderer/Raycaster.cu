@@ -49,9 +49,9 @@ bool Raycaster::Create()
 {
 	if(IsCreated()) return true;
 
-	cudaSafeCall(cudaMalloc(&md_pProjParamsCyclop, sizeof(ProjectionParamsGPU)));
-	cudaSafeCall(cudaMalloc(&md_pProjParamsLeft,   sizeof(ProjectionParamsGPU)));
-	cudaSafeCall(cudaMalloc(&md_pProjParamsRight,  sizeof(ProjectionParamsGPU)));
+	cudaSafeCall(cudaMalloc2(&md_pProjParamsCyclop, sizeof(ProjectionParamsGPU)));
+	cudaSafeCall(cudaMalloc2(&md_pProjParamsLeft,   sizeof(ProjectionParamsGPU)));
+	cudaSafeCall(cudaMalloc2(&md_pProjParamsRight,  sizeof(ProjectionParamsGPU)));
 
 	cudaSafeCall(cudaHostRegister(&m_raycastParamsGPU, sizeof(m_raycastParamsGPU), cudaHostRegisterDefault));
 	cudaSafeCall(cudaEventCreate(&m_raycastParamsUploadEvent, cudaEventDisableTiming));

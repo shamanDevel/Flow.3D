@@ -52,6 +52,8 @@ RenderingManager::~RenderingManager()
 
 bool RenderingManager::Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice)
 {
+	std::cout << "Creating RenderingManager..." << std::endl;
+
 	m_pCompressShared = pCompressShared;
 	m_pCompressVolume = pCompressVolume;
 	m_pDevice = pDevice;
@@ -97,6 +99,8 @@ bool RenderingManager::Create(GPUResources* pCompressShared, CompressVolumeResou
 	}
 
 	m_isCreated = true;
+
+	std::cout << "RenderingManager created." << std::endl;
 
 	return true;
 }
@@ -478,6 +482,7 @@ HRESULT RenderingManager::CreateScreenDependentResources()
 	else
 	{
 		cudaChannelFormatDesc desc = cudaCreateChannelDesc<uchar4>();
+		std::cout << "cudaMallocArray " << (width * height * sizeof(uchar4)) / 1024.0f << "KB" << std::endl;
 		cudaSafeCall(cudaMallocArray(&m_pRaycastArray, &desc, width, height, cudaArraySurfaceLoadStore));
 	}
 
@@ -607,7 +612,7 @@ HRESULT RenderingManager::CreateVolumeDependentResources()
 	m_dpChannelBuffer.resize(m_channelCount);
 	for(size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
 	{
-		cudaSafeCall(cudaMalloc(&m_dpChannelBuffer[channel], brickSizeBytePerChannel));
+		cudaSafeCall(cudaMalloc2(&m_dpChannelBuffer[channel], brickSizeBytePerChannel));
 	}
 
 	m_brickSlots.resize(GetRequiredBrickSlotCount());
@@ -798,6 +803,7 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 		// for 1D arrays, this returns 0 in width and height...
 		extent.height = (extent.height, size_t(1));
 		extent.depth = (extent.depth, size_t(1));
+		std::cout << "cudaMallocArray " << (extent.width * extent.height * 16) / 1024.0f << "KB" << std::endl;
 		cudaSafeCall(cudaMallocArray(&m_pTfArray, &desc, extent.width, extent.height));
 		size_t elemCount = extent.width * extent.height * extent.depth;
 		size_t bytesPerElem = (desc.x + desc.y + desc.z + desc.w) / 8;
@@ -1707,7 +1713,7 @@ void RenderingManager::SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceCont
 
 		//compute depth
 		float* depth;
-		cudaSafeCall(cudaMalloc(&depth, sizeof(float) * pLineBuffers->m_indexCountTotal)); //todo: cache this array
+		cudaSafeCall(cudaMalloc2(&depth, sizeof(float) * pLineBuffers->m_indexCountTotal)); //todo: cache this array
 		uint blockSize = 128;
 		uint blockCount = (pLineBuffers->m_indexCountTotal + blockSize - 1) / blockSize;
 		FillVertexDepth <<< blockCount, blockSize >>> (dpVB, dpIB, depth, depthMultiplier, pLineBuffers->m_indexCountTotal);
@@ -1850,12 +1856,13 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 	y = height - 1 - y;
 
 	// get a pointer to the pixel at (x,y)
-	float* pixel = (float*)(surface + y*pitch) + 4 * x;
+	const int components = 1;
+	float* pixel = (float*)(surface + y*pitch) + components * x;
 
 	pixel[0] = ftle;
-	pixel[1] = ftle;
-	pixel[2] = ftle;
-	pixel[3] = 1;
+	//pixel[1] = ftle;
+	//pixel[2] = ftle;
+	//pixel[3] = 1;
 
 	//// populate it
 	//float value_x = 0.5f + 0.5f*cos(1.0 + 10.0f*((2.0f*x) / width - 1.0f));
@@ -1869,17 +1876,29 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 
 void RenderingManager::CreateFTLETexture()
 {
+	std::cout << "RenderingManager::CreateFTLETexture: creating texture." << std::endl;
+	size_t memFree = 0;
+	size_t memTotal = 0;
+	cudaSafeCall(cudaMemGetInfo(&memFree, &memTotal));
+	std::cout << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+	
 	int res = m_particleTraceParams.m_ftleResolution;
 
 	if (m_ftleTexture.IsTextureCreated())
 		m_ftleTexture.ReleaseResources();
 
-	if (!m_ftleTexture.CreateTexture(m_pDevice, res, res, 1, 1, DXGI_FORMAT_R32G32B32A32_FLOAT))
+	//if (!m_ftleTexture.CreateTexture(m_pDevice, res, res, 1, 1, DXGI_FORMAT_R32G32B32A32_FLOAT))
+	if (!m_ftleTexture.CreateTexture(m_pDevice, res, res, 1, 1, DXGI_FORMAT_R32_FLOAT))
 		std::cerr << "------------ Error: could not create FTLE texture" << std::endl;
 
 	m_ftleTexture.RegisterCUDAResources();
 
 	cudaSafeCall(cudaDeviceSynchronize());
+
+	cudaSafeCall(cudaMemGetInfo(&memFree, &memTotal));
+	std::cout << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	std::cout << "RenderingManager::CreateFTLETexture: done." << std::endl;
 }
 
 void RenderingManager::ComputeFTLE()
@@ -1936,7 +1955,7 @@ void RenderingManager::ComputeFTLE()
 		cuArray, // dst array
 		0, 0,    // offset
 		m_ftleTexture.cudaLinearMemory, m_ftleTexture.pitch,       // src
-		width * 4 * sizeof(float), height, // extent
+		width * m_ftleTexture.GetNumberOfComponents() * sizeof(float), height, // extent
 		cudaMemcpyDeviceToDevice)); // kind
 	cudaCheckMsg("cudaMemcpy2DToArray failed");
 

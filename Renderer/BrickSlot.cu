@@ -56,6 +56,8 @@ BrickSlot& BrickSlot::operator=(BrickSlot&& other)
 
 bool BrickSlot::Create(uint size, uint channelCount, const Vec3ui& slotCount)
 {
+	std::cout << "BrickSlot::Create: size(" << size << ") channelCount(" << channelCount << ") slotCount(" << slotCount.x() << "," << slotCount.y() << "," << slotCount.z() << ")" << std::endl;
+
 	Release();
 
 	if(channelCount < 1) {
@@ -76,9 +78,16 @@ bool BrickSlot::Create(uint size, uint channelCount, const Vec3ui& slotCount)
 	std::vector<cudaChannelFormatDesc> channelDesc(textureCount);
 	m_pArray.resize(textureCount);
 
+	size_t memFree = 0;
+	size_t memTotal = 0;
+
+	std::cout << "Allocating " << textureCount << " textures" << std::endl;
+
 	for(uint tex = 0; tex < textureCount; tex++)
 	{
 		uint channelCountThisTex = ((tex == textureCount - 1) ? (m_channelCount % 4) : 4);
+
+		size_t s = sizeof(float);
 
 		switch(channelCountThisTex) {
 			case 1:
@@ -86,13 +95,27 @@ bool BrickSlot::Create(uint size, uint channelCount, const Vec3ui& slotCount)
 				break;
 			case 2:
 				channelDesc[tex] = cudaCreateChannelDesc<float2>();
+				s *= 2;
 				break;
 			case 3: // no 3-channel textures in cuda - fall-through to 4
 			case 4:
 			default:
 				channelDesc[tex] = cudaCreateChannelDesc<float4>();
+				s *= 4;
 				break;
 		}
+
+		
+		if (textureSize.x() > 0)
+			s *= textureSize.x();
+		if (textureSize.y() > 0)
+			s *= textureSize.y();
+		if (textureSize.z() > 0)
+			s *= textureSize.z();
+
+		
+		cudaMemGetInfo(&memFree, &memTotal);
+		std::cout << "cudaMalloc3DArray: " << double(s) / (1024.0 * 1024.0) << "MB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
 
 		cudaError_t result = cudaMalloc3DArray(&m_pArray[tex], &channelDesc[tex], extent, cudaArraySurfaceLoadStore);
 
@@ -110,6 +133,12 @@ bool BrickSlot::Create(uint size, uint channelCount, const Vec3ui& slotCount)
 			return false;
 		}
 	}
+
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	std::cout << "BrickSlot::Create done." << std::endl;
 
 	return true;
 }

@@ -12,7 +12,7 @@ texture<uint32, cudaTextureType2D, cudaReadModeElementType> g_cellTexture;
 void IntegratorTimeInCell::Upload(CellTextureGPU& info, uint32 * textureMemCPU, size_t width, size_t height)
 {
 	Free(info);
-
+	std::cout << "cudaMallocArray " << (width * height * sizeof(uint32)) / 1024.0f << "KB" << std::endl;
 	cudaSafeCall(cudaMallocArray(&info.textureArray, &g_cellTexture.channelDesc, width, height));
 	cudaSafeCall(cudaMemcpyToArray(info.textureArray, 0, 0, textureMemCPU, width * height * sizeof(uint32), cudaMemcpyHostToDevice));
 	cudaChannelFormatDesc channelFormat = { 32, 0, 0, 0, cudaChannelFormatKindUnsigned };

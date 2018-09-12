@@ -4,8 +4,22 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
 
 #include <cuda_runtime.h>
+
+template<class T>
+static __inline__ __host__ cudaError_t cudaMalloc2(T **devPtr, size_t size)
+{
+	size_t memFree = 0;
+	size_t memTotal = 0;
+	cudaMemGetInfo(&memFree, &memTotal);
+
+	std::cout << "cudaMalloc: " << float(size) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+
+	return cudaMalloc(devPtr, size);
+}
 
 
 #define cudaSafeCall(err)       __cudaSafeCall      (err, __FILE__, __LINE__)

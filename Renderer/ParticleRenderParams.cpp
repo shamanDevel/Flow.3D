@@ -22,8 +22,16 @@ bool D3D11CudaTexture::IsRegisteredWithCuda()
 
 bool D3D11CudaTexture::CreateTexture(ID3D11Device* device, int width, int height, int miplevels, int arraysize, DXGI_FORMAT format)
 {
+	if (!IsFormatSupported(format))
+	{
+		std::cout << "Unsupported texture format." << std::endl;
+		return false;
+	}
+	
 	if (IsTextureCreated())
 		ReleaseResources();
+
+	this->format = format;
 
 	this->width = width;
 	this->height = height;
@@ -80,6 +88,8 @@ void D3D11CudaTexture::ReleaseResources()
 
 	}
 
+	format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
+
 	pSRView = nullptr;
 	pTexture = nullptr;
 
@@ -99,7 +109,7 @@ void D3D11CudaTexture::RegisterCUDAResources()
 	// cuda cannot write into the texture directly : the texture is seen as a cudaArray and can only be mapped as a texture
 	// Create a buffer so that cuda can write into it
 	// pixel fmt is DXGI_FORMAT_R32G32B32A32_FLOAT
-	cudaMallocPitch(&cudaLinearMemory, &pitch, width * sizeof(float) * 4, height);
+	cudaMallocPitch(&cudaLinearMemory, &pitch, width * sizeof(float) * GetNumberOfComponents(format), height);
 	cudaCheckMsg("---------- cudaMallocPitch (D3D11CudaTexture) failed");
 	cudaMemset(cudaLinearMemory, 1, pitch * height);
 }
@@ -119,6 +129,40 @@ void D3D11CudaTexture::UnregisterCudaResources()
 	cudaLinearMemory = nullptr;
 }
 
+bool D3D11CudaTexture::IsFormatSupported(DXGI_FORMAT format)
+{
+	switch (format)
+	{
+	case DXGI_FORMAT_R32G32B32A32_FLOAT:
+	case DXGI_FORMAT_R32G32B32_FLOAT:
+	case DXGI_FORMAT_R32G32_FLOAT:
+	case DXGI_FORMAT_R32_FLOAT:
+		return true;
+	default:
+		return false;
+	}
+}
+
+int D3D11CudaTexture::GetNumberOfComponents(DXGI_FORMAT format)
+{
+	switch (format)
+	{
+	case DXGI_FORMAT_R32G32B32A32_FLOAT:
+		return 4;
+	case DXGI_FORMAT_R32G32B32_FLOAT:
+		return 3;
+	case DXGI_FORMAT_R32G32_FLOAT:
+		return 2;
+	case DXGI_FORMAT_R32_FLOAT:
+		return 1;
+	default:
+		return 0;
+	}
+}
+int D3D11CudaTexture::GetNumberOfComponents()
+{
+	return GetNumberOfComponents(format);
+}
 
 ParticleRenderParams::ParticleRenderParams()
 {

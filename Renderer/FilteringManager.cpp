@@ -31,6 +31,7 @@ FilteringManager::~FilteringManager()
 
 bool FilteringManager::Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume)
 {
+	std::cout << "Creating FilteringManager..." << std::endl;
 	//if(!m_volumeFilter.Create())
 	//{
 	//	Release();
@@ -42,6 +43,7 @@ bool FilteringManager::Create(GPUResources* pCompressShared, CompressVolumeResou
 
 	m_isCreated = true;
 
+	std::cout << "FilteringManager created." << std::endl;
 	return true;
 }
 
@@ -353,10 +355,10 @@ bool FilteringManager::CreateVolumeDependentResources()
 	uint bufferSizeBytes = m_brickSize * m_brickSize * m_brickSize * sizeof(float);
 
 	// allocate brick buffers
-	cudaSafeCall(cudaMalloc(&m_dpBufferCenter, bufferSizeBytes));
-	cudaSafeCall(cudaMalloc(&m_dpBufferLeft,   bufferSizeBytes));
-	cudaSafeCall(cudaMalloc(&m_dpBufferRight,  bufferSizeBytes));
-	cudaSafeCall(cudaMalloc(&m_dpBufferOut,    bufferSizeBytes));
+	cudaSafeCall(cudaMalloc2(&m_dpBufferCenter, bufferSizeBytes));
+	cudaSafeCall(cudaMalloc2(&m_dpBufferLeft,   bufferSizeBytes));
+	cudaSafeCall(cudaMalloc2(&m_dpBufferRight,  bufferSizeBytes));
+	cudaSafeCall(cudaMalloc2(&m_dpBufferOut,    bufferSizeBytes));
 
 	return true;
 }
@@ -464,7 +466,7 @@ bool FilteringManager::CompressDownload(GPUResources* pCompressShared, CompressV
 	{
 		// find appropriate quant step
 		float* dpValMax = nullptr;
-		cudaSafeCall(cudaMalloc(&dpValMax, sizeof(float)));
+		cudaSafeCall(cudaMalloc2(&dpValMax, sizeof(float)));
 		cudaCompress::util::getMaxAbs(pCompressShared->m_pCuCompInstance, dpBuffer, size.volume(), dpValMax);
 		float valMax;
 		cudaSafeCall(cudaMemcpy(&valMax, dpValMax, sizeof(float), cudaMemcpyDeviceToHost));

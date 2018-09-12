@@ -53,7 +53,7 @@ void ParticleTraceParams::Reset()
 
 	m_lineCount     = 1024;
 	m_lineLengthMax = 1024;
-	m_lineAgeMax    = 512;
+	m_lineAgeMax    = 1;
 	m_minVelocity   = 0;
 
 	m_advectDeltaT         = 0.005f;

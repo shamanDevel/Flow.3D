@@ -21,9 +21,9 @@ void BrickIndexGPU::Allocate(bool cpuTracing, uint brickCountNew, uint2 slotCoun
 	}
 	else
 	{
-		cudaSafeCall(cudaMalloc(&dpBrickToSlot, brickCount * sizeof(uint2)));
-		cudaSafeCall(cudaMalloc(&dpSlotTimestepMin, slotCount.x * slotCount.y * sizeof(uint)));
-		cudaSafeCall(cudaMalloc(&dpSlotTimestepMax, slotCount.x * slotCount.y * sizeof(uint)));
+		cudaSafeCall(cudaMalloc2(&dpBrickToSlot, brickCount * sizeof(uint2)));
+		cudaSafeCall(cudaMalloc2(&dpSlotTimestepMin, slotCount.x * slotCount.y * sizeof(uint)));
+		cudaSafeCall(cudaMalloc2(&dpSlotTimestepMax, slotCount.x * slotCount.y * sizeof(uint)));
 	}
 }
 

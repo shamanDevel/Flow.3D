@@ -69,7 +69,7 @@ HeatMap::Channel::Channel(size_t width, size_t height, size_t depth)
 	: m_pCudaBuffer(nullptr)
 {
 	m_count = sizeof(uint) * width * height * depth;
-	cudaSafeCall(cudaMalloc(&m_pCudaBuffer, m_count));
+	cudaSafeCall(cudaMalloc2(&m_pCudaBuffer, m_count));
 }
 
 HeatMap::Channel::~Channel()

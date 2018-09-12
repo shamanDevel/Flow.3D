@@ -151,10 +151,10 @@ void FlowGraph::Build(GPUResources* pCompressShared, CompressVolumeResources* pC
 	int brickSizeBytePerChannel = brickSize * brickSize * brickSize * sizeof(float);
 	for(size_t channel = 0; channel < dpBrickBuffer.size(); channel++)
 	{
-		cudaSafeCall(cudaMalloc(&dpBrickBuffer[channel], brickSizeBytePerChannel));
+		cudaSafeCall(cudaMalloc2(&dpBrickBuffer[channel], brickSizeBytePerChannel));
 	}
 	SimpleParticleVertex* dpParticles = nullptr;
-	cudaSafeCall(cudaMalloc(&dpParticles, particleCountPerBrick * sizeof(SimpleParticleVertex)));
+	cudaSafeCall(cudaMalloc2(&dpParticles, particleCountPerBrick * sizeof(SimpleParticleVertex)));
 
 
 	// temporary: file output

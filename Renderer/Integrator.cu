@@ -333,7 +333,7 @@ uint Integrator::BuildLineIndexBuffer(const uint* dpLineVertexCounts, uint lineV
 	{
 		cudaSafeCall(cudaFree(m_dpIndexOffset));
 		m_indexOffsetSize = indexOffsetSize;
-		cudaSafeCall(cudaMalloc(&m_dpIndexOffset, m_indexOffsetSize * sizeof(uint)));
+		cudaSafeCall(cudaMalloc2(&m_dpIndexOffset, m_indexOffsetSize * sizeof(uint)));
 	}
 
 	thrust::device_ptr<const uint> dpLengthThrust(dpLineVertexCounts);

@@ -44,6 +44,8 @@ HeatMapManager::~HeatMapManager()
 
 bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResources * pCompressVolume, ID3D11Device * pDevice)
 {
+	std::cout << "Creating HeatMapManager..." << std::endl;
+
 	m_pCompressShared = pCompressShared;
 	m_pCompressVolume = pCompressVolume;
 	m_pDevice = pDevice;
@@ -54,13 +56,14 @@ bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResour
 
 	m_isCreated = true;
 
-	std::cout << "HeatMapManager created" << std::endl;
+	std::cout << "HeatMapManager created." << std::endl;
 
 	return true;
 }
 
 void HeatMapManager::Release()
 {
+	std::cout << "HeatMapManager releasing..." << std::endl;
 	delete m_pHeatMap;
 	m_pHeatMap = nullptr;
 
@@ -77,7 +80,7 @@ void HeatMapManager::Release()
 
 	ReleaseRenderTextures();
 
-	std::cout << "HeatMapManager released" << std::endl;
+	std::cout << "HeatMapManager released." << std::endl;
 }
 
 void HeatMapManager::SetParams(const HeatMapParams & params)
@@ -167,7 +170,7 @@ void HeatMapManager::ProcessLines(std::shared_ptr<LineBuffers> pLineBuffer)
 		if (m_seedTexCuda != nullptr) {
 			cudaSafeCall(cudaFree(m_seedTexCuda));
 		}
-		cudaSafeCall(cudaMalloc(&m_seedTexCuda, sizeof(unsigned int) * m_seedTexSize));
+		cudaSafeCall(cudaMalloc2(&m_seedTexCuda, sizeof(unsigned int) * m_seedTexSize));
 		m_seedTexChanged = true;
 	}
 
@@ -424,7 +427,7 @@ void HeatMapManager::CreateRenderTextures(ID3D11Device* pDevice)
 {
 	ReleaseRenderTextures();
 
-	cudaSafeCall(cudaMalloc(&m_cudaCopyBuffer, sizeof(float) 
+	cudaSafeCall(cudaMalloc2(&m_cudaCopyBuffer, sizeof(float) 
 		* m_resolution.x * m_resolution.y * m_resolution.z));
 
 	D3D11_TEXTURE3D_DESC desc;

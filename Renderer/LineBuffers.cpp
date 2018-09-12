@@ -199,35 +199,132 @@ bool LineBuffers::Read(std::istream& file, int lineIDOverwrite)
 
 bool LineBuffers::CreateResources()
 {
+	std::cout << "LineBuffers::CreateResources(m_lineCount(" << m_lineCount << "), m_lineLengthMax(" << m_lineLengthMax << "), sizeof(LineVertex)(" << sizeof(LineVertex) << "))" << std::endl;
+
+	size_t memFree, memTotal;
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\t0 Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	size_t m0 = memFree;
+
 	HRESULT hr;
+
+	
+	ID3D11DeviceContext* pContext = nullptr;
+	m_pDevice->GetImmediateContext(&pContext);
+
+	pContext->IASetInputLayout(NULL);
+
+	//cudaSafeCall(cudaDeviceSynchronize());
+	//pContext->Flush();
+
+	//D3D11_QUERY_DESC queryDesc;
+	//queryDesc.Query = D3D11_QUERY_EVENT;
+	//// Fill out queryDesc structure
+	//ID3D11Query * pQuery;
+	//m_pDevice->CreateQuery(&queryDesc, &pQuery);
+
+	//pContext->Begin(pQuery);
+
+	pContext->Release();
 
 	D3D11_BUFFER_DESC bufDesc = {};
 
 	bufDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufDesc.ByteWidth = m_lineCount * m_lineLengthMax * sizeof(LineVertex);
 	bufDesc.Usage = D3D11_USAGE_DEFAULT;
+
+
+	std::cout << "Allocating D3D11_BUFFER (" << (m_lineCount * m_lineLengthMax * sizeof(LineVertex)) / (1024.0 * 1024.0) << "MB)" << std::endl;
 	if(FAILED(hr = m_pDevice->CreateBuffer(&bufDesc, nullptr, &m_pVB)))
 	{
 		ReleaseResources();
 		return false;
 	}
+
+	//cudaSafeCall(cudaDeviceSynchronize());
+	//pContext->Flush();
+
+	//pContext->End(pQuery);
+	//BOOL queryData; // This data type is different depending on the query type
+
+	//while (S_OK != pContext->GetData(pQuery, &queryData, sizeof(BOOL), 0))
+	//{
+	//	std::cout << "Waiting for query..." << std::endl;
+	//}
+	
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\t1 Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
 	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pVBCuda, m_pVB, cudaGraphicsRegisterFlagsNone));
+	cudaSafeCall(cudaDeviceSynchronize());
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\t2 Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+	
+
+	std::cout << "_______________ Ratio: " << (m0 - memFree) / double(m_lineCount * m_lineLengthMax * sizeof(LineVertex))<< std::endl;
+
+
+	cudaSafeCall(cudaGraphicsUnregisterResource(m_pVBCuda));
+	cudaSafeCall(cudaDeviceSynchronize());
+	m_pVBCuda = nullptr;
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\t3 Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pVBCuda, m_pVB, cudaGraphicsRegisterFlagsNone));
+	cudaSafeCall(cudaDeviceSynchronize());
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\t4 Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+
+
+
+
+
+
 
 	bufDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	bufDesc.ByteWidth = m_lineCount * (m_lineLengthMax - 1) * 2 * sizeof(uint);
 	bufDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	std::cout << "Allocating D3D11_BUFFER (" << (m_lineCount * (m_lineLengthMax - 1) * 2 * sizeof(uint)) / (1024.0 * 1024.0) << "MB)" << std::endl;
 	if(FAILED(hr = m_pDevice->CreateBuffer(&bufDesc, nullptr, &m_pIB)))
 	{
 		ReleaseResources();
 		return false;
 	}
 	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pIBCuda, m_pIB, cudaGraphicsRegisterFlagsNone));
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\t5 Available: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+
+
+
+
+
+
+
+
+
+
+
+	std::cout << "Allocating D3D11_BUFFER (" << (m_lineCount * (m_lineLengthMax - 1) * 2 * sizeof(uint)) / (1024.0 * 1024.0) << "MB)" << std::endl;
 	if (FAILED(hr = m_pDevice->CreateBuffer(&bufDesc, nullptr, &m_pIB_sorted)))
 	{
 		ReleaseResources();
 		return false;
 	}
 	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&m_pIBCuda_sorted, m_pIB_sorted, cudaGraphicsRegisterFlagsNone));
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	std::cout << "LineBuffers::CreateResources: done." << std::endl;
 
 	return true;
 }
@@ -262,7 +359,7 @@ void LineBuffers::ReleaseResources()
 
 	if(m_pVBCuda)
 	{
-		cudaGraphicsUnregisterResource(m_pVBCuda);
+		cudaSafeCall(cudaGraphicsUnregisterResource(m_pVBCuda));
 		m_pVBCuda = nullptr;
 	}
 	if(m_pVB)

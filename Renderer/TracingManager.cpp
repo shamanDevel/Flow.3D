@@ -62,6 +62,8 @@ TracingManager::~TracingManager()
 
 bool TracingManager::Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice)
 {
+	std::cout << "Creating TracingManager..." << std::endl;
+
 	m_pCompressShared = pCompressShared;
 	m_pCompressVolume = pCompressVolume;
 	m_pDevice = pDevice;
@@ -83,6 +85,8 @@ bool TracingManager::Create(GPUResources* pCompressShared, CompressVolumeResourc
 	}
 
 	m_isCreated = true;
+
+	std::cout << "TracingManager created." << std::endl;
 
 	return true;
 }
@@ -142,7 +146,7 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	ReleaseResources();
 	ReleaseResultResources();
 
-	printf("TracingManager::StartTracing\n");
+	printf("\n----------------------------------------------------------------------\nTracingManager::StartTracing\n");
 
 	m_pVolume = &volume;
 	m_traceParams = traceParams;
@@ -971,7 +975,7 @@ HRESULT TracingManager::CreateVolumeDependentResources()
 	m_pChannelBufferCPU.resize(channelCount);
 	for(size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
 	{
-		cudaSafeCall(cudaMalloc(&m_dpChannelBuffer[channel], brickSizeBytePerChannel));
+		cudaSafeCall(cudaMalloc2(&m_dpChannelBuffer[channel], brickSizeBytePerChannel));
 		cudaSafeCall(cudaMallocHost(&m_pChannelBufferCPU[channel], brickSizeBytePerChannel));
 	}
 
@@ -996,12 +1000,15 @@ HRESULT TracingManager::CreateVolumeDependentResources()
 	size_t memTotal = 0;
 	cudaSafeCall(cudaMemGetInfo(&memFree, &memTotal));
 
+	std::cout << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
 	size_t memPerTimeSlot = brickSize * brickSize * brickSize * channelCountTex * sizeof(float);
 
 	// leave some wiggle room - arbitrarily chosen to be the size of a brick, or at least min(128 MB, 0.1 * totalMemory)
 	// with large bricks, CUDA tends to start paging otherwise...
 	size_t memBuffer = max(memPerTimeSlot, min(size_t(32) * 1024 * 1024, memTotal / 100));
-	size_t memAvailable = memFree - min(memBuffer, memFree);
+	//size_t memAvailable = memFree - min(memBuffer, memFree);
+	size_t memAvailable = 1024ll * 1024ll * 1024ll;
 
 	float memAvailableMB = float(memAvailable) / (1024.0f * 1024.0f);
 
@@ -1043,6 +1050,11 @@ HRESULT TracingManager::CreateVolumeDependentResources()
 	m_brickSlotInfo.resize(m_brickSlotCount.yz().area());
 
 
+	memFree = 0;
+	memTotal = 0;
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "cudaMallocHost: " << float(brickCount * sizeof(uint2)) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
 	// allocate brick index *after* brick slots - need to know the slot count!
 	cudaSafeCall(cudaMallocHost(&m_pBrickToSlot, brickCount * sizeof(uint2)));
 	for(uint i = 0; i < brickCount; i++)
@@ -1050,6 +1062,10 @@ HRESULT TracingManager::CreateVolumeDependentResources()
 		m_pBrickToSlot[i].x = BrickIndexGPU::INVALID;
 		m_pBrickToSlot[i].y = BrickIndexGPU::INVALID;
 	}
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "cudaMallocHost: " << float(brickSlotCount.area() * sizeof(uint) * 2) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
 	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMin, brickSlotCount.area() * sizeof(uint)));
 	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMax, brickSlotCount.area() * sizeof(uint)));
 	for(uint i = 0; i < brickCount; i++)
@@ -1060,6 +1076,8 @@ HRESULT TracingManager::CreateVolumeDependentResources()
 	m_brickIndexGPU.Allocate(m_traceParams.m_cpuTracing, brickCount, make_uint2(brickSlotCount));
 	m_brickIndexGPU.Update(m_traceParams.m_cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
 	cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
+
+	std::cout << "TracingManager::CreateVolumeDependentResources done." << std::endl;
 
 	return S_OK;
 }
@@ -1101,6 +1119,8 @@ void TracingManager::ReleaseVolumeDependentResources()
 
 HRESULT TracingManager::CreateParamDependentResources()
 {
+	std::cout << "CreateParamDependentResources()" << std::endl;
+
 	ReleaseParamDependentResources();
 
 	if(m_traceParams.m_cpuTracing)
@@ -1113,10 +1133,13 @@ HRESULT TracingManager::CreateParamDependentResources()
 	}
 	else
 	{
-		cudaSafeCall(cudaMalloc(&m_dpLineCheckpoints, m_traceParams.m_lineCount * sizeof(LineCheckpoint)));
-		cudaSafeCall(cudaMalloc(&m_dpLineVertexCounts, m_traceParams.m_lineCount * sizeof(uint)));
+		cudaSafeCall(cudaMalloc2(&m_dpLineCheckpoints, m_traceParams.m_lineCount * sizeof(LineCheckpoint)));
+		cudaSafeCall(cudaMalloc2(&m_dpLineVertexCounts, m_traceParams.m_lineCount * sizeof(uint)));
 		cudaSafeCall(cudaMemset(m_dpLineVertexCounts, 0, m_traceParams.m_lineCount * sizeof(uint)));
 	}
+
+	std::cout << "CreateParamDependentResources(): done" << std::endl;
+
 
 	return S_OK;
 }
