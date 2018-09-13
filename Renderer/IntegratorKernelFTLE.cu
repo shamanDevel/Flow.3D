@@ -69,8 +69,10 @@ __global__ void computeFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint 
 	const float timestepInc = (float)c_volumeInfo.brickSizeVoxelsWithOverlap;
 
 	// get velocity at initial position
-	float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
-	float3 velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
+	//float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
+	//float3 velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
+
+	float3 velocity = c_volumeInfo.velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
 
 	//vertex.LineID = index;
 
@@ -167,8 +169,8 @@ __global__ void computeFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint 
 			{
 				bool isOutOfDomain = c_volumeInfo.isOutsideOfDomain(vertex.Position);
 				if (isOutOfDomain || !findBrickTime(	vertex.Position, vertex.Time,
-													brickBoxMin, brickBoxMax, world2texOffset, world2texScale,
-													brickTimeMin, brickTimeMax, time2texOffset, time2texScale))
+														brickBoxMin, brickBoxMax, world2texOffset, world2texScale,
+														brickTimeMin, brickTimeMax, time2texOffset, time2texScale))
 				{
 					// new brick isn't available (or we went out of the domain) - get outta here
 					// (if we're still inside the domain, the new brick has already been requested in findBrickTime!)
@@ -196,6 +198,8 @@ __global__ void computeFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint 
 
 	//c_lineInfo.pCheckpoints[index].StepsAccepted += stepsAccepted;
 	//c_lineInfo.pCheckpoints[index].StepsTotal    += step;
+
+	vertex.DeltaT = deltaTime;
 
 	dpParticles[index] = vertex;
 
