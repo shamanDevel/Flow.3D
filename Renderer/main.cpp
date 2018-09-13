@@ -2576,7 +2576,7 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 			lineBuffers, linesOnly,
 			g_ballBuffers, g_ballRadius,
 			&g_heatMapManager,
-			g_raycastParams, pTfArray);
+			g_raycastParams, pTfArray, g_tracingManager.m_dpParticles);
 
 
 		if(state == RenderingManager::STATE_ERROR)

@@ -290,7 +290,7 @@ void WorkerThread::TaskRender()
 		m_shared.viewParams, m_shared.stereoParams,
 		false, false, false, false,
 		m_shared.particleTraceParams, m_shared.particleRenderParams, lineBuffers, false, ballBuffers, 0.0f, NULL,
-		m_shared.raycastParams, m_shared.pTransferFunction, m_shared.transferFunctionDevice);
+		m_shared.raycastParams, m_shared.pTransferFunction, nullptr, m_shared.transferFunctionDevice);
 	if(state != RenderingManager::STATE_RENDERING) //FIXME ?
 	{
 		return;

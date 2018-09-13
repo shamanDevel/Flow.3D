@@ -139,6 +139,8 @@ public:
 	};
 	const Stats& GetStats() const { return m_stats; }
 
+	SimpleParticleVertexDeltaT* m_dpParticles = nullptr;
+
 private:
 	struct BrickSortItem
 	{
@@ -305,6 +307,7 @@ private:
 	// note: if m_traceParams.m_cpuTracing, then these are actually CPU arrays!
 	LineCheckpoint*       m_dpLineCheckpoints;
 	uint*                 m_dpLineVertexCounts;
+	
 
 	// result resources
 	std::shared_ptr<LineBuffers> m_pResult;

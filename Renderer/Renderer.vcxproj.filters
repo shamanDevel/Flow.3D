@@ -56,9 +56,6 @@
     <ClCompile Include="TracingBenchmark.cpp">
       <Filter>ParticleTracing</Filter>
     </ClCompile>
-    <ClCompile Include="TracingManager.cpp">
-      <Filter>ParticleTracing</Filter>
-    </ClCompile>
     <ClCompile Include="FlowGraph.cpp">
       <Filter>ParticleTracing</Filter>
     </ClCompile>
@@ -174,6 +171,9 @@
     </ClCompile>
     <ClCompile Include="DXUT\Core\WICTextureLoader.cpp">
       <Filter>DirectXTK</Filter>
+    </ClCompile>
+    <ClCompile Include="TracingManager.cpp">
+      <Filter>ParticleTracing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -15,6 +15,8 @@
 #include <MultiTimerGPU.h>
 #include <Vec.h>
 
+#include "TracingCommon.h"
+
 #include "BallBuffers.h"
 #include "Box.h"
 #include "BrickSlot.h"
@@ -66,7 +68,7 @@ public:
 		const std::vector<LineBuffers*>& pLineBuffers, bool linesOnly,
 		const std::vector<BallBuffers*>& pBallBuffers, float ballRadius,
 		HeatMapManager* pHeatMapManager,
-		const RaycastParams& raycastParams, cudaArray* pTransferFunction, int transferFunctionDevice = -1);
+		const RaycastParams& raycastParams, cudaArray* pTransferFunction, SimpleParticleVertexDeltaT* dpParticles = nullptr, int transferFunctionDevice = -1);
 	eRenderState Render();
 	void CancelRendering();
 	bool IsRendering() const;
@@ -148,7 +150,7 @@ private:
 
 	void SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext);
 	
-	void ComputeFTLE();
+	void ComputeFTLE(SimpleParticleVertexDeltaT* dpParticles);
 
 	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
 	void RenderBricks(bool recordEvents);

@@ -128,16 +128,17 @@ void Integrator::IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimplePar
 }
 
 
-void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params)
+void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params, SimpleParticleVertexDeltaT* dpParticles)
 {
 	float timeMax = lineInfo.lineSeedTime + params.m_lineAgeMax;
-	if(LineModeIsTimeDependent(params.m_lineMode))
-	{
-		timeMax = min(timeMax, (m_volumeInfo.GetTimestepCount() - 1) * m_volumeInfo.GetTimeSpacing());
-	}
-	UpdateIntegrationParams(params, timeMax);
-	UpdateLineInfo(params, lineInfo);
 
+	if(LineModeIsTimeDependent(params.m_lineMode))
+		timeMax = min(timeMax, (m_volumeInfo.GetTimestepCount() - 1) * m_volumeInfo.GetTimeSpacing());
+
+	UpdateIntegrationParams(params, timeMax);
+
+	if (!params.m_ftleEnabled)
+		UpdateLineInfo(params, lineInfo);
 
 	if(!params.m_cpuTracing)
 	{
@@ -155,28 +156,27 @@ void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lin
 	}
 	else
 	{
-		switch(params.m_lineMode)
+		switch (params.m_lineMode)
 		{
-			case LINE_STREAM:
-				if(params.m_enableDenseOutput && IsAdvectModeDenseOutput(params.m_advectMode)) {
-					integratorKernelStreamLinesDense(lineInfo, params.m_advectMode, params.m_filterMode);
-				} else {
-					integratorKernelStreamLines(lineInfo, params.m_advectMode, params.m_filterMode);
-				}
-				break;
-			case LINE_PATH:
-				integratorKernelPathLines(lineInfo, params.m_advectMode, params.m_filterMode);
-				break;
-			case LINE_PATH_FTLE:
-				integratorKernelComputeFTLE(lineInfo, params.m_advectMode, params.m_filterMode);
-				break;
+		case LINE_STREAM:
+		{
+			if (params.m_enableDenseOutput && IsAdvectModeDenseOutput(params.m_advectMode))
+				integratorKernelStreamLinesDense(lineInfo, params.m_advectMode, params.m_filterMode);
+			else
+				integratorKernelStreamLines(lineInfo, params.m_advectMode, params.m_filterMode);
+			break;
+		}
+		case LINE_PATH:
+			integratorKernelPathLines(lineInfo, params.m_advectMode, params.m_filterMode);
+			break;
+		case LINE_PATH_FTLE:
+			integratorKernelComputeFTLE(dpParticles, params.m_lineCount, params.m_advectMode, params.m_filterMode);
+			break;
 		}
 	}
 
 	if(!params.m_cpuTracing)
-	{
 		cudaSafeCall(cudaUnbindTexture(g_texVolume1));
-	}
 }
 
 void Integrator::InitIntegrateParticles(const LineInfo& lineInfo, const ParticleTraceParams& params)

@@ -764,7 +764,7 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 	const std::vector<LineBuffers*>& pLineBuffers, bool linesOnly,
 	const std::vector<BallBuffers*>& pBallBuffers, float ballRadius,
 	HeatMapManager* pHeatMapManager,
-	const RaycastParams& raycastParams, cudaArray* pTransferFunction, int transferFunctionDevice)
+	const RaycastParams& raycastParams, cudaArray* pTransferFunction, SimpleParticleVertexDeltaT* dpParticles, int transferFunctionDevice)
 {
 	if(IsRendering()) CancelRendering();
 
@@ -1007,7 +1007,7 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 			CreateFTLETexture();
 
 		if (isTracing)
-			ComputeFTLE();
+			ComputeFTLE(dpParticles);
 
 		if (m_particleRenderParams.m_ftleShowTexture)
 		{
@@ -1794,7 +1794,7 @@ __device__ float LambdaMax(const float3x3 &m)
 	return maxRoot(a2, a1, a0);
 }
 
-__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float spawnTime)
+__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float spawnTime, SimpleParticleVertexDeltaT* dpParticles, uint particleCount)
 {
 	int x = blockIdx.x*blockDim.x + threadIdx.x;
 	int y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -1808,19 +1808,19 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 
 	//assert(index < c_lineInfo.lineCount);
 
-	if (index >= c_lineInfo.lineCount)
+	if (index >= particleCount)
 		return;
 
-	float currTime = c_lineInfo.pCheckpoints[index + 0].Time;
+	float currTime = dpParticles[index + 0].Time;
 
-	float3 posX0 = c_lineInfo.pCheckpoints[index + 0].Position;
-	float3 posX1 = c_lineInfo.pCheckpoints[index + 1].Position;
+	float3 posX0 = dpParticles[index + 0].Position;
+	float3 posX1 = dpParticles[index + 1].Position;
 
-	float3 posY0 = c_lineInfo.pCheckpoints[index + 2].Position;
-	float3 posY1 = c_lineInfo.pCheckpoints[index + 3].Position;
+	float3 posY0 = dpParticles[index + 2].Position;
+	float3 posY1 = dpParticles[index + 3].Position;
 
-	float3 posZ0 = c_lineInfo.pCheckpoints[index + 4].Position;
-	float3 posZ1 = c_lineInfo.pCheckpoints[index + 5].Position;
+	float3 posZ0 = dpParticles[index + 4].Position;
+	float3 posZ1 = dpParticles[index + 5].Position;
 
 	float3 dx = (posX1 - posX0) / (2.0 * separationDist.x);
 	float3 dy = (posY1 - posY0) / (2.0 * separationDist.y);
@@ -1901,7 +1901,7 @@ void RenderingManager::CreateFTLETexture()
 	std::cout << "RenderingManager::CreateFTLETexture: done." << std::endl;
 }
 
-void RenderingManager::ComputeFTLE()
+void RenderingManager::ComputeFTLE(SimpleParticleVertexDeltaT* dpParticles)
 {
 	std::cout << "ComputeFTLE";
 	std::cout << " Res(" << m_ftleTexture.width << "," << m_ftleTexture.height << ")" << std::endl;
@@ -1933,7 +1933,7 @@ void RenderingManager::ComputeFTLE()
 
 	float3 separationDist = make_float3(m_particleTraceParams.m_ftleSeparationDistance.x(), m_particleTraceParams.m_ftleSeparationDistance.y(), m_particleTraceParams.m_ftleSeparationDistance.z());
 
-	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, m_pVolume->GetCurTime());
+	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, m_pVolume->GetCurTime(), dpParticles, m_particleTraceParams.m_lineCount);
 
 	error = cudaGetLastError();
 

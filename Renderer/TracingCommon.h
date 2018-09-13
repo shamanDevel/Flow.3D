@@ -17,6 +17,13 @@ struct SimpleParticleVertex
 	float  Time;
 };
 
+struct SimpleParticleVertexDeltaT
+{
+	float3	Position;
+	float	Time;
+	float	DeltaT;
+};
+
 
 struct BallVertex
 {

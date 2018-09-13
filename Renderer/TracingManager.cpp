@@ -185,18 +185,38 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	m_brickRequestsGPU.Upload(m_traceParams.m_cpuTracing);
 
 	m_integrator.SetVolumeInfo(m_pVolume->GetInfo());
-	LineInfo lineInfo(GetLineSpawnTime(), m_traceParams.m_lineCount, m_dpLineCheckpoints, nullptr, m_dpLineVertexCounts, m_traceParams.m_lineLengthMax);
+
+	float spawnTime = GetLineSpawnTime();
+
+	LineInfo lineInfo(spawnTime, m_traceParams.m_lineCount, m_dpLineCheckpoints, nullptr, m_dpLineVertexCounts, m_traceParams.m_lineLengthMax);
+
 	m_integrator.ForceParamUpdate(m_traceParams, lineInfo);
 
 	UpdateFrameBudgets();
 
 	//create initial checkpoints
-	float spawnTime = GetLineSpawnTime();
 	CreateInitialCheckpoints(spawnTime);
+
+
+	if (m_traceParams.m_ftleEnabled)
+	{
+		std::vector<SimpleParticleVertexDeltaT> particles(m_traceParams.m_lineCount);
+
+		for (size_t i = 0; i < m_checkpoints.size(); i++)
+		{
+			particles[i].DeltaT = m_checkpoints[i].DeltaT;
+			particles[i].Position = m_checkpoints[i].Position;
+			particles[i].Time = m_checkpoints[i].Time;
+		}
+
+		cudaSafeCall(cudaMemcpy(m_dpParticles, particles.data(), particles.size() * sizeof(SimpleParticleVertexDeltaT), cudaMemcpyHostToDevice));
+	}
+
+
 	//and upload the seed texture (if available)
-	if (traceParams.m_seedTexture.m_colors != NULL) {
-		IntegratorTimeInCell::Upload(m_cellTextureGPU, traceParams.m_seedTexture.m_colors,
-			traceParams.m_seedTexture.m_width, traceParams.m_seedTexture.m_height);
+	if (traceParams.m_seedTexture.m_colors != NULL) 
+	{
+		IntegratorTimeInCell::Upload(m_cellTextureGPU, traceParams.m_seedTexture.m_colors, traceParams.m_seedTexture.m_width, traceParams.m_seedTexture.m_height);
 	}
 
 	// compute last timestep that will be needed for integration
@@ -215,11 +235,8 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	m_bricksLoaded.clear();
 
 
-	if(m_traceParams.HeuristicUseFlowGraph() && !m_pFlowGraph->IsBuilt())
-	{
-		printf("TracingManager: Warning: heuristic wants to use flow graph, but it's not built\n");
-	}
-
+	if (m_traceParams.HeuristicUseFlowGraph() && !m_pFlowGraph->IsBuilt())
+		std::cout << "TracingManager: Warning: heuristic wants to use flow graph, but it's not built\n" << std::endl;
 
 	// start timing
 	m_timerUploadDecompress.ResetTimers();
@@ -232,10 +249,10 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 
 	m_timerTrace.Start();
 
-	if (LineModeIsIterative(m_traceParams.m_lineMode)) {
+	if (LineModeIsIterative(m_traceParams.m_lineMode)) 
 		StartTracingParticlesIteratively();
-	}
-	else {
+	else 
+	{
 		// run integration kernel immediately to populate brick request list
 		TraceRound();
 		UpdateBricksToLoad();
@@ -357,9 +374,12 @@ void TracingManager::CreateInitialCheckpoints(float spawnTime)
 		m_checkpoints[i].StepsAccepted = 0;
 	}
 
-	// upload checkpoints
-	cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
-	cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, m_checkpoints.data(), m_checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+	if (!m_traceParams.m_ftleEnabled)
+	{
+		// upload checkpoints
+		cudaMemcpyKind copyDir = m_traceParams.m_cpuTracing ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice;
+		cudaSafeCall(cudaMemcpy(m_dpLineCheckpoints, m_checkpoints.data(), m_checkpoints.size() * sizeof(LineCheckpoint), copyDir));
+	}
 }
 
 
@@ -463,31 +483,25 @@ void TracingManager::SetCheckpointTimeStep(float deltaT)
 //	cudaSafeCall(cudaGraphicsMapResources(1, &m_pResult->m_pVBCuda));
 //	LineVertex* dpVB = nullptr;
 //	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, m_pResult->m_pVBCuda));
-
 //	uint lineIndex = 5;
 //	std::vector<LineVertex> vertices(m_traceParams.m_lineLengthMax);
 //	cudaSafeCall(cudaMemcpy(vertices.data(), dpVB + lineIndex * m_traceParams.m_lineLengthMax, m_traceParams.m_lineLengthMax * sizeof(LineVertex), cudaMemcpyDeviceToHost));
-
 //	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));
-
 //	FILE* file = fopen("E:\\_line.txt", "w");
 //	for(size_t i = 0; i < vertices.size(); i++) {
 //		float timePrev = vertices[max(i,1)-1].Time;
 //		fprintf(file, "%1.10f %1.10f %1.10f %1.10f %1.10f\n", vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z, vertices[i].Time, vertices[i].Time - timePrev);
 //	}
 //	fclose(file);
-
 //	// write out brick texture
 //	Vec3ui size = m_brickAtlas.GetSize() * m_brickAtlas.GetSlotCount();
 //	std::vector<float> tex(size.volume() * 4);
-
 //	cudaMemcpy3DParms memcpyParams = { 0 };
 //	memcpyParams.srcArray = const_cast<cudaArray*>(m_brickAtlas.GetCudaArray());
 //	memcpyParams.dstPtr   = make_cudaPitchedPtr(tex.data(), size.x() * 4 * sizeof(float), size.x(), size.y());
 //	memcpyParams.extent   = make_cudaExtent(size.x(), size.y(), size.z());
 //	memcpyParams.kind     = cudaMemcpyDeviceToHost;
 //	cudaSafeCall(cudaMemcpy3D(&memcpyParams));
-
 //	std::vector<float> tex3(size.volume() * 3);
 //	for(uint z = 0; z < size.z(); z++) {
 //		for(uint y = 0; y < size.y(); y++) {
@@ -1131,7 +1145,7 @@ HRESULT TracingManager::CreateParamDependentResources()
 
 		m_lineVerticesCPU.resize(m_traceParams.m_lineCount * m_traceParams.m_lineLengthMax);
 	}
-	else
+	else if (!m_traceParams.m_ftleEnabled)
 	{
 		cudaSafeCall(cudaMalloc2(&m_dpLineCheckpoints, m_traceParams.m_lineCount * sizeof(LineCheckpoint)));
 		cudaSafeCall(cudaMalloc2(&m_dpLineVertexCounts, m_traceParams.m_lineCount * sizeof(uint)));
@@ -1169,7 +1183,10 @@ HRESULT TracingManager::CreateResultResources()
 
 	assert(m_pDevice);
 
-	m_pResult = std::make_shared<LineBuffers>(m_pDevice, m_traceParams.m_lineCount, m_traceParams.m_lineLengthMax);
+	if (m_traceParams.m_ftleEnabled)
+		cudaSafeCall(cudaMalloc2(&m_dpParticles, m_traceParams.m_lineCount * sizeof(SimpleParticleVertexDeltaT)));
+	else
+		m_pResult = std::make_shared<LineBuffers>(m_pDevice, m_traceParams.m_lineCount, m_traceParams.m_lineLengthMax);
 
 	return S_OK;
 }
@@ -1177,6 +1194,12 @@ HRESULT TracingManager::CreateResultResources()
 void TracingManager::ReleaseResultResources()
 {
 	m_pResult = nullptr;
+
+	if (m_dpParticles != nullptr)
+	{
+		cudaSafeCall(cudaFree(m_dpParticles));
+		m_dpParticles = nullptr;
+	}
 }
 
 
@@ -1722,55 +1745,64 @@ void TracingManager::TraceRound()
 
 	// clear all brick requests
 	m_brickRequestsGPU.Clear(m_traceParams.m_cpuTracing, brickCount);
-	// update brick index
-	//TODO only if something changed
+	// update brick index. TODO only if something changed
 	m_brickIndexGPU.Update(m_traceParams.m_cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
 	cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
 
 	// map d3d result buffer
-	cudaSafeCall(cudaGraphicsMapResources(1, &m_pResult->m_pVBCuda));
 	LineVertex* dpVB = nullptr;
-	cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, m_pResult->m_pVBCuda));
+
+	if (!m_traceParams.m_ftleEnabled)
+	{
+		cudaSafeCall(cudaGraphicsMapResources(1, &m_pResult->m_pVBCuda));
+		cudaSafeCall(cudaGraphicsResourceGetMappedPointer((void**)&dpVB, nullptr, m_pResult->m_pVBCuda));
+	}
 
 	// integrate
 	LineVertex* pVertices = (m_traceParams.m_cpuTracing ? m_lineVerticesCPU.data() : dpVB);
 	LineInfo lineInfo(GetLineSpawnTime(), m_traceParams.m_lineCount, m_dpLineCheckpoints, pVertices, m_dpLineVertexCounts, m_traceParams.m_lineLengthMax);
+	
 	m_timerIntegrateCPU.Start();
 	m_timerIntegrate.StartNextTimer();
 	//cudaSafeCall(cudaDeviceSynchronize());
-	m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_traceParams);
+
+	if (m_traceParams.m_ftleEnabled)
+		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_traceParams, m_dpParticles);
+	else
+		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_traceParams);
+
 	//cudaSafeCall(cudaDeviceSynchronize());
 	m_timerIntegrate.StopCurrentTimer();
 	m_timerIntegrateCPU.Stop();
 	m_timings.IntegrateCPU += m_timerIntegrateCPU.GetElapsedTimeMS();
 
+	// copy vertices into d3d buffer
 	if(m_traceParams.m_cpuTracing)
-	{
-		// copy vertices into d3d buffer
 		cudaSafeCall(cudaMemcpy(dpVB, m_lineVerticesCPU.data(), m_lineVerticesCPU.size() * sizeof(LineVertex), cudaMemcpyHostToDevice));
-	}
 
 #if 0
 	//TEST!!
 	m_lineVerticesCPU.resize(m_traceParams.m_lineCount * m_traceParams.m_lineLengthMax);
 	cudaSafeCall(cudaMemcpy(m_lineVerticesCPU.data(), dpVB, m_lineVerticesCPU.size() * sizeof(LineVertex), cudaMemcpyDeviceToHost));
-	for (const auto& v : m_lineVerticesCPU) {
+	for (const auto& v : m_lineVerticesCPU) 
+	{
 		printf("vertex (%f, %f, %f) : t=%f\n", v.Position.x, v.Position.y, v.Position.z, v.Heat);
 	}
 #endif
 
 	// unmap d3d buffer again
-	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));
+	if (!m_traceParams.m_ftleEnabled)
+		cudaSafeCall(cudaGraphicsUnmapResources(1, &m_pResult->m_pVBCuda));
 
 	m_indexBufferDirty = true;
 
-	// start download of brick requests
-	// for stream lines, do *not* download timestep indices (not filled by the kernel!)
+	// start download of brick requests. for stream lines, do *not* download timestep indices (not filled by the kernel!)
 	uint* pBrickTimestepMins = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? m_pBrickTimestepMins : nullptr;
 	m_brickRequestsGPU.Download(m_traceParams.m_cpuTracing, m_pBrickRequestCounts, pBrickTimestepMins, brickCount);
-	if(!m_traceParams.m_cpuTracing) {
+	
+	if(!m_traceParams.m_cpuTracing)
 		cudaSafeCall(cudaEventRecord(m_brickRequestsDownloadEvent));
-	}
+
 	m_bricksToDoDirty = true;
 }
 
@@ -1781,6 +1813,9 @@ void TracingManager::BuildIndexBuffer()
 	if(!IsTracing()) return;
 
 	if(!m_indexBufferDirty) return;
+
+	if (m_pResult == nullptr)
+		return;
 
 	m_timerBuildIndexBuffer.StartNextTimer();
 

@@ -36,7 +36,7 @@ public:
 
 	void IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimpleParticleVertex* dpParticles, uint particleCount, const ParticleTraceParams& params);
 
-	void IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params);
+	void IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, const ParticleTraceParams& params, SimpleParticleVertexDeltaT* dpParticles = nullptr);
 
 	//Initializes the particles. This must be called once before IntegrateParticles(...)
 	void InitIntegrateParticles(const LineInfo& lineInfo, const ParticleTraceParams& params);
