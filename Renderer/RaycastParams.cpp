@@ -35,7 +35,7 @@ void RaycastParams::Reset()
 	m_isoValue1					= 1.0f;
 	m_isoValue2					= 1.0f;
 	m_isoValue3					= 1.0f;
-	m_isoColor1					= Vec4f(1.0f, 1.0f, 1.0f, 192.0f/255.0f);
+	m_isoColor1					= Vec4f(0.7f, 0.7f, 0.7f, 1.0f);
 	m_isoColor2					= Vec4f(1.0f, 100.0f/255.0f, 24.0f/255.0f, 1.0f);
 	m_isoColor3					= Vec4f(100.0f/255.0f, 1.0f, 24.0f/255.0f, 1.0f);
 

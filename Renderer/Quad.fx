@@ -57,20 +57,20 @@ void vsQuad(uint index : SV_VertexID, out float4 outPos : SV_Position, out float
 	switch(index) {
 		case 0:
 			outPos = mul(g_mWorldViewProj, float4(g_vCenter - 0.5*g_vTangent*g_vSize.x - 0.5*g_vBitangent*g_vSize.y, 1.0f));
-			outTexCoord = float2(0, 0);
+			outTexCoord = float2(0, 1);
 			break;
 		case 1:
 			outPos = mul(g_mWorldViewProj, float4(g_vCenter - 0.5*g_vTangent*g_vSize.x + 0.5*g_vBitangent*g_vSize.y, 1.0f));
-			outTexCoord = float2(0, 1);
+			outTexCoord = float2(0, 0);
 			break;
 		case 2:
 			outPos = mul(g_mWorldViewProj, float4(g_vCenter + 0.5*g_vTangent*g_vSize.x - 0.5*g_vBitangent*g_vSize.y, 1.0f));
-			outTexCoord = float2(1, 0);
+			outTexCoord = float2(1, 1);
 			break;
 		case 3:
 		default:
 			outPos = mul(g_mWorldViewProj, float4(g_vCenter + 0.5*g_vTangent*g_vSize.x + 0.5*g_vBitangent*g_vSize.y, 1.0f));
-			outTexCoord = float2(1, 1);
+			outTexCoord = float2(1, 0);
 			break;
 	}
 }

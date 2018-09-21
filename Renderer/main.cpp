@@ -1159,7 +1159,7 @@ void TW_CALL SaveRenderingParamsDialog(void *clientData)
 		filename = tum3d::RemoveExt(filename) + ".cfg";
 		SaveRenderingParams( filename );
 	}
-
+	
 	if( bFullscreen ) DXUTToggleFullScreen();
 }
 
@@ -2811,7 +2811,7 @@ NoVolumeLoaded:
 
 
 	// Draw Transfer function
-	if (g_bRenderUI)
+	if (g_bRenderUI && !g_saveScreenshot)
 	{
 		g_tfEdt.setVisible(
 			(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))

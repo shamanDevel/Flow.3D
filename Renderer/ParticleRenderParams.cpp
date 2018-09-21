@@ -173,15 +173,15 @@ void ParticleRenderParams::Reset()
 {
 	m_linesEnabled = true;
 
-	m_lineRenderMode = LINE_RENDER_PARTICLES;
+	m_lineRenderMode = eLineRenderMode::LINE_RENDER_TUBE;
 	m_ribbonWidth = 0.8f;
-	m_tubeRadius = 0.4f;
+	m_tubeRadius = 0.1f;
 
 	m_particleRenderMode = PARTICLE_RENDER_ALPHA;
 	m_particleTransparency = 0.3f;
 	m_particleSize = 0.5f;
 
-	m_tubeRadiusFromVelocity = true;
+	m_tubeRadiusFromVelocity = false;
 	m_referenceVelocity = 1.5f;
 
 	m_lineColorMode = eLineColorMode::LINE_ID;
@@ -201,8 +201,8 @@ void ParticleRenderParams::Reset()
 
 	m_pSliceTexture = NULL;
 	m_showSlice = false;
-	m_slicePosition = 0;
-	m_sliceAlpha = 0.5f;
+	m_slicePosition = -0.041;
+	m_sliceAlpha = 0.7f;
 
 	m_sortParticles = true;
 
