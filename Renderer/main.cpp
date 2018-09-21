@@ -1492,7 +1492,9 @@ void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
 		TwDefine("Main/LineCount readonly=true");
 		TwDefine("Main/LineMode readonly=true");
 		TwDefine("Main/LineLengthMax readonly=true");
-		g_particleTraceParams.m_lineMode = LINE_PATH_FTLE;
+		TwDefine("Main/LineLengthMax readonly=true");
+		TwDefine("Main/SeedingPattern readonly=true"); 
+		g_particleTraceParams.m_lineMode = eLineMode::LINE_PATH_FTLE;
 		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
 		g_particleTraceParams.m_lineLengthMax = 2;
 		g_particleTraceParams.m_lineAgeMax = 0.1f;
@@ -1500,10 +1502,12 @@ void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
 	}
 	else
 	{
+		g_particleTraceParams.m_lineMode = eLineMode::LINE_STREAM;
 		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
 		TwDefine("Main/LineCount readonly=false");
 		TwDefine("Main/LineMode readonly=false");
 		TwDefine("Main/LineLengthMax readonly=false");
+		TwDefine("Main/SeedingPattern readonly=false");
 	}
 }
 
@@ -1531,6 +1535,14 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwInit(TW_DIRECT3D11, pDevice);
 
 	TwDefine("GLOBAL iconpos=bottomleft iconalign=horizontal");
+
+
+	std::ostringstream strSeedingPatterns;
+	strSeedingPatterns << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(0));
+	for (uint i = 1; i < ParticleTraceParams::eSeedPattern::COUNT; i++)
+		strSeedingPatterns << "," << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(i));
+	TwType twSeedingPaterns = TwDefineEnumFromString("EnumSeedingPatterns", strSeedingPatterns.str().c_str());
+
 
 	std::ostringstream strFilterModes;
 	strFilterModes << GetTextureFilterModeName(eTextureFilterMode(0));
@@ -1609,7 +1621,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	g_pTwBarMain = TwNewBar("Main");
 	std::ostringstream ss;
 	int iHeight = max(static_cast<int>(uiBBHeight)-40, 200);
-	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light valueswidth=100";
+	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light valueswidth=100 alpha=235 color='175 175 175'";
 	TwDefine(ss.str().c_str());
 
 	// "global" params: data set and timestep
@@ -1689,7 +1701,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceZ", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.z(), "label='Z' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
 	TwDefine("Main/FTLESeparationDistance label='Separation Distance' group=FTLE opened=false");
 
-	
+	TwDefine("Main/FTLE label='FTLE' opened=false");
 
 	// particle params
 	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
@@ -1711,6 +1723,8 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeZ",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.z(),	"label='Z' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
 	TwDefine("Main/SeedBoxSize label='Seed Box Size' group=ParticleTrace opened=false");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
+	
+	TwAddVarRW(g_pTwBarMain, "SeedingPattern",  twSeedingPaterns,	&g_particleTraceParams.m_seedPattern,		"label='Seeding Pattern' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "AdvectMode",		twAdvectMode,		&g_particleTraceParams.m_advectMode,		"label='Advection' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "DenseOutput",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enableDenseOutput,	"label='Dense Output' group=ParticleTrace");
 	TwAddVarRW(g_pTwBarMain, "TraceInterpol",	twFilterMode,		&g_particleTraceParams.m_filterMode,		"label='Interpolation' group=ParticleTrace");
@@ -1776,7 +1790,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddButton(g_pTwBarMain, "LoadFlowGraph", LoadFlowGraphCallback, nullptr, "label='Load Flow Graph' group=ParticleTraceIO");
 	TwDefine("Main/ParticleTraceIO label='Extra IO' group=ParticleTrace opened=false");
 
-	TwDefine("Main/ParticleTrace label='Particle Tracing'");
+	TwDefine("Main/ParticleTrace label='Particle Tracing' opened=false");
 
 	//Rendering
 
@@ -1798,7 +1812,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "Color1",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color1,			"label='Color 1' group=ParticleRender");
 	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice,                                    "label='Load Color Texture' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "RenderMeasure",   twMeasureMode,      &g_particleRenderParams.m_measure,          "label='Measure' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "RenderMeasureScale", TW_TYPE_FLOAT,	&g_particleRenderParams.m_measureScale,		"label='Measure Scale' step=0.01 min=0 precision=6 group=ParticleRender");
+	TwAddVarRW(g_pTwBarMain, "RenderMeasureScale", TW_TYPE_FLOAT,	&g_particleRenderParams.m_measureScale,		"label='Measure Scale' step=0.01 precision=6 group=ParticleRender");
 	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripes",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_timeStripes,		"label='Time Stripes' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "TimeStripeLength",TW_TYPE_FLOAT,		&g_particleRenderParams.m_timeStripeLength,	"label='Time Stripe Length' min=0.001 step=0.001 group=ParticleRender");
@@ -1807,7 +1821,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.001 group=ParticleRender");
 	TwAddVarRW(g_pTwBarMain, "SliceAlpha",      TW_TYPE_FLOAT,      &g_particleRenderParams.m_sliceAlpha,       "label='Slice Transparency' step=0.01 min=0 max=1 group=ParticleRender");
-	TwDefine("Main/ParticleRender label='Rendering'");
+	TwDefine("Main/ParticleRender label='Rendering' opened=false");
 
 	// Heat Map
 	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRecording", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRecording,
@@ -1836,10 +1850,11 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "HeatMap_Isovalue", TW_TYPE_FLOAT, &g_heatMapParams.m_isovalue,
 		"label='Isovalue' min=0 max=1 step=0.001 group='Heat Map'");
 
+	TwDefine("Main/'Heat Map' label='Heat Map' opened=false");
+
 	// bounding boxes
 	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
 	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)' group=MiscRendering");
-
 
 	// view params
 	TwAddSeparator(g_pTwBarMain, "", "");

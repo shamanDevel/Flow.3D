@@ -8,6 +8,9 @@ using namespace tum3D;
 ViewParams::ViewParams()
 {
 	Reset();
+
+	m_lookAt = tum3D::Vec3f(0.3f, -0.72f, 0.0f);
+	m_viewDistance = 1.3f;
 }
 
 void ViewParams::Reset()

@@ -34,8 +34,10 @@ ParticleTraceParams::ParticleTraceParams()
 
 void ParticleTraceParams::Reset()
 {
-	m_seedBoxMin    = Vec3f(-0.2f, -0.2f, -0.2f);
-	m_seedBoxSize   = Vec3f( 0.4f,  0.4f,  0.4f);
+	//m_seedBoxMin    = Vec3f(-0.2f, -0.2f, -0.2f);
+	//m_seedBoxSize   = Vec3f( 0.4f,  0.4f,  0.4f);
+	m_seedBoxMin = Vec3f(0.24f, -1.0f, -0.039f);
+	m_seedBoxSize = Vec3f(0.07f, 0.47f, 0.078f);
 
 	m_advectMode        = ADVECT_RK547M;
 	m_enableDenseOutput = true;
@@ -273,6 +275,21 @@ void ParticleTraceParams::ScaleSeedBox(const Vec3f& scaling)
 	m_seedBoxMin = (center - 0.5f * sizeNew);
 }
 
+
+std::string ParticleTraceParams::GetSeedPatternName(int i)
+{
+	static const std::string seedpatternNames[eSeedPattern::COUNT] =
+	{
+		"Random",
+		"Regular Grid",
+		"FTLE",
+	};
+
+	if (i >= eSeedPattern::COUNT)
+		return std::string("");
+
+	return seedpatternNames[i];
+}
 
 bool ParticleTraceParams::hasChangesForRetracing(const ParticleTraceParams & old) const
 {

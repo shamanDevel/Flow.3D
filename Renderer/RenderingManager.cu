@@ -1853,6 +1853,8 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 
 	ftle *= 0.01;
 
+	//ftle = currTime;
+
 	y = height - 1 - y;
 
 	// get a pointer to the pixel at (x,y)

@@ -57,11 +57,14 @@ struct ParticleTraceParams
 	uint m_ftleResolution;
 	float m_ftleSliceY;
 
+
+	static std::string GetSeedPatternName(int i);
 	enum eSeedPattern
 	{
 		RANDOM = 0,
 		REGULAR_GRID,
-		FTLE = 0xFFFFFFFF
+		FTLE,
+		COUNT
 	};
 	eSeedPattern m_seedPattern;
 
