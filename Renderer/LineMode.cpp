@@ -41,6 +41,8 @@ bool LineModeIsTimeDependent(eLineMode mode)
 			return false;
 
 		case LINE_PATH_FTLE:
+			return false;
+		
 		case LINE_PATH:
 			return true;
 
