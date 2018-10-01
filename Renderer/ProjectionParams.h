@@ -16,6 +16,7 @@ struct ProjectionParams
 
 	void Reset();
 
+	bool	 m_perspective;
 	float    m_aspectRatio;
 	float    m_fovy;
 	float    m_near;

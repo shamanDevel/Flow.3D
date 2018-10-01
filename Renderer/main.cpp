@@ -1541,6 +1541,23 @@ void TW_CALL CBGetInvertVelocity(void *value, void *clientData)
 }
 
 
+void TW_CALL CBSetPerspective(const void *value, void *clientData)
+{
+	g_projParams.m_perspective = *reinterpret_cast<const bool*>(value);
+
+	if (g_projParams.m_perspective)
+		g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
+	else
+		g_projParams.m_fovy = 3.1f;
+}
+
+void TW_CALL CBGetPerspecive(void *value, void *clientData)
+{
+	*reinterpret_cast<bool*>(value) = g_projParams.m_perspective;
+}
+
+
+
 
 void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 {
@@ -1877,6 +1894,13 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	// view params
 	TwAddSeparator(g_pTwBarMain, "", "");
 	TwAddVarRW(g_pTwBarMain, "Supersample",		TW_TYPE_FLOAT,		&g_renderBufferSizeFactor,		"label='SuperSample Factor' min=0.5 max=8 step=0.5 group=MiscRendering");
+
+	//TwAddVarRW(g_pTwBarMain, "Perspective",		TW_TYPE_BOOLCPP, &g_projParams.m_perspective, "label='Perspective' group=MiscRendering");
+	TwAddVarCB(g_pTwBarMain, "Perspective",		TW_TYPE_BOOLCPP, CBSetPerspective, CBGetPerspecive, nullptr, "label='Perspective' group=MiscRendering");
+	
+	//TwAddVarRW(g_pTwBarMain, "AspectRatio",		TW_TYPE_FLOAT,		&g_projParams.m_aspectRatio,	"label='Aspect Ratio' min=0 step=0.01 group=MiscRendering");
+	TwAddVarRW(g_pTwBarMain, "FoVY",			TW_TYPE_FLOAT,		&g_projParams.m_fovy,			"label='FoVY' min=0 step=0.01 group=MiscRendering");
+
 	TwAddVarRW(g_pTwBarMain, "LookAtX",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.x(),		"label='X' group=LookAt");
 	TwAddVarRW(g_pTwBarMain, "LookAtY",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.y(),		"label='Y' group=LookAt");
 	TwAddVarRW(g_pTwBarMain, "LookAtZ",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.z(),		"label='Z' group=LookAt");

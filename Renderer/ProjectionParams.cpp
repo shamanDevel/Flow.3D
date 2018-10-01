@@ -16,6 +16,7 @@ void ProjectionParams::Reset()
 	m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
 	m_near = 0.01f; //0.7f;
 	m_far = 100.0f;
+	m_perspective = true;
 
 	m_imageWidth = 0;
 	m_imageHeight = 0;
@@ -114,8 +115,13 @@ Mat4f ProjectionParams::BuildProjectionMatrix(EStereoEye eye, float eyeDistance,
 {
 	float frustum[6];
 	GetFrustumParams(frustum, eye, eyeDistance, range);
+
 	Mat4f proj;
-	perspectiveOffCenterProjMatD3D(frustum[0], frustum[1], frustum[2], frustum[3], frustum[4], frustum[5], proj);
+	if (m_perspective)
+		perspectiveOffCenterProjMatD3D(frustum[0], frustum[1], frustum[2], frustum[3], frustum[4], frustum[5], proj);
+	else
+		orthoOffCenterProjMatD3D(frustum[0], frustum[1], frustum[2], frustum[3], frustum[4], frustum[5], proj);
+
 	return proj;
 }
 
