@@ -56,6 +56,7 @@ struct ParticleTraceParams
 	tum3D::Vec3f m_ftleSeparationDistance;
 	uint m_ftleResolution;
 	float m_ftleSliceY;
+	bool m_ftleInvertVelocity;
 
 
 	static std::string GetSeedPatternName(int i);

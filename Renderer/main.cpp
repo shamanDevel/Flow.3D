@@ -1530,6 +1530,18 @@ void TW_CALL CBGetFTLEResolution(void *value, void *clientData)
 }
 
 
+void TW_CALL CBSetInvertVelocity(const void *value, void *clientData)
+{
+	g_particleTraceParams.m_ftleInvertVelocity = *reinterpret_cast<const bool*>(value);
+}
+
+void TW_CALL CBGetInvertVelocity(void *value, void *clientData)
+{
+	*reinterpret_cast<bool*>(value) = g_particleTraceParams.m_ftleInvertVelocity;
+}
+
+
+
 void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 {
 	TwInit(TW_DIRECT3D11, pDevice);
@@ -1691,6 +1703,10 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	// FTLE
 	TwAddVarCB(g_pTwBarMain, "FTLEEnabled", TW_TYPE_BOOLCPP, CBSetFTLEEnabled, CBGetFTLEEnabled, nullptr, "label='Enabled' group=FTLE");
 
+	TwAddVarRW(g_pTwBarMain, "FTLEScale", TW_TYPE_FLOAT, &g_renderingManager.m_ftleScale, "label='Scale' step=0.01 group=FTLE");
+
+	TwAddVarCB(g_pTwBarMain, "InvertVelocity", TW_TYPE_BOOLCPP, CBSetInvertVelocity, CBGetInvertVelocity, nullptr, "label='Invert velocity' group=FTLE");
+
 	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
 
 	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=4 group=FTLE");
@@ -1702,6 +1718,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwDefine("Main/FTLESeparationDistance label='Separation Distance' group=FTLE opened=false");
 
 	TwDefine("Main/FTLE label='FTLE' opened=false");
+
 
 	// particle params
 	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
@@ -1768,6 +1785,7 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwAddVarRW(g_pTwBarMain, "OutputPosDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputPosDiff,		"label='Output Pos Diff (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "OutputTimeDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputTimeDiff,	"label='Output Time Diff' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "WaitForDisk",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_waitForDisk,		"label='Wait for Disk' group=ParticleTraceAdvanced");
+
 	TwAddVarRW(g_pTwBarMain, "Prefetching",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enablePrefetching,	"label='Prefetching' group=ParticleTraceAdvanced");
 	TwAddVarRW(g_pTwBarMain, "UpsampledVolume",	TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_upsampledVolumeHack,"label='Upsampled Volume Hack' group=ParticleTraceAdvanced");
 	TwDefine("Main/ParticleTraceAdvanced label='Advanced Settings' group=ParticleTrace opened=false");

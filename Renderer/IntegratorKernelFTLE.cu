@@ -219,7 +219,7 @@ __global__ void computePathFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, u
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint particleCount)
+__global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, bool invertVelocity)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -256,7 +256,8 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 	//float4 vel4 = sampleVolume<filterMode, float4, float4>(g_texVolume1, w2t(vertex.Position));
 	//vertex.Velocity = c_volumeInfo.velocityScale * make_float3(vel4.x, vel4.y, vel4.z);
 
-	float3 velocity = c_volumeInfo.velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
+	float3 velocityScale = (invertVelocity ? -1.0 : 1.0) * c_volumeInfo.velocityScale;
+	float3 velocity = velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
 
 	//vertex.LineID = lineIndex;
 
@@ -309,7 +310,7 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 															vertex.Position, vertex.Time, velocity,
 															deltaTime,
 															world2texOffset, world2texScale,
-															c_volumeInfo.velocityScale);
+															velocityScale);
 
 		++step;
 		if (stepAccepted)
@@ -369,7 +370,7 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 				{
 					// semi-HACK: update velocity from new brick (can be different to previous one because of lossy compression)
 					//            this avoids excessively small time steps at some brick boundaries
-					velocity = c_volumeInfo.velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
+					velocity = velocityScale * sampleVolume<filterMode, float4, float3>(g_texVolume1, w2t(vertex.Position));
 				}
 			}
 		}
@@ -410,12 +411,12 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode)
+void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode, bool invertVelocity)
 {
 	uint blockSize = 128;
 	uint blockCount = (particleCount + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) computeStreamFTLEKernel <advect, filter> <<<blockCount, blockSize>>> (dpParticles, particleCount)
+#define INTEGRATE(advect, filter) computeStreamFTLEKernel <advect, filter> <<<blockCount, blockSize>>> (dpParticles, particleCount, invertVelocity)
 
 	ADVECT_SWITCH;
 	cudaCheckMsg("integratePathLinesKernel execution failed");

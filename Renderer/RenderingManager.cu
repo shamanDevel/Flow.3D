@@ -1794,7 +1794,7 @@ __device__ float LambdaMax(const float3x3 &m)
 	return maxRoot(a2, a1, a0);
 }
 
-__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float spawnTime, SimpleParticleVertexDeltaT* dpParticles, uint particleCount)
+__global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height, size_t pitch, float3 separationDist, float spawnTime, SimpleParticleVertexDeltaT* dpParticles, uint particleCount, float scale)
 {
 	int x = blockIdx.x*blockDim.x + threadIdx.x;
 	int y = blockIdx.y*blockDim.y + threadIdx.y;
@@ -1851,7 +1851,7 @@ __global__ void ComputeFTLEKernel(unsigned char *surface, int width, int height,
 	if(dt > 0)
 		ftle = 1.0 / dt * log(sqrt(Lmax));
 
-	ftle *= 0.01;
+	ftle *= scale;
 
 	//ftle = currTime;
 
@@ -1935,7 +1935,7 @@ void RenderingManager::ComputeFTLE(SimpleParticleVertexDeltaT* dpParticles)
 
 	float3 separationDist = make_float3(m_particleTraceParams.m_ftleSeparationDistance.x(), m_particleTraceParams.m_ftleSeparationDistance.y(), m_particleTraceParams.m_ftleSeparationDistance.z());
 
-	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, m_pVolume->GetCurTime(), dpParticles, m_particleTraceParams.m_lineCount);
+	ComputeFTLEKernel << <Dg, Db >> >((unsigned char*)m_ftleTexture.cudaLinearMemory, width, height, m_ftleTexture.pitch, separationDist, m_pVolume->GetCurTime(), dpParticles, m_particleTraceParams.m_lineCount, m_ftleScale);
 
 	error = cudaGetLastError();
 

@@ -110,6 +110,7 @@ public:
 	bool WriteCurTimestepToLA3Ds(TimeVolume& volume, const std::vector<std::string>& filenames);
 
 	D3D11CudaTexture	m_ftleTexture;
+	float				m_ftleScale = 0.02f;
 
 private:
 	HRESULT CreateScreenDependentResources();

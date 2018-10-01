@@ -14,7 +14,7 @@ void integratorKernelSimpleParticles(SimpleParticleVertex* dpParticles, uint par
 void integratorKernelStreamLines(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
 void integratorKernelPathLines  (const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
 //void integratorKernelComputeFTLE(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
-void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode);
+void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode, bool invertVelocity);
 void integratorKernelStreamLinesDense(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
 
 

@@ -191,7 +191,6 @@ public:
 
 
 	// ***** Setter / Getter *****
-
 	const TimeVolumeInfo& GetInfo() const { return m_info; }
 
 	const Vec3i& GetVolumeSize() const { return m_info.GetVolumeSize(); }

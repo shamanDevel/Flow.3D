@@ -170,7 +170,7 @@ void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lin
 			integratorKernelPathLines(lineInfo, params.m_advectMode, params.m_filterMode);
 			break;
 		case LINE_PATH_FTLE:
-			integratorKernelComputeFTLE(dpParticles, params.m_lineCount, params.m_advectMode, params.m_filterMode);
+			integratorKernelComputeFTLE(dpParticles, params.m_lineCount, params.m_advectMode, params.m_filterMode, params.m_ftleInvertVelocity);
 			break;
 		}
 	}
