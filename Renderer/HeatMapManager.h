@@ -7,7 +7,7 @@
 #include <cuda_d3d11_interop.h>
 #include <D3D11.h>
 #include <D3DX11Effect/d3dx11effect.h>
-#include <AntTweakBar\AntTweakBar.h>
+//#include <AntTweakBar\AntTweakBar.h>
 
 #include "ProjectionParams.h"
 #include "Range.h"

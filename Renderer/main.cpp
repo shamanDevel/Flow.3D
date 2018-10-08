@@ -8,13 +8,15 @@
 #include <vector>
 #include <iostream>
 
+#include <tchar.h>
+
 #include <omp.h>
 
 #include <cuda_runtime.h>
 #include <cuda_d3d11_interop.h>
 #include <cuda_profiler_api.h>
 
-#include <AntTweakBar/AntTweakBar.h>
+//#include <AntTweakBar/AntTweakBar.h>
 #include <D3DX11Effect/d3dx11effect.h>
 
 #include <cudaCompress/Instance.h>
@@ -26,7 +28,7 @@
 
 #include "TransferFunctionEditor/TransferFunctionEditor.h"
 
-#include "DXUT.h"
+//#include "DXUT.h"
 #include <WICTextureLoader.h>
 
 #include "stb_image_write.h"
@@ -60,6 +62,12 @@
 
 #include "FlowGraph.h"
 
+
+#include <imgui.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx11.h>
+
+
 //#include "TracingBenchmark.h"
 //#if 0
 //#include <vld.h>
@@ -68,6 +76,11 @@
 using namespace tum3D;
 
 #pragma region Definitions
+
+// ImGui stuff
+#ifndef WM_DPICHANGED
+#define WM_DPICHANGED 0x02E0 // From Windows SDK 8.1+ headers
+#endif
 
 struct MyCudaDevice
 {
@@ -136,6 +149,15 @@ struct BatchTrace
 #pragma endregion
 
 #pragma region GlobalVariables
+
+static WNDCLASSEX				g_wc;
+static HWND						g_hwnd;
+static ID3D11Device*            g_pd3dDevice = NULL;
+static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
+static IDXGISwapChain*          g_pSwapChain = NULL;
+static ID3D11RenderTargetView*  g_mainRenderTargetView = NULL;
+static ID3D11DepthStencilView*	g_mainDepthStencilView = NULL;
+static ID3D11Texture2D*			g_pDepthStencil = NULL;
 
 Vec2i            g_windowSize(0, 0);
 float            g_renderBufferSizeFactor = 2.0f;
@@ -226,9 +248,9 @@ bool g_saveRenderBufferScreenshot = false;
 
 // GUI
 bool   g_bRenderUI = true;
-TwBar* g_pTwBarMain = nullptr;
-TwBar* g_pTwBarImageSequence = nullptr;
-TwBar* g_pTwBarBatchTrace = nullptr;
+//TwBar* g_pTwBarMain = nullptr;
+//TwBar* g_pTwBarImageSequence = nullptr;
+//TwBar* g_pTwBarBatchTrace = nullptr;
 
 clock_t	g_lastRenderParamsUpdate = 0;
 clock_t	g_lastTraceParamsUpdate = 0;
@@ -242,8 +264,7 @@ uint g_guiFilterRadius[3] = { 0, 0, 0 };
 const int				TF_LINE_MEASURES = 0;
 const int				TF_HEAT_MAP = 1;
 const int				TF_RAYTRACE = 2;
-TransferFunctionEditor  g_tfEdt(400, 250, std::vector<std::string>(
-	{"Measures", "HeatMap", "Raytrace"}));
+//TransferFunctionEditor  g_tfEdt(400, 250, std::vector<std::string>( {"Measures", "HeatMap", "Raytrace"} ));
 int                     g_tfTimestamp = -1;
 cudaGraphicsResource*   g_pTfEdtSRVCuda = nullptr;
 
@@ -344,16 +365,16 @@ bool LoadRenderingParams(const std::string& filename)
 	}
 
 	// forward params to tf editor
-	g_tfEdt.setAlphaScale(TF_RAYTRACE, g_raycastParams.m_alphaScale);
-	g_tfEdt.setTfRangeMin(TF_RAYTRACE, g_raycastParams.m_transferFunctionRangeMin);
-	g_tfEdt.setTfRangeMax(TF_RAYTRACE, g_raycastParams.m_transferFunctionRangeMax);
+	//g_tfEdt.setAlphaScale(TF_RAYTRACE, g_raycastParams.m_alphaScale);
+	//g_tfEdt.setTfRangeMin(TF_RAYTRACE, g_raycastParams.m_transferFunctionRangeMin);
+	//g_tfEdt.setTfRangeMax(TF_RAYTRACE, g_raycastParams.m_transferFunctionRangeMax);
 
 	// load transfer function from separate binary file
-	std::ifstream fileTF(filename + ".tf", std::ios_base::binary);
-	if(fileTF.good()) {
-		g_tfEdt.loadTransferFunction(TF_RAYTRACE, &fileTF);
-		fileTF.close();
-	}
+	//std::ifstream fileTF(filename + ".tf", std::ios_base::binary);
+	//if(fileTF.good()) {
+	//	g_tfEdt.loadTransferFunction(TF_RAYTRACE, &fileTF);
+	//	fileTF.close();
+	//}
 
 	// resize window if necessary
 	if(windowSizeNew != g_windowSize)
@@ -361,11 +382,11 @@ bool LoadRenderingParams(const std::string& filename)
 		g_windowSize = windowSizeNew;
 
 		// SetWindowPos wants the total size including borders, so determine how large they are...
-		RECT oldWindowRect; GetWindowRect(DXUTGetHWND(), &oldWindowRect);
-		RECT oldClientRect; GetClientRect(DXUTGetHWND(), &oldClientRect);
+		RECT oldWindowRect; GetWindowRect(g_hwnd, &oldWindowRect);
+		RECT oldClientRect; GetClientRect(g_hwnd, &oldClientRect);
 		uint borderX = (oldWindowRect.right - oldWindowRect.left) - (oldClientRect.right - oldClientRect.left);
 		uint borderY = (oldWindowRect.bottom - oldWindowRect.top) - (oldClientRect.bottom - oldClientRect.top);
-		SetWindowPos(DXUTGetHWND(), HWND_TOP, 0, 0, g_windowSize.x() + borderX, g_windowSize.y() + borderY, SWP_NOMOVE);
+		SetWindowPos(g_hwnd, HWND_TOP, 0, 0, g_windowSize.x() + borderX, g_windowSize.y() + borderY, SWP_NOMOVE);
 	}
 
 	return true;
@@ -397,7 +418,7 @@ bool SaveRenderingParams(const std::string& filename)
 	config.Write(filename);
 
 	std::ofstream fileTF(filename + ".tf", std::ios_base::binary);
-	g_tfEdt.saveTransferFunction(TF_RAYTRACE, &fileTF);
+	//g_tfEdt.saveTransferFunction(TF_RAYTRACE, &fileTF);
 	fileTF.close();
 
 	return true;
@@ -570,9 +591,9 @@ bool OpenVolumeFile(const std::string& filename, ID3D11Device* pDevice)
 	int32 timestepMax = g_volume.GetTimestepCount() - 1;
 	float timeSpacing = g_volume.GetTimeSpacing();
 	float timeMax = timeSpacing * float(timestepMax);
-	TwSetParam(g_pTwBarMain, "Time", "max", TW_PARAM_FLOAT, 1, &timeMax);
-	TwSetParam(g_pTwBarMain, "Time", "step", TW_PARAM_FLOAT, 1, &timeSpacing);
-	TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &timestepMax);
+	//TwSetParam(g_pTwBarMain, "Time", "max", TW_PARAM_FLOAT, 1, &timeMax);
+	//TwSetParam(g_pTwBarMain, "Time", "step", TW_PARAM_FLOAT, 1, &timeSpacing);
+	//TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &timestepMax);
 
 
 	g_volume.SetCurTime(0.0f);
@@ -827,1167 +848,1167 @@ void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4
 
 #pragma region GUI
 
-void TW_CALL Redraw(void *clientData)
-{
-	g_redraw = true;
-}
-
-void TW_CALL Retrace(void *clientData)
-{
-	g_retrace = true;
-}
-
-void TW_CALL SetBoundingBoxToDomainSize(void *clientData)
-{
-	g_particleTraceParams.m_seedBoxMin = -g_volume.GetVolumeHalfSizeWorld();
-	g_particleTraceParams.m_seedBoxSize = 2 * g_volume.GetVolumeHalfSizeWorld();
-}
-
-
-void TW_CALL SetTime(const void *value, void *clientData)
-{
-	float timeNew = *reinterpret_cast<const float*>(value);
-	g_volume.SetCurTime(timeNew);
-}
-
-void TW_CALL GetTime(void *value, void *clientData)
-{
-	*reinterpret_cast<float*>(value) = g_volume.GetCurTime();
-}
-
-void TW_CALL SetTimestepIndex(const void *value, void *clientData)
-{
-	int32 timestepNew = *reinterpret_cast<const int32*>(value);
-	float timeNew = float(timestepNew) * g_volume.GetTimeSpacing();
-	g_volume.SetCurTime(timeNew);
-}
-
-void TW_CALL GetTimestepIndex(void *value, void *clientData)
-{
-	*reinterpret_cast<uint*>(value) = g_volume.GetCurNearestTimestepIndex();
-}
-
-void TW_CALL SetTimeSpacing(const void *value, void *clientData)
-{
-	float timeSpacingNew = *reinterpret_cast<const float*>(value);
-	g_volume.SetTimeSpacing(timeSpacingNew);
-}
-
-void TW_CALL GetTimeSpacing(void *value, void *clientData)
-{
-	*reinterpret_cast<float*>(value) = g_volume.GetTimeSpacing();
-}
-
-
-void TW_CALL SelectFile(void *clientData)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Select TimeVolume file", "TimeVolume (*.timevol)\0*.timevol\0", filename, false))
-	{
-		CloseVolumeFile();
-		OpenVolumeFile(filename, DXUTGetD3D11Device());
-	}
-}
-
-void TW_CALL LoadTimestepCallback(void *clientData)
-{
-	printf("Loading timestep...");
-	TimerCPU timer;
-	timer.Start();
-	g_volume.LoadNearestTimestep();
-	timer.Stop();
-	printf(" done in %.2f s\n", timer.GetElapsedTimeMS() / 1000.0f);
-}
-
-void TW_CALL SelectOutputRawFile(void *clientData)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Select output file", "Raw (*.raw)\0*.raw\0", filename, true))
-	{
-		// remove extension
-		if(filename.substr(filename.size() - 4) == ".raw")
-		{
-			filename = filename.substr(0, filename.size() - 4);
-		}
-		std::vector<std::string> filenames;
-		for(int c = 0; c < g_volume.GetChannelCount(); c++)
-		{
-			std::ostringstream str;
-			str << filename << char('X' + c) << ".raw";
-			filenames.push_back(str.str());
-		}
-		g_renderingManager.WriteCurTimestepToRaws(g_volume, filenames);
-	}
-}
-
-void TW_CALL SelectOutputLA3DFile(void *clientData)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Select output file", "LargeArray3D (*.la3d)\0*.la3d\0", filename, true))
-	{
-		// remove extension
-		if(filename.substr(filename.size() - 5) == ".la3d")
-		{
-			filename = filename.substr(0, filename.size() - 5);
-		}
-		std::vector<std::string> filenames;
-		for(int c = 0; c < g_volume.GetChannelCount(); c++)
-		{
-			std::ostringstream str;
-			str << filename << char('X' + c) << ".la3d";
-			filenames.push_back(str.str());
-		}
-		g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames);
-	}
-}
-
-
-void TW_CALL ResetView(void *clientData)
-{
-	g_viewParams.Reset();
-	g_rotationX = Vec4f(1, 0, 0, 0);
-	g_rotationY = Vec4f(1, 0, 0, 0);
-	g_rotation = Vec4f(1, 0, 0, 0);
-}
-
-
-void TW_CALL SetMeasure1(const void *value, void *clientData)
-{
-	g_raycastParams.m_measure1 = *reinterpret_cast<const eMeasure*>(value);
-	g_raycastParams.m_measureScale1 = GetDefaultMeasureScale(g_raycastParams.m_measure1);
-}
-
-void TW_CALL GetMeasure1(void *value, void *clientData)
-{
-	*reinterpret_cast<eMeasure*>(value) = g_raycastParams.m_measure1;
-}
-
-
-void TW_CALL SetMeasure2(const void *value, void *clientData)
-{
-	g_raycastParams.m_measure2 = *reinterpret_cast<const eMeasure*>(value);
-	g_raycastParams.m_measureScale2 = GetDefaultMeasureScale(g_raycastParams.m_measure2);
-}
-
-void TW_CALL GetMeasure2(void *value, void *clientData)
-{
-	*reinterpret_cast<eMeasure*>(value) = g_raycastParams.m_measure2;
-}
-
-
-void TW_CALL SetTwColorMode(const void *value, void *clientData)
-{
-	g_raycastParams.m_colorMode = *reinterpret_cast<const eColorMode*>(value);
-}
-
-
-void TW_CALL GetTwColorMode(void *value, void *clientData)
-{
-	*reinterpret_cast<eColorMode*>(value) = g_raycastParams.m_colorMode;
-}
-
-
-void UpdateFilterRadii()
-{
-	g_filterParams.m_radius.clear();
-	for(uint i = 0; i < 3; i++)
-	{
-		g_filterParams.m_radius.push_back(g_guiFilterRadius[i]);
-	}
-}
-
-void TW_CALL SetFilterRadius1(const void *value, void *clientData)
-{
-	g_guiFilterRadius[0] = *reinterpret_cast<const uint*>(value);
-	UpdateFilterRadii();
-}
-
-void TW_CALL GetFilterRadius1(void *value, void *clientData)
-{
-	*reinterpret_cast<uint*>(value) = g_guiFilterRadius[0];
-}
-
-void TW_CALL SetFilterRadius2(const void *value, void *clientData)
-{
-	g_guiFilterRadius[1] = *reinterpret_cast<const uint*>(value);
-	UpdateFilterRadii();
-}
-
-void TW_CALL GetFilterRadius2(void *value, void *clientData)
-{
-	*reinterpret_cast<uint*>(value) = g_guiFilterRadius[1];
-}
-
-void TW_CALL SetFilterRadius3(const void *value, void *clientData)
-{
-	g_guiFilterRadius[2] = *reinterpret_cast<const uint*>(value);
-	UpdateFilterRadii();
-}
-
-void TW_CALL GetFilterRadius3(void *value, void *clientData)
-{
-	*reinterpret_cast<uint*>(value) = g_guiFilterRadius[2];
-}
-
-
-void TW_CALL SaveLinesDialog(void *clientData)
-{
-	bool bFullscreen = (!DXUTIsWindowed());
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Save Lines", "*.linebuf\0*.linebuf", filename, true)) 
-	{
-		filename = tum3d::RemoveExt(filename) + ".linebuf";
-		float posOffset = 0.0f;
-		if(g_particleTraceParams.m_upsampledVolumeHack)
-		{
-			// upsampled volume is offset by half a grid spacing...
-			float gridSpacingWorld = 2.0f / float(g_volume.GetVolumeSize().maximum());
-			posOffset = 0.5f * gridSpacingWorld;
-		}
-		if(!g_tracingManager.GetResult()->Write(filename, posOffset))
-		{
-			printf("Saving lines to file %s failed!\n", filename.c_str());
-		}
-	}
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-}
-
-void TW_CALL LoadLinesDialog(void *clientData)
-{
-	bool bFullscreen = (!DXUTIsWindowed());
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Lines", "*.linebuf\0*.linebuf", filename, false))
-	{
-		LineBuffers* pBuffers = new LineBuffers(DXUTGetD3D11Device());
-		if(!pBuffers->Read(filename, g_lineIDOverride))
-		{
-			printf("Loading lines from file %s failed!\n", filename.c_str());
-			delete pBuffers;
-		}
-		else
-		{
-			g_lineBuffers.push_back(pBuffers);
-		}
-	}
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	g_redraw = true;
-}
-
-void TW_CALL ClearLinesCallback(void *clientData)
-{
-	ReleaseLineBuffers();
-	g_redraw = true;
-}
-
-void TW_CALL LoadBallsDialog(void *clientData)
-{
-	bool bFullscreen = (!DXUTIsWindowed());
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Balls", "*.*\0*.*", filename, false))
-	{
-		BallBuffers* pBuffers = new BallBuffers(DXUTGetD3D11Device());
-		if(!pBuffers->Read(filename))
-		{
-			printf("Loading balls from file %s failed!\n", filename.c_str());
-			delete pBuffers;
-		}
-		else
-		{
-			g_ballBuffers.push_back(pBuffers);
-		}
-	}
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	g_redraw = true;
-}
-
-void TW_CALL ClearBallsCallback(void *clientData)
-{
-	ReleaseBallBuffers();
-	g_redraw = true;
-}
-
-
-void TW_CALL SetRotation(const void *value, void *clientData)
-{
-	const float* pRotationNew = reinterpret_cast<const float*>(value);
-	g_viewParams.m_rotationQuat.set(pRotationNew[3], pRotationNew[0], pRotationNew[1], pRotationNew[2]);
-}
-
-void TW_CALL GetRotation(void *value, void *clientData)
-{
-	reinterpret_cast<float*>(value)[0] = g_viewParams.m_rotationQuat.y();
-	reinterpret_cast<float*>(value)[1] = g_viewParams.m_rotationQuat.z();
-	reinterpret_cast<float*>(value)[2] = g_viewParams.m_rotationQuat.w();
-	reinterpret_cast<float*>(value)[3] = g_viewParams.m_rotationQuat.x();
-}
-
-
-void TW_CALL SaveScreenshot(void *clientData)
-{
-	g_saveScreenshot = true;
-}
-
-void TW_CALL SaveRenderBufferScreenshot(void *clientData)
-{
-	g_saveRenderBufferScreenshot = true;
-}
-
-
-void TW_CALL SaveRenderingParamsDialog(void *clientData)
-{
-	bool bFullscreen = (!DXUTIsWindowed());
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	std::string filename;
-	if ( tum3d::GetFilenameDialog("Save Settings", "*.cfg\0*.cfg", filename, true) ) 
-	{
-		filename = tum3d::RemoveExt(filename) + ".cfg";
-		SaveRenderingParams( filename );
-	}
-	
-	if( bFullscreen ) DXUTToggleFullScreen();
-}
-
-void TW_CALL LoadRenderingParamsDialog(void *clientData)
-{
-	bool bFullscreen = (!DXUTIsWindowed());
-
-	if( bFullscreen ) DXUTToggleFullScreen();
-
-	std::string filename;
-	if ( tum3d::GetFilenameDialog("Load Settings", "*.cfg\0*.cfg", filename, false) ) 
-		LoadRenderingParams( filename );
-
-	if( bFullscreen ) DXUTToggleFullScreen();	
-}
-
-
-void TW_CALL SetMemLimitCallback(const void *value, void *clientData)
-{
-	g_volume.GetSystemMemoryUsage().SetSystemMemoryLimitMBytes(*reinterpret_cast<const float*>(value));
-}
-
-void TW_CALL GetMemLimitCallback(void *value, void *clientData)
-{
-	*reinterpret_cast<float*>(value) = g_volume.GetSystemMemoryUsage().GetSystemMemoryLimitMBytes();
-}
-
-
-void TW_CALL BuildFlowGraphCallback(void *clientData)
-{
-	BuildFlowGraph("flowgraph.txt");
-}
-
-void TW_CALL SaveFlowGraphCallback(void *clientData)
-{
-	SaveFlowGraph();
-}
-
-void TW_CALL LoadFlowGraphCallback(void *clientData)
-{
-	LoadFlowGraph();
-}
-
-
-void TW_CALL SetUseAllGPUs(const void *value, void *clientData)
-{
-	ReleaseVolumeDependentResources();
-	ShutdownCudaDevices();
-
-	g_useAllGPUs = *reinterpret_cast<const bool*>(value);
-
-	InitCudaDevices();
-	CreateVolumeDependentResources(DXUTGetD3D11Device());
-}
-
-void TW_CALL GetUseAllGPUs(void *value, void *clientData)
-{
-	*reinterpret_cast<bool*>(value) = g_useAllGPUs;
-}
-
-
-void TW_CALL StartImageSequence(void *clientData)
-{
-	g_imageSequence.BaseRotationQuat = g_viewParams.m_rotationQuat;
-	g_imageSequence.BaseTimestep = g_volume.GetCurNearestTimestepIndex();
-
-	g_imageSequence.FrameCur = 0;
-	g_imageSequence.Running = true;
-}
-
-void TW_CALL StopImageSequence(void *clientData)
-{
-	g_imageSequence.Running = false;
-	g_imageSequence.FrameCur = 0;
-}
-
-
-void TW_CALL StartProfiler(void *clientData)
-{
-	cudaProfilerStart();
-	cudaGetLastError();
-}
-
-void TW_CALL StopProfiler(void *clientData)
-{
-	cudaProfilerStop();
-	cudaGetLastError();
-}
-
-
-void TW_CALL SetEnableBatchAdvectMode(const void *value, void *clientData)
-{
-	bool enable = *reinterpret_cast<const bool*>(value);
-	eAdvectMode mode = eAdvectMode(uint(clientData));
-
-	if(enable) {
-		g_batchTraceParams.m_advectModes.insert(mode);
-	} else {
-		g_batchTraceParams.m_advectModes.erase(mode);
-	}
-}
-
-void TW_CALL GetEnableBatchAdvectMode(void *value, void *clientData)
-{
-	eAdvectMode mode = eAdvectMode(uint(clientData));
-
-	bool enabled = (g_batchTraceParams.m_advectModes.count(mode) > 0);
-
-	*reinterpret_cast<bool*>(value) = enabled;
-}
-
-void TW_CALL SetEnableBatchFilterMode(const void *value, void *clientData)
-{
-	bool enable = *reinterpret_cast<const bool*>(value);
-	eTextureFilterMode mode = eTextureFilterMode(uint(clientData));
-
-	if(enable) {
-		g_batchTraceParams.m_filterModes.insert(mode);
-	} else {
-		g_batchTraceParams.m_filterModes.erase(mode);
-	}
-}
-
-void TW_CALL GetEnableBatchFilterMode(void *value, void *clientData)
-{
-	eTextureFilterMode mode = eTextureFilterMode(uint(clientData));
-
-	bool enabled = (g_batchTraceParams.m_filterModes.count(mode) > 0);
-
-	*reinterpret_cast<bool*>(value) = enabled;
-}
-
-void StartBatchTracing()
-{
-	if(g_batchTrace.VolumeFiles.empty()) {
-		return;
-	}
-
-	g_tracingManager.CancelTracing();
-	CloseVolumeFile();
-
-	// semi-HACK: disable rendering preview
-	//g_showPreview = false;
-
-	// create outpath if it doesn't exist yet
-	system((string("mkdir \"") + tum3d::GetPath(g_batchTrace.OutPath) + "\"").c_str());
-
-	// save config
-	ConfigFile config;
-	g_particleTraceParams.WriteConfig(config, true);
-	g_batchTraceParams.WriteConfig(config);
-	config.Write(g_batchTrace.OutPath + "BatchParams.cfg");
-
-	g_batchTrace.FileCur = 0;
-	g_batchTrace.StepCur = 0;
-	g_batchTrace.Running = true;
-
-	std::string filenameStats = g_batchTrace.OutPath + "BatchStats.csv";
-	g_batchTrace.FileStats.open(filenameStats);
-	if(!g_batchTrace.FileStats.good()) {
-		printf("WARNING: Failed opening output file %s\n", filenameStats.c_str());
-	}
-	std::string filenameTimings = g_batchTrace.OutPath + "BatchTimings.csv";
-	g_batchTrace.FileTimings.open(filenameTimings);
-	if(!g_batchTrace.FileStats.good()) {
-		printf("WARNING: Failed opening output file %s\n", filenameTimings.c_str());
-	}
-
-	std::vector<std::string> extraColumns;
-	extraColumns.push_back("Name");
-	extraColumns.push_back("Bonus");
-	extraColumns.push_back("Penalty");
-	TracingManager::Stats::WriteCSVHeader(g_batchTrace.FileStats, extraColumns);
-	TracingManager::Timings::WriteCSVHeader(g_batchTrace.FileTimings, extraColumns);
-
-	printf("\n------ Batch trace started.  File count: %Iu  Step count: %u\n\n", g_batchTrace.VolumeFiles.size(), g_batchTraceParams.GetTotalStepCount());
-
-	OpenVolumeFile(g_batchTrace.VolumeFiles[g_batchTrace.FileCur], DXUTGetD3D11Device());
-	if(!LineModeIsTimeDependent(g_particleTraceParams.m_lineMode) && g_volume.IsCompressed()) {
-		// semi-HACK: fully load the whole timestep, so we get results consistently without IO
-		printf("Loading file %u...", g_batchTrace.FileCur);
-		g_volume.LoadNearestTimestep();
-		printf("\n");
-	}
-	if(g_particleTraceParams.HeuristicUseFlowGraph()) {
-		LoadOrBuildFlowGraph();
-	}
-	g_batchTraceParams.ApplyToTraceParams(g_particleTraceParams, g_batchTrace.StepCur);
-}
-
-void TW_CALL StartBatchTracingChooseFiles(void *clientData = nullptr)
-{
-	if(!tum3d::GetMultiFilenameDialog("Choose volume files", "TimeVolume (*.timevol)\0*.timevol\0", g_batchTrace.VolumeFiles))
-		return;
-	assert(!g_batchTrace.VolumeFiles.empty());
-
-	g_batchTrace.OutPath = tum3d::GetPath(g_batchTrace.VolumeFiles[0]);
-	//if(!tum3d::GetPathDialog("Choose output folder", g_batchTrace.OutPath))
-	//	return;
-
-	StartBatchTracing();
-}
-
-void TW_CALL StopBatchTracing(void *clientData = nullptr)
-{
-	if(g_batchTrace.Running) {
-		printf("\n------ Batch trace stopped.\n\n");
-	}
-
-	g_batchTrace.Running = false;
-	g_batchTrace.FileCur = 0;
-	g_batchTrace.StepCur = 0;
-}
-
-
-void TW_CALL GetNumOMPThreads(void *value, void *clientData)
-{
-	*reinterpret_cast<uint*>(value) = g_threadCount;
-}
-
-void TW_CALL SetNumOMPThreads(const void *value, void *clientData)
-{
-	g_threadCount = *reinterpret_cast<const uint*>(value);
-	omp_set_num_threads(g_threadCount);
-}
-
-void TW_CALL LoadSliceTexture(void *clientData)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-		//release old texture
-		SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
-		//create new texture
-		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
-		std::wstring wfilename(filename.begin(), filename.end());
-		ID3D11Resource* tmp = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pSliceTexture))) {
-			std::cout << "Slice texture " << filename << " loaded" << std::endl;
-			g_particleRenderParams.m_showSlice = true;
-			g_redraw = true;
-		}
-		else {
-			std::cerr << "Failed to load slice texture" << std::endl;
-		}
-		SAFE_RELEASE(tmp);
-	}
-}
-
-void TW_CALL LoadColorTexture(void *clientData)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-		//release old texture
-		SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
-		//create new texture
-		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
-		std::wstring wfilename(filename.begin(), filename.end());
-		ID3D11Resource* tmp = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pColorTexture))) {
-			std::cout << "Color texture " << filename << " loaded" << std::endl;
-			g_particleRenderParams.m_lineColorMode = eLineColorMode::TEXTURE;
-			g_redraw = true;
-		}
-		else {
-			std::cerr << "Failed to load color texture" << std::endl;
-		}
-		SAFE_RELEASE(tmp);
-	}
-}
-
-void TW_CALL LoadSeedTexture(void *clientData)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-		//create new texture
-		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
-		std::wstring wfilename(filename.begin(), filename.end());
-		ID3D11Resource* res = NULL;
-		//ID3D11ShaderResourceView* srv = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFileEx(pd3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
-			std::cout << "Seed texture " << filename << " loaded" << std::endl;
-			//delete old data
-			delete[] g_particleTraceParams.m_seedTexture.m_colors;
-			g_particleTraceParams.m_seedTexture.m_colors = NULL;
-			//Copy to cpu memory
-			ID3D11Texture2D* tex = NULL;
-			res->QueryInterface(&tex);
-			D3D11_TEXTURE2D_DESC desc;
-			tex->GetDesc(&desc);
-			g_particleTraceParams.m_seedTexture.m_width = desc.Width;
-			g_particleTraceParams.m_seedTexture.m_height = desc.Height;
-			g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			ID3D11DeviceContext* context = NULL;
-			pd3dDevice->GetImmediateContext(&context);
-			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
-				for (int y = 0; y < desc.Width; ++y) {
-					memcpy(&g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
-				}
-				context->Unmap(tex, 0);
-			}
-			SAFE_RELEASE(context);
-			SAFE_RELEASE(tex);
-			//reset color
-			g_particleTraceParams.m_seedTexture.m_picked.clear();
-			//set seed box to domain
-			SetBoundingBoxToDomainSize(clientData);
-			std::cout << "Seed texture copied to cpu memory" << std::endl;
-		}
-		else {
-			std::cerr << "Failed to load seed texture" << std::endl;
-		}
-		//SAFE_RELEASE(srv);
-		SAFE_RELEASE(res);
-	}
-}
-
-
-void FTLEComputeParticleCount()
-{
-	g_particleTraceParams.m_lineCount = g_particleTraceParams.m_ftleResolution * g_particleTraceParams.m_ftleResolution * 6;
-}
-
-void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
-{
-	g_particleTraceParams.m_ftleEnabled = *reinterpret_cast<const bool*>(value);
-
-	if (g_particleTraceParams.m_ftleEnabled)
-	{
-		TwDefine("Main/LineCount readonly=true");
-		TwDefine("Main/LineMode readonly=true");
-		TwDefine("Main/LineLengthMax readonly=true");
-		TwDefine("Main/LineLengthMax readonly=true");
-		TwDefine("Main/SeedingPattern readonly=true"); 
-		g_particleTraceParams.m_lineMode = eLineMode::LINE_PATH_FTLE;
-		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
-		g_particleTraceParams.m_lineLengthMax = 2;
-		g_particleTraceParams.m_lineAgeMax = 0.1f;
-		FTLEComputeParticleCount();
-	}
-	else
-	{
-		g_particleTraceParams.m_lineMode = eLineMode::LINE_STREAM;
-		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
-		TwDefine("Main/LineCount readonly=false");
-		TwDefine("Main/LineMode readonly=false");
-		TwDefine("Main/LineLengthMax readonly=false");
-		TwDefine("Main/SeedingPattern readonly=false");
-	}
-}
-
-void TW_CALL CBGetFTLEEnabled(void *value, void *clientData)
-{
-	*reinterpret_cast<bool*>(value) = g_particleTraceParams.m_ftleEnabled;
-}
-
-void TW_CALL CBSetFTLEResolution(const void *value, void *clientData)
-{
-	g_particleTraceParams.m_ftleResolution = *reinterpret_cast<const uint*>(value);
-
-	if (g_particleTraceParams.m_ftleEnabled)
-		FTLEComputeParticleCount();
-}
-
-void TW_CALL CBGetFTLEResolution(void *value, void *clientData)
-{
-	*reinterpret_cast<uint*>(value) = g_particleTraceParams.m_ftleResolution;
-}
-
-
-void TW_CALL CBSetInvertVelocity(const void *value, void *clientData)
-{
-	g_particleTraceParams.m_ftleInvertVelocity = *reinterpret_cast<const bool*>(value);
-}
-
-void TW_CALL CBGetInvertVelocity(void *value, void *clientData)
-{
-	*reinterpret_cast<bool*>(value) = g_particleTraceParams.m_ftleInvertVelocity;
-}
-
-
-void TW_CALL CBSetPerspective(const void *value, void *clientData)
-{
-	g_projParams.m_perspective = *reinterpret_cast<const bool*>(value);
-
-	if (g_projParams.m_perspective)
-		g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
-	else
-		g_projParams.m_fovy = 3.1f;
-}
-
-void TW_CALL CBGetPerspecive(void *value, void *clientData)
-{
-	*reinterpret_cast<bool*>(value) = g_projParams.m_perspective;
-}
-
-
-
-
-void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
-{
-	TwInit(TW_DIRECT3D11, pDevice);
-
-	TwDefine("GLOBAL iconpos=bottomleft iconalign=horizontal");
-
-
-	std::ostringstream strSeedingPatterns;
-	strSeedingPatterns << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(0));
-	for (uint i = 1; i < ParticleTraceParams::eSeedPattern::COUNT; i++)
-		strSeedingPatterns << "," << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(i));
-	TwType twSeedingPaterns = TwDefineEnumFromString("EnumSeedingPatterns", strSeedingPatterns.str().c_str());
-
-
-	std::ostringstream strFilterModes;
-	strFilterModes << GetTextureFilterModeName(eTextureFilterMode(0));
-	for(uint i = 1; i < TEXTURE_FILTER_MODE_COUNT; i++) 
-		strFilterModes << "," << GetTextureFilterModeName(eTextureFilterMode(i));
-	TwType twFilterMode = TwDefineEnumFromString("EnumTextureFilterMode", strFilterModes.str().c_str());
-
-	//Raycaster only supports the first two modes, linear and cubic
-	std::ostringstream strFilterModes2;
-	strFilterModes2 << GetTextureFilterModeName(eTextureFilterMode(0));
-	for (uint i = 1; i < 2; i++)
-		strFilterModes2 << "," << GetTextureFilterModeName(eTextureFilterMode(i));
-	TwType twFilterMode2 = TwDefineEnumFromString("EnumTextureFilterMode2", strFilterModes2.str().c_str());
-
-	std::ostringstream strRaycastModes;
-	strRaycastModes << GetRaycastModeName(eRaycastMode(0));
-	for(uint i = 1; i < RAYCAST_MODE_COUNT; i++)
-		strRaycastModes << "," << GetRaycastModeName(eRaycastMode(i));
-	TwType twRaycastMode = TwDefineEnumFromString("EnumRaycastMode", strRaycastModes.str().c_str());
-
-	std::ostringstream strMeasureModes;
-	strMeasureModes << GetMeasureName(eMeasure(0));
-	for(uint i = 1; i < MEASURE_COUNT; i++)
-		strMeasureModes << "," << GetMeasureName(eMeasure(i));
-	TwType twMeasureMode = TwDefineEnumFromString("EnumMeasureMode", strMeasureModes.str().c_str());
-
-	std::ostringstream strColorModes;
-	strColorModes << GetColorModeName(eColorMode(0));
-	for(uint i = 1; i < COLOR_MODE_COUNT; i++)
-		strColorModes << "," << GetColorModeName(eColorMode(i));
-	TwType twColorMode = TwDefineEnumFromString("EnumColorMode", strColorModes.str().c_str());
-
-	std::ostringstream strMeasureComputeModes;
-	strMeasureComputeModes << GetMeasureComputeModeName(eMeasureComputeMode(0));
-	for(uint i = 1; i < MEASURE_COMPUTE_COUNT; i++)
-		strMeasureComputeModes << "," << GetMeasureComputeModeName(eMeasureComputeMode(i));
-	TwType twMeasureComputeMode = TwDefineEnumFromString("EnumMeasureComputeMode", strMeasureComputeModes.str().c_str());
-
-	std::ostringstream strLineRenderModes;
-	strLineRenderModes << GetLineRenderModeName(eLineRenderMode(0));
-	for(uint i = 1; i < LINE_RENDER_MODE_COUNT; i++)
-		strLineRenderModes << "," << GetLineRenderModeName(eLineRenderMode(i));
-	TwType twLineRenderMode = TwDefineEnumFromString("EnumLineRenderMode", strLineRenderModes.str().c_str());
-
-	std::ostringstream strLineColorModes;
-	strLineColorModes << GetLineColorModeName(eLineColorMode(0));
-	for (uint i = 1; i < LINE_COLOR_MODE_COUNT; i++)
-		strLineColorModes << "," << GetLineColorModeName(eLineColorMode(i));
-	TwType twLineColorMode = TwDefineEnumFromString("EnumLineColorMode", strLineColorModes.str().c_str());
-
-	std::ostringstream strParticleRenderModes;
-	strParticleRenderModes << GetParticleRenderModeName(eParticleRenderMode(0));
-	for (uint i = 1; i < PARTICLE_RENDER_MODE_COUNT; i++)
-		strParticleRenderModes << "," << GetParticleRenderModeName(eParticleRenderMode(i));
-	TwType twParticleRenderMode = TwDefineEnumFromString("EnumParticleRenderMode", strParticleRenderModes.str().c_str());
-
-	std::ostringstream strAdvectModes;
-	strAdvectModes << GetAdvectModeName(eAdvectMode(0));
-	for(uint i = 1; i < ADVECT_MODE_COUNT; i++) 
-		strAdvectModes << "," << GetAdvectModeName(eAdvectMode(i));
-	TwType twAdvectMode = TwDefineEnumFromString("EnumAdvectMode", strAdvectModes.str().c_str());
-
-	std::ostringstream strLineModes;
-	strLineModes << GetLineModeName(eLineMode(0));
-	for(uint i = 1; i < LINE_MODE_COUNT; i++) 
-		strLineModes << "," << GetLineModeName(eLineMode(i));
-	TwType twLineMode = TwDefineEnumFromString("EnumLineMode", strLineModes.str().c_str());
-
-	std::ostringstream strHeatMapNormalizationModes;
-	strHeatMapNormalizationModes << GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(0));
-	for (uint i = 1; i < HEAT_MAP_NORMALIZATION_MODE_COUNT; i++)
-		strHeatMapNormalizationModes << "," << GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(i));
-	TwType twHeatMapNormalizationMode = TwDefineEnumFromString("EnumHeatMapNormalizationMode", strHeatMapNormalizationModes.str().c_str());
-
-	// MAIN BAR
-	g_pTwBarMain = TwNewBar("Main");
-	std::ostringstream ss;
-	int iHeight = max(static_cast<int>(uiBBHeight)-40, 200);
-	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light valueswidth=100 alpha=235 color='175 175 175'";
-	TwDefine(ss.str().c_str());
-
-	// "global" params: data set and timestep
-	TwAddButton(g_pTwBarMain, "SelectFile", SelectFile, nullptr, "label='Select file'");
-	TwAddVarCB(g_pTwBarMain, "Time", TW_TYPE_FLOAT, SetTime, GetTime, nullptr, "label='Time' min=0 max=0 precision=4");
-	TwAddVarCB(g_pTwBarMain, "Timestep", TW_TYPE_UINT32, SetTimestepIndex, GetTimestepIndex, nullptr, "label='Timestep' min=0 max=0");
-	int32 c = g_volume.GetTimestepCount() - 1;
-	TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &c);
-	TwAddVarCB(g_pTwBarMain, "TimeSpacing", TW_TYPE_FLOAT, SetTimeSpacing, GetTimeSpacing, nullptr, "label='Time Spacing' min=0.001 step=0.001 precision=3");
-	TwAddButton(g_pTwBarMain, "LoadTimestep", LoadTimestepCallback, nullptr, "label='Preload Timestep' group=MiscSettings");
-	TwAddButton(g_pTwBarMain, "WriteTimestepRaw", SelectOutputRawFile, nullptr, "label='Write as .raw' group=MiscSettings");
-	TwAddButton(g_pTwBarMain, "WriteTimestepLA3D", SelectOutputLA3DFile, nullptr, "label='Write as .la3d' group=MiscSettings");
-
-	TwAddSeparator(g_pTwBarMain, "", " group=MiscSettings");
-	TwAddButton(g_pTwBarMain, "SaveSettings", SaveRenderingParamsDialog, nullptr, "label='Save Settings' group=MiscSettings");
-	TwAddButton(g_pTwBarMain, "LoadSettings", LoadRenderingParamsDialog, nullptr, "label='Load Settings' group=MiscSettings");
-
-	TwAddSeparator(g_pTwBarMain, "", " group=MiscSettings");
-	TwAddVarCB(g_pTwBarMain, "MemLimit", TW_TYPE_FLOAT, SetMemLimitCallback, GetMemLimitCallback, nullptr, "label='Mem Usage Limit (MB)' precision=1 group=MiscSettings");
-
-	TwDefine("Main/MiscSettings label='Misc. Settings' opened=false");
-
-	// ray casting params
-	TwAddSeparator(g_pTwBarMain, "", "");
-
-	TwAddVarRW(g_pTwBarMain, "RaycastEnabled",	TW_TYPE_BOOLCPP,	&g_raycastParams.m_raycastingEnabled,		"label='Enable' group=RayCast");
-
-	TwAddVarRW(g_pTwBarMain, "Source",			twMeasureComputeMode,&g_raycastParams.m_measureComputeMode,		"label='Measure Computation' group=RayCast");
-
-	TwAddVarRW(g_pTwBarMain, "Interpolation",	twFilterMode2,		&g_raycastParams.m_textureFilterMode,		"label='Interpolation' group=RayCast");
-	TwAddVarRW(g_pTwBarMain, "VisMode",			twRaycastMode,		&g_raycastParams.m_raycastMode,				"label='Raycast Mode' group=RayCast");
-	TwAddVarCB(g_pTwBarMain, "Measure1",		twMeasureMode,		SetMeasure1, GetMeasure1, nullptr,			"label='Measure 1' group=RayCast");
-	TwAddVarRW(g_pTwBarMain, "MeasureScale1",	TW_TYPE_FLOAT,		&g_raycastParams.m_measureScale1,			"label='Measure 1 Scale' step=0.01 precision=6 group=RayCast");
-	TwAddVarCB(g_pTwBarMain, "Measure2",		twMeasureMode,		SetMeasure2, GetMeasure2, nullptr,			"label='Measure 2' group=RayCast");
-	TwAddVarRW(g_pTwBarMain, "MeasureScale2",	TW_TYPE_FLOAT,		&g_raycastParams.m_measureScale2,			"label='Measure 2 Scale' step=0.01 precision=6 group=RayCast");
-
-	TwAddVarRW(g_pTwBarMain, "SampleRate",		TW_TYPE_FLOAT,		&g_raycastParams.m_sampleRate,				"label='Sample Rate' min=0.01 max=20.0 step=0.01 group=RayCast");
-	TwAddVarRW(g_pTwBarMain, "Density",			TW_TYPE_FLOAT,		&g_raycastParams.m_density,					"label='Density' min=0.1 max=1000.0 step=0.1 group=RayCast");
-	TwAddVarRW(g_pTwBarMain, "Iso1",			TW_TYPE_FLOAT,		&g_raycastParams.m_isoValue1,				"label='IsoValue1' step=0.01 precision=4 group=IsoSettings");
-	TwAddVarRW(g_pTwBarMain, "IsoColor1",		TW_TYPE_COLOR4F,	&g_raycastParams.m_isoColor1,				"label='IsoColor1' group=IsoSettings");
-	TwAddVarRW(g_pTwBarMain, "Iso2",			TW_TYPE_FLOAT,		&g_raycastParams.m_isoValue2,				"label='IsoValue2' step=0.01 precision=4 group=IsoSettings");
-	TwAddVarRW(g_pTwBarMain, "IsoColor2",		TW_TYPE_COLOR4F,	&g_raycastParams.m_isoColor2,				"label='IsoColor2' group=IsoSettings");
-	TwAddVarRW(g_pTwBarMain, "Iso3",			TW_TYPE_FLOAT,		&g_raycastParams.m_isoValue3,				"label='IsoValue3' step=0.01 precision=4 group=IsoSettings");
-	TwAddVarRW(g_pTwBarMain, "IsoColor3",		TW_TYPE_COLOR4F,	&g_raycastParams.m_isoColor3,				"label='IsoColor3' group=IsoSettings");
-	TwAddVarCB(g_pTwBarMain, "Color Mode",		twColorMode,		SetTwColorMode, GetTwColorMode, nullptr,	"label='Color Mode' group=IsoSettings");
-	TwDefine("Main/IsoSettings label='Iso Settings' group=RayCast");
-
-	TwAddVarCB(g_pTwBarMain, "FilterRadius1",	TW_TYPE_UINT32,		SetFilterRadius1, GetFilterRadius1, nullptr,"label='Radius 1' min=0 max=247 step=1 group=Filter");
-	TwAddVarCB(g_pTwBarMain, "FilterRadius2",	TW_TYPE_UINT32,		SetFilterRadius2, GetFilterRadius2, nullptr,"label='Radius 2' min=0 max=247 step=1 group=Filter");
-	TwAddVarCB(g_pTwBarMain, "FilterRadius3",	TW_TYPE_UINT32,		SetFilterRadius3, GetFilterRadius3, nullptr,"label='Radius 3' min=0 max=247 step=1 group=Filter");
-	TwAddVarRW(g_pTwBarMain, "FilterOffset",	TW_TYPE_UINT32,		&g_raycastParams.m_filterOffset,			"label='Filter (Scale) Offset' max=2 group=Filter");
-	TwDefine("Main/Filter group=RayCast opened=false");
-
-	TwAddVarRW(g_pTwBarMain, "ShowClipBox",		TW_TYPE_BOOLCPP,	&g_bRenderClipBox,							"label='Show Clip Box (Red)' group=RayCast");
-	TwAddVarRW(g_pTwBarMain, "ClipBoxMinX",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMin.x(),			"label='X' min=-1 max=1 step=0.01 group=ClipBoxMin");
-	TwAddVarRW(g_pTwBarMain, "ClipBoxMinY",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMin.y(),			"label='Y' min=-1 max=1 step=0.01 group=ClipBoxMin");
-	TwAddVarRW(g_pTwBarMain, "ClipBoxMinZ",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMin.z(),			"label='Z' min=-1 max=1 step=0.01 group=ClipBoxMin");
-	TwDefine("Main/ClipBoxMin label='Clip Box Min' group=RayCast opened=false");
-	TwAddVarRW(g_pTwBarMain, "ClipBoxMaxX",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMax.x(),			"label='X' min=-1 max=1 step=0.01 group=ClipBoxMax");
-	TwAddVarRW(g_pTwBarMain, "ClipBoxMaxY",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMax.y(),			"label='Y' min=-1 max=1 step=0.01 group=ClipBoxMax");
-	TwAddVarRW(g_pTwBarMain, "ClipBoxMaxZ",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMax.z(),			"label='Z' min=-1 max=1 step=0.01 group=ClipBoxMax");
-	TwDefine("Main/ClipBoxMax label='Clip Box Max' group=RayCast opened=false");
-
-	TwDefine("Main/RayCast label='Ray Casting' opened=false");
-
-
-	// FTLE
-	TwAddVarCB(g_pTwBarMain, "FTLEEnabled", TW_TYPE_BOOLCPP, CBSetFTLEEnabled, CBGetFTLEEnabled, nullptr, "label='Enabled' group=FTLE");
-
-	TwAddVarRW(g_pTwBarMain, "FTLEScale", TW_TYPE_FLOAT, &g_renderingManager.m_ftleScale, "label='Scale' step=0.01 group=FTLE");
-
-	TwAddVarCB(g_pTwBarMain, "InvertVelocity", TW_TYPE_BOOLCPP, CBSetInvertVelocity, CBGetInvertVelocity, nullptr, "label='Invert velocity' group=FTLE");
-
-	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
-
-	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=4 group=FTLE");
-	TwAddVarRW(g_pTwBarMain, "FTLESliceAlpha", TW_TYPE_FLOAT, &g_particleRenderParams.m_ftleTextureAlpha, "label='Slice Alpha' min=0 max=1 step=0.01 precision=3 group=FTLE");
-
-	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
-	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.y(), "label='Y' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
-	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceZ", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.z(), "label='Z' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
-	TwDefine("Main/FTLESeparationDistance label='Separation Distance' group=FTLE opened=false");
-
-	TwDefine("Main/FTLE label='FTLE' opened=false");
-
-
-	// particle params
-	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "ShowSeedBox",		TW_TYPE_BOOLCPP,	&g_bRenderSeedBox,							"label='Show Seed Box (Green)' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "CPUTrace",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_cpuTracing,		"label='CPU Tracing' group=ParticleTraceAdvanced");
-	TwAddVarCB(g_pTwBarMain, "CPUThreads",		TW_TYPE_UINT32,		SetNumOMPThreads, GetNumOMPThreads, nullptr, "label='# CPU Threads' group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "BrickSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetBrickSlotCountMax(),	"label='Max Brick Slot Count' group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "TimeSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetTimeSlotCountMax(),	"label='Max Time Slot Count' group=ParticleTraceAdvanced");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
-	TwAddButton(g_pTwBarMain,"SeedToDomain", SetBoundingBoxToDomainSize, NULL,                                  "label='Set Seed Box to Domain' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "LoadSeedTexture", LoadSeedTexture, pDevice, "label='Load Seed Texture' group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "SeedTextureInfo", NULL, NULL, "label='Press P to pick the color under the mouse' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "SeedBoxMinX",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.x(),	"label='X' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
-	TwAddVarRW(g_pTwBarMain, "SeedBoxMinY",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.y(),	"label='Y' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
-	TwAddVarRW(g_pTwBarMain, "SeedBoxMinZ",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.z(),	"label='Z' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
-	TwDefine("Main/SeedBoxMin label='Seed Box Min' group=ParticleTrace opened=false");
-	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeX",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.x(),	"label='X' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
-	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeY",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.y(),	"label='Y' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
-	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeZ",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.z(),	"label='Z' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
-	TwDefine("Main/SeedBoxSize label='Seed Box Size' group=ParticleTrace opened=false");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
-	
-	TwAddVarRW(g_pTwBarMain, "SeedingPattern",  twSeedingPaterns,	&g_particleTraceParams.m_seedPattern,		"label='Seeding Pattern' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectMode",		twAdvectMode,		&g_particleTraceParams.m_advectMode,		"label='Advection' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "DenseOutput",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enableDenseOutput,	"label='Dense Output' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "TraceInterpol",	twFilterMode,		&g_particleTraceParams.m_filterMode,		"label='Interpolation' group=ParticleTrace");
-	//TwAddVarRW(g_pTwBarMain, "LineMode",		twLineMode,			&g_particleTraceParams.m_lineMode,			"label='Line Mode' group=ParticleTrace");
-	TwAddVarCB(g_pTwBarMain, "LineMode",		twLineMode,
-		[](const void* valueToSet, void* clientData) {
-			g_particleTraceParams.m_lineMode = *((eLineMode*)valueToSet);
-			if (LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
-				//force render mode to 'particles' and preview to true
-				g_particleRenderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
-				g_showPreview = true;
-			}
-			if (LineModeGenerateAlwaysNewSeeds(g_particleTraceParams.m_lineMode)) {
-				//new seeds are always generated -> color-by-line does not make sense, switch to color by age
-				if (g_particleRenderParams.m_lineColorMode == eLineColorMode::LINE_ID)
-					g_particleRenderParams.m_lineColorMode = eLineColorMode::AGE;
-			}
-		},
-		[](void* value, void* clientData) {
-			*((eLineMode*) value) = g_particleTraceParams.m_lineMode;
-		}, 
-		NULL, "label='Line Mode' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "LineCount",		TW_TYPE_UINT32,		&g_particleTraceParams.m_lineCount,			"label='Line Count' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' min=2 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=4 step=0.01 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "MinVelocity",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_minVelocity,		"label='Min Velocity' min=0 precision=2 step=0.01 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "ParticlesPerSecond",TW_TYPE_FLOAT,	&g_particleTraceParams.m_particlesPerSecond,"label='Particles per second' min=0 step=0.01 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "SeedManyParticles", [](void* data) {
-		g_tracingManager.SeedManyParticles();
-	}, NULL, "label='Seed many particles' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "CellChangeThreshold", TW_TYPE_FLOAT,  &g_particleTraceParams.m_cellChangeThreshold, "label='Cell Change Time Threshold' min=0 precision=5 step=0.001 group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "AdvectErrorTol",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectErrorTolerance,"label='Advection Error Tolerance (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMin",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMin,	"label='Advection Delta T Min' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMax",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMax,	"label='Advection Delta T Max' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "AdvectStepsMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_advectStepsPerRound,"label='Advect Steps per Round' min=0 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "PurgeTimeout",	TW_TYPE_UINT32,		&g_particleTraceParams.m_purgeTimeoutInRounds,"label='Brick Purge Timeout' min=0 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "HeuristicBonus",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicBonusFactor,"label='Heuristic: Bonus Factor' min=0 step=0.01 precision=3 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "HeuristicPenalty",TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicPenaltyFactor,"label='Heuristic: Penalty Factor' min=0 step=0.01 precision=3 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "HeuristicFlags",	TW_TYPE_UINT32,		&g_particleTraceParams.m_heuristicFlags,	"label='Heuristic: Flags' group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "OutputPosDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputPosDiff,		"label='Output Pos Diff (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "OutputTimeDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputTimeDiff,	"label='Output Time Diff' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "WaitForDisk",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_waitForDisk,		"label='Wait for Disk' group=ParticleTraceAdvanced");
-
-	TwAddVarRW(g_pTwBarMain, "Prefetching",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enablePrefetching,	"label='Prefetching' group=ParticleTraceAdvanced");
-	TwAddVarRW(g_pTwBarMain, "UpsampledVolume",	TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_upsampledVolumeHack,"label='Upsampled Volume Hack' group=ParticleTraceAdvanced");
-	TwDefine("Main/ParticleTraceAdvanced label='Advanced Settings' group=ParticleTrace opened=false");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
-	TwAddButton(g_pTwBarMain, "Retrace", Retrace, nullptr, "label='Retrace' group=ParticleTrace");
-	TwAddVarRW(g_pTwBarMain, "TracingPaused", TW_TYPE_BOOLCPP, &g_particleTracingPaused, "label='Paused (SPACE)' group=ParticleTrace key=SPACE");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
-
-	// IO
-	TwAddButton(g_pTwBarMain, "SaveLines", SaveLinesDialog, nullptr, "label='Save Traced Lines' group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "LoadLines", LoadLinesDialog, nullptr, "label='Load Lines' group=ParticleTraceIO");
-	TwAddVarRW(g_pTwBarMain,  "LineID", TW_TYPE_INT32, &g_lineIDOverride,"label='Line ID Override' min=-1 group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "ClearLines", ClearLinesCallback, nullptr, "label='Clear Loaded Lines' group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "LoadBalls", LoadBallsDialog, nullptr, "label='Load Balls' group=ParticleTraceIO");
-	TwAddVarRW(g_pTwBarMain, "BallsRadius", TW_TYPE_FLOAT, &g_ballRadius, "label='Ball Radius' group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "ClearBalls", ClearBallsCallback, nullptr, "label='Clear Loaded Balls' group=ParticleTraceIO");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "FlowGraph", BuildFlowGraphCallback, nullptr, "label='Build Flow Graph' group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "SaveFlowGraph", SaveFlowGraphCallback, nullptr, "label='Save Flow Graph' group=ParticleTraceIO");
-	TwAddButton(g_pTwBarMain, "LoadFlowGraph", LoadFlowGraphCallback, nullptr, "label='Load Flow Graph' group=ParticleTraceIO");
-	TwDefine("Main/ParticleTraceIO label='Extra IO' group=ParticleTrace opened=false");
-
-	TwDefine("Main/ParticleTrace label='Particle Tracing' opened=false");
-
-	//Rendering
-
-	TwAddVarRW(g_pTwBarMain, "ParticleEnabled",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_linesEnabled,		"label='Enable' group=ParticleRender");
-	//TwAddVarRW(g_pTwBarMain, "LightDirView",	TW_TYPE_DIR3F,		&g_particleRenderParams.m_lightDirView,		"label='Light Dir (View Space)' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "LineRenderMode",	twLineRenderMode,	&g_particleRenderParams.m_lineRenderMode,	"label='Line Render Mode' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "RibbonWidth",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_ribbonWidth,		"label='Ribbon Width' min=0 step=0.01 group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "TubeRadius",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_tubeRadius,		"label='Tube Radius' min=0 step=0.01 group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ParticleSize",    TW_TYPE_FLOAT,      &g_particleRenderParams.m_particleSize,     "label='Particle Size' group=ParticleRender min=0 step=0.01");
-	TwAddVarRW(g_pTwBarMain, "RadiusFromVel",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_tubeRadiusFromVelocity, "label='Display Velocity' group=ParticleRender"); //"label='Tube Radius from Velocity' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ReferenceVel",	TW_TYPE_FLOAT,		&g_particleRenderParams.m_referenceVelocity,"label='Reference Velocity' min=0.001 step=0.01 precision=3 group=ParticleRender");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ParticleRenderMode", twParticleRenderMode, &g_particleRenderParams.m_particleRenderMode, "label='Particle Render Mode' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ParticleTransparency", TW_TYPE_FLOAT, &g_particleRenderParams.m_particleTransparency, "label='Particle Transparency' group=ParticleRender min=0 max=1 step=0.01");
-	TwAddVarRW(g_pTwBarMain, "SortParticles",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_sortParticles,	"label='Sort Particles' group=ParticleRender");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ColorMode",		twLineColorMode,	&g_particleRenderParams.m_lineColorMode,	"label='Color Mode' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "Color0",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color0,			"label='Color 0' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "Color1",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color1,			"label='Color 1' group=ParticleRender");
-	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice,                                    "label='Load Color Texture' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "RenderMeasure",   twMeasureMode,      &g_particleRenderParams.m_measure,          "label='Measure' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "RenderMeasureScale", TW_TYPE_FLOAT,	&g_particleRenderParams.m_measureScale,		"label='Measure Scale' step=0.01 precision=6 group=ParticleRender");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "TimeStripes",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_timeStripes,		"label='Time Stripes' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "TimeStripeLength",TW_TYPE_FLOAT,		&g_particleRenderParams.m_timeStripeLength,	"label='Time Stripe Length' min=0.001 step=0.001 group=ParticleRender");
-	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
-	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.001 group=ParticleRender");
-	TwAddVarRW(g_pTwBarMain, "SliceAlpha",      TW_TYPE_FLOAT,      &g_particleRenderParams.m_sliceAlpha,       "label='Slice Transparency' step=0.01 min=0 max=1 group=ParticleRender");
-	TwDefine("Main/ParticleRender label='Rendering' opened=false");
-
-	// Heat Map
-	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRecording", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRecording,
-		"label='Enable Recording' group='Heat Map'");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRendering", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRendering,
-		"label='Enable Rendering' group='Heat Map'");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_AutoReset", TW_TYPE_BOOLCPP, &g_heatMapParams.m_autoReset,
-		"label='Auto Reset' group='Heat Map'");
-	TwAddButton(g_pTwBarMain, "HeatMap_Reset", [](void* data) {
-			g_heatMapManager.ClearChannels();
-			g_redraw = true;
-		}, 
-		NULL, "label='Reset (C)' group='Heat Map' key=c");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", twHeatMapNormalizationMode, &g_heatMapParams.m_normalizationMode,
-		"label='Normalization' group='Heat Map'");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_StepSize", TW_TYPE_FLOAT, &g_heatMapParams.m_stepSize,
-		"label='Step Size' min=0.001 step=0.001 group='Heat Map'");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_DensityScale", TW_TYPE_FLOAT, &g_heatMapParams.m_densityScale,
-		"label='Density Scale' min=0 step=0.01 group='Heat Map'");
-	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel1", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[0],
-		"label='First displayed channel (1)' group='Heat Map'");
-	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel2", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[1],
-		"label='Second displayed channel (2)' group='Heat Map'");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableIsosurface", TW_TYPE_BOOLCPP, &g_heatMapParams.m_isosurface,
-		"label='Isosurface Rendering' group='Heat Map'");
-	TwAddVarRW(g_pTwBarMain, "HeatMap_Isovalue", TW_TYPE_FLOAT, &g_heatMapParams.m_isovalue,
-		"label='Isovalue' min=0 max=1 step=0.001 group='Heat Map'");
-
-	TwDefine("Main/'Heat Map' label='Heat Map' opened=false");
-
-	// bounding boxes
-	
-	TwAddVarRW(g_pTwBarMain, "DomainBoxThickness", TW_TYPE_FLOAT,	&g_renderingManager.m_DomainBoxThickness,	"label='Domain Box Thickness' min=0.0 step=0.0001 group=MiscRendering");
-	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
-	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)' group=MiscRendering");
-
-	TwAddVarRW(g_pTwBarMain, "FixedLightDir",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_FixedLightDir,	"label='Fixed Light Pos' group=Light");
-	TwAddVarRW(g_pTwBarMain, "LightDirX", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.x(), "label='X' min=-1 max=1 step=0.1 group=Light");
-	TwAddVarRW(g_pTwBarMain, "LightDirY", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.y(), "label='Y' min=-1 max=1 step=0.1 group=Light");
-	TwAddVarRW(g_pTwBarMain, "LightDirZ", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.z(), "label='Z' min=-1 max=1 step=0.1 group=Light");
-	TwDefine("Main/Light label='Light' opened=false group=MiscRendering");
-
-	// view params
-	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddVarRW(g_pTwBarMain, "Supersample",		TW_TYPE_FLOAT,		&g_renderBufferSizeFactor,		"label='SuperSample Factor' min=0.5 max=8 step=0.5 group=MiscRendering");
-
-	//TwAddVarRW(g_pTwBarMain, "Perspective",		TW_TYPE_BOOLCPP, &g_projParams.m_perspective, "label='Perspective' group=MiscRendering");
-	TwAddVarCB(g_pTwBarMain, "Perspective",		TW_TYPE_BOOLCPP, CBSetPerspective, CBGetPerspecive, nullptr, "label='Perspective' group=MiscRendering");
-	
-	//TwAddVarRW(g_pTwBarMain, "AspectRatio",		TW_TYPE_FLOAT,		&g_projParams.m_aspectRatio,	"label='Aspect Ratio' min=0 step=0.01 group=MiscRendering");
-	TwAddVarRW(g_pTwBarMain, "FoVY",			TW_TYPE_FLOAT,		&g_projParams.m_fovy,			"label='FoVY' min=0 step=0.01 group=MiscRendering");
-
-	TwAddVarRW(g_pTwBarMain, "LookAtX",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.x(),		"label='X' group=LookAt");
-	TwAddVarRW(g_pTwBarMain, "LookAtY",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.y(),		"label='Y' group=LookAt");
-	TwAddVarRW(g_pTwBarMain, "LookAtZ",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.z(),		"label='Z' group=LookAt");
-	TwAddVarRW(g_pTwBarMain, "ViewDistance",	TW_TYPE_FLOAT,		&g_viewParams.m_viewDistance,	"label='View Distance' min=0 step=0.01 group=MiscRendering");
-	TwDefine("Main/LookAt label='LookAt' opened=false group=MiscRendering");
-	TwAddVarCB(g_pTwBarMain, "Rotation",		TW_TYPE_QUAT4F,	SetRotation, GetRotation, nullptr,	"label='Rotation' opened=false group=MiscRendering");
-	TwAddButton(g_pTwBarMain, "ResetView", ResetView, nullptr, "label='Reset View' group=MiscRendering");
-	TwAddVarRW(g_pTwBarMain, "BackColor",		TW_TYPE_COLOR3F,	&g_backgroundColor,	"label='Background Color' opened=false group=MiscRendering");
-	TwAddVarRW(g_pTwBarMain, "StereoEnable",	TW_TYPE_BOOLCPP,	&g_stereoParams.m_stereoEnabled,"label='Enable' group=Stereo");
-	TwAddVarRW(g_pTwBarMain, "StereoEyeDist",	TW_TYPE_FLOAT,		&g_stereoParams.m_eyeDistance,	"label='Eye Distance' min=0 step=0.001 group=Stereo");
-	TwDefine("Main/Stereo label='Stereo 3D' opened=false group=MiscRendering");
-	TwDefine("Main/MiscRendering label='Misc Rendering Settings' opened=false");
-
-	// screenshot
-	TwAddButton(g_pTwBarMain, "SaveScreenshot", SaveScreenshot, nullptr, "label='Save Screenshot' key=s");
-	TwAddButton(g_pTwBarMain, "SaveRBScreenshot", SaveRenderBufferScreenshot, nullptr, "label='Save RenderBuffer' key=r");
-
-
-	// other stuff
-	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddVarRW(g_pTwBarMain, "Preview", TW_TYPE_BOOLCPP, &g_showPreview, "label='Rendering Preview'");
-	//TwAddVarCB(g_pTwBarMain, "UseAllGPUs", TW_TYPE_BOOLCPP, SetUseAllGPUs, GetUseAllGPUs, nullptr, "label='Use all GPUs'");
-
-	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddButton(g_pTwBarMain, "Redraw", Redraw, nullptr, "label='Redraw'");
-
-	TwAddSeparator(g_pTwBarMain, "", "");
-	TwAddButton(g_pTwBarMain, "StartProfiler", StartProfiler, nullptr, "label='Start CUDA Profiler'");
-	TwAddButton(g_pTwBarMain, "StopProfiler", StopProfiler, nullptr, "label='Stop CUDA Profiler'");
-
-
-	// IMAGE SEQUENCE RECORDER BAR
-	g_pTwBarImageSequence = TwNewBar("ImageSequence");
-	TwDefine("ImageSequence label='Image Sequence' size='260 180' text=light iconified=true");
-
-	TwAddVarRW(g_pTwBarImageSequence, "FrameCount", TW_TYPE_INT32, &g_imageSequence.FrameCount, "label='Frame Count' min=1");
-	TwAddVarRW(g_pTwBarImageSequence, "AngleInc", TW_TYPE_FLOAT, &g_imageSequence.AngleInc, "label='Rotation per Frame' step=0.1");
-	TwAddVarRW(g_pTwBarImageSequence, "ViewDistInc", TW_TYPE_FLOAT, &g_imageSequence.ViewDistInc, "label='Distance offset per Frame' step=0.001");
-	TwAddVarRW(g_pTwBarImageSequence, "FramesPerTimestep", TW_TYPE_INT32, &g_imageSequence.FramesPerTimestep, "label='Frames per Timestep' min=1");
-	TwAddVarRW(g_pTwBarImageSequence, "Record", TW_TYPE_BOOLCPP, &g_imageSequence.Record, "label='Record'");
-	TwAddVarRW(g_pTwBarImageSequence, "FromRenderbuffer", TW_TYPE_BOOLCPP, &g_imageSequence.FromRenderBuffer, "label='Grab RenderBuffer'");
-	TwAddButton(g_pTwBarImageSequence, "StartSequence", StartImageSequence, nullptr, "label='Start'");
-	TwAddButton(g_pTwBarImageSequence, "StopSequence", StopImageSequence, nullptr, "label='Stop'");
-	TwAddVarRO(g_pTwBarImageSequence, "FrameCur", TW_TYPE_INT32, &g_imageSequence.FrameCur, "label='Current Frame'");
-
-
-	// BATCH TRACING BAR
-	g_pTwBarBatchTrace = TwNewBar("BatchTracing");
-	TwDefine("BatchTracing label='Batch Tracing' size='260 480' text=light iconified=true");
-
-	for(uint i = 0; i < ADVECT_MODE_COUNT; i++)
-	{
-		std::ostringstream strName;
-		strName << "AdvectMode" << i;
-		std::ostringstream strDef;
-		strDef << "label='" << GetAdvectModeName(eAdvectMode(i)) << "' group=Advection";
-		TwAddVarCB(g_pTwBarBatchTrace, strName.str().c_str(), TW_TYPE_BOOLCPP, SetEnableBatchAdvectMode, GetEnableBatchAdvectMode, (void*)(i), strDef.str().c_str());
-	}
-	for(uint i = 0; i < TEXTURE_FILTER_MODE_COUNT; i++)
-	{
-		std::ostringstream strName;
-		strName << "FilterMode" << i;
-		std::ostringstream strDef;
-		strDef << "label='" << GetTextureFilterModeName(eTextureFilterMode(i)) << "' group=Filtering";
-		TwAddVarCB(g_pTwBarBatchTrace, strName.str().c_str(), TW_TYPE_BOOLCPP, SetEnableBatchFilterMode, GetEnableBatchFilterMode, (void*)(i), strDef.str().c_str());
-	}
-	TwAddVarRW(g_pTwBarBatchTrace, "DeltaTMin", TW_TYPE_FLOAT, &g_batchTraceParams.m_deltaTMin, "label='Delta T Min' min=0 precision=5 step=0.001");
-	TwAddVarRW(g_pTwBarBatchTrace, "DeltaTMax", TW_TYPE_FLOAT, &g_batchTraceParams.m_deltaTMax, "label='Delta T Max' min=0 precision=5 step=0.001");
-	TwAddVarRW(g_pTwBarBatchTrace, "ErrorToleranceMin", TW_TYPE_FLOAT, &g_batchTraceParams.m_errorToleranceMin, "label='Error Tolerance Min' min=0 precision=5 step=0.001");
-	TwAddVarRW(g_pTwBarBatchTrace, "ErrorToleranceMax", TW_TYPE_FLOAT, &g_batchTraceParams.m_errorToleranceMax, "label='Error Tolerance Max' min=0 precision=5 step=0.001");
-	TwAddVarRW(g_pTwBarBatchTrace, "QualitySteps", TW_TYPE_UINT32, &g_batchTraceParams.m_qualityStepCount, "label='Quality Steps'");
-	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicFactorMin", TW_TYPE_FLOAT, &g_batchTraceParams.m_heuristicFactorMin, "label='Heuristic Factor Min' precision=1 step=1");
-	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicFactorMax", TW_TYPE_FLOAT, &g_batchTraceParams.m_heuristicFactorMax, "label='Heuristic Factor Max' precision=1 step=1");
-	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicSteps", TW_TYPE_UINT32, &g_batchTraceParams.m_heuristicStepCount, "label='Heuristic Steps'");
-	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicBPSeparate", TW_TYPE_BOOLCPP, &g_batchTraceParams.m_heuristicBPSeparate, "label='Heuristic B/P Separate'");
-	TwAddVarRW(g_pTwBarBatchTrace, "WriteLinebufs", TW_TYPE_BOOLCPP, &g_batchTrace.WriteLinebufs, "label='Write .linebuf files'");
-	TwAddButton(g_pTwBarBatchTrace, "StartBatch", StartBatchTracingChooseFiles, nullptr, "label='Start'");
-	TwAddButton(g_pTwBarBatchTrace, "StopBatch", StopBatchTracing, nullptr, "label='Stop'");
-}
+//void TW_CALL Redraw(void *clientData)
+//{
+//	g_redraw = true;
+//}
+//
+//void TW_CALL Retrace(void *clientData)
+//{
+//	g_retrace = true;
+//}
+//
+//void TW_CALL SetBoundingBoxToDomainSize(void *clientData)
+//{
+//	g_particleTraceParams.m_seedBoxMin = -g_volume.GetVolumeHalfSizeWorld();
+//	g_particleTraceParams.m_seedBoxSize = 2 * g_volume.GetVolumeHalfSizeWorld();
+//}
+//
+//
+//void TW_CALL SetTime(const void *value, void *clientData)
+//{
+//	float timeNew = *reinterpret_cast<const float*>(value);
+//	g_volume.SetCurTime(timeNew);
+//}
+//
+//void TW_CALL GetTime(void *value, void *clientData)
+//{
+//	*reinterpret_cast<float*>(value) = g_volume.GetCurTime();
+//}
+//
+//void TW_CALL SetTimestepIndex(const void *value, void *clientData)
+//{
+//	int32 timestepNew = *reinterpret_cast<const int32*>(value);
+//	float timeNew = float(timestepNew) * g_volume.GetTimeSpacing();
+//	g_volume.SetCurTime(timeNew);
+//}
+//
+//void TW_CALL GetTimestepIndex(void *value, void *clientData)
+//{
+//	*reinterpret_cast<uint*>(value) = g_volume.GetCurNearestTimestepIndex();
+//}
+//
+//void TW_CALL SetTimeSpacing(const void *value, void *clientData)
+//{
+//	float timeSpacingNew = *reinterpret_cast<const float*>(value);
+//	g_volume.SetTimeSpacing(timeSpacingNew);
+//}
+//
+//void TW_CALL GetTimeSpacing(void *value, void *clientData)
+//{
+//	*reinterpret_cast<float*>(value) = g_volume.GetTimeSpacing();
+//}
+//
+//
+//void TW_CALL SelectFile(void *clientData)
+//{
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Select TimeVolume file", "TimeVolume (*.timevol)\0*.timevol\0", filename, false))
+//	{
+//		CloseVolumeFile();
+//		OpenVolumeFile(filename, DXUTGetD3D11Device());
+//	}
+//}
+//
+//void TW_CALL LoadTimestepCallback(void *clientData)
+//{
+//	printf("Loading timestep...");
+//	TimerCPU timer;
+//	timer.Start();
+//	g_volume.LoadNearestTimestep();
+//	timer.Stop();
+//	printf(" done in %.2f s\n", timer.GetElapsedTimeMS() / 1000.0f);
+//}
+//
+//void TW_CALL SelectOutputRawFile(void *clientData)
+//{
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Select output file", "Raw (*.raw)\0*.raw\0", filename, true))
+//	{
+//		// remove extension
+//		if(filename.substr(filename.size() - 4) == ".raw")
+//		{
+//			filename = filename.substr(0, filename.size() - 4);
+//		}
+//		std::vector<std::string> filenames;
+//		for(int c = 0; c < g_volume.GetChannelCount(); c++)
+//		{
+//			std::ostringstream str;
+//			str << filename << char('X' + c) << ".raw";
+//			filenames.push_back(str.str());
+//		}
+//		g_renderingManager.WriteCurTimestepToRaws(g_volume, filenames);
+//	}
+//}
+//
+//void TW_CALL SelectOutputLA3DFile(void *clientData)
+//{
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Select output file", "LargeArray3D (*.la3d)\0*.la3d\0", filename, true))
+//	{
+//		// remove extension
+//		if(filename.substr(filename.size() - 5) == ".la3d")
+//		{
+//			filename = filename.substr(0, filename.size() - 5);
+//		}
+//		std::vector<std::string> filenames;
+//		for(int c = 0; c < g_volume.GetChannelCount(); c++)
+//		{
+//			std::ostringstream str;
+//			str << filename << char('X' + c) << ".la3d";
+//			filenames.push_back(str.str());
+//		}
+//		g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames);
+//	}
+//}
+//
+//
+//void TW_CALL ResetView(void *clientData)
+//{
+//	g_viewParams.Reset();
+//	g_rotationX = Vec4f(1, 0, 0, 0);
+//	g_rotationY = Vec4f(1, 0, 0, 0);
+//	g_rotation = Vec4f(1, 0, 0, 0);
+//}
+//
+//
+//void TW_CALL SetMeasure1(const void *value, void *clientData)
+//{
+//	g_raycastParams.m_measure1 = *reinterpret_cast<const eMeasure*>(value);
+//	g_raycastParams.m_measureScale1 = GetDefaultMeasureScale(g_raycastParams.m_measure1);
+//}
+//
+//void TW_CALL GetMeasure1(void *value, void *clientData)
+//{
+//	*reinterpret_cast<eMeasure*>(value) = g_raycastParams.m_measure1;
+//}
+//
+//
+//void TW_CALL SetMeasure2(const void *value, void *clientData)
+//{
+//	g_raycastParams.m_measure2 = *reinterpret_cast<const eMeasure*>(value);
+//	g_raycastParams.m_measureScale2 = GetDefaultMeasureScale(g_raycastParams.m_measure2);
+//}
+//
+//void TW_CALL GetMeasure2(void *value, void *clientData)
+//{
+//	*reinterpret_cast<eMeasure*>(value) = g_raycastParams.m_measure2;
+//}
+//
+//
+//void TW_CALL SetTwColorMode(const void *value, void *clientData)
+//{
+//	g_raycastParams.m_colorMode = *reinterpret_cast<const eColorMode*>(value);
+//}
+//
+//
+//void TW_CALL GetTwColorMode(void *value, void *clientData)
+//{
+//	*reinterpret_cast<eColorMode*>(value) = g_raycastParams.m_colorMode;
+//}
+//
+//
+//void UpdateFilterRadii()
+//{
+//	g_filterParams.m_radius.clear();
+//	for(uint i = 0; i < 3; i++)
+//	{
+//		g_filterParams.m_radius.push_back(g_guiFilterRadius[i]);
+//	}
+//}
+//
+//void TW_CALL SetFilterRadius1(const void *value, void *clientData)
+//{
+//	g_guiFilterRadius[0] = *reinterpret_cast<const uint*>(value);
+//	UpdateFilterRadii();
+//}
+//
+//void TW_CALL GetFilterRadius1(void *value, void *clientData)
+//{
+//	*reinterpret_cast<uint*>(value) = g_guiFilterRadius[0];
+//}
+//
+//void TW_CALL SetFilterRadius2(const void *value, void *clientData)
+//{
+//	g_guiFilterRadius[1] = *reinterpret_cast<const uint*>(value);
+//	UpdateFilterRadii();
+//}
+//
+//void TW_CALL GetFilterRadius2(void *value, void *clientData)
+//{
+//	*reinterpret_cast<uint*>(value) = g_guiFilterRadius[1];
+//}
+//
+//void TW_CALL SetFilterRadius3(const void *value, void *clientData)
+//{
+//	g_guiFilterRadius[2] = *reinterpret_cast<const uint*>(value);
+//	UpdateFilterRadii();
+//}
+//
+//void TW_CALL GetFilterRadius3(void *value, void *clientData)
+//{
+//	*reinterpret_cast<uint*>(value) = g_guiFilterRadius[2];
+//}
+//
+//
+//void TW_CALL SaveLinesDialog(void *clientData)
+//{
+//	bool bFullscreen = (!DXUTIsWindowed());
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Save Lines", "*.linebuf\0*.linebuf", filename, true)) 
+//	{
+//		filename = tum3d::RemoveExt(filename) + ".linebuf";
+//		float posOffset = 0.0f;
+//		if(g_particleTraceParams.m_upsampledVolumeHack)
+//		{
+//			// upsampled volume is offset by half a grid spacing...
+//			float gridSpacingWorld = 2.0f / float(g_volume.GetVolumeSize().maximum());
+//			posOffset = 0.5f * gridSpacingWorld;
+//		}
+//		if(!g_tracingManager.GetResult()->Write(filename, posOffset))
+//		{
+//			printf("Saving lines to file %s failed!\n", filename.c_str());
+//		}
+//	}
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//}
+//
+//void TW_CALL LoadLinesDialog(void *clientData)
+//{
+//	bool bFullscreen = (!DXUTIsWindowed());
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Load Lines", "*.linebuf\0*.linebuf", filename, false))
+//	{
+//		LineBuffers* pBuffers = new LineBuffers(DXUTGetD3D11Device());
+//		if(!pBuffers->Read(filename, g_lineIDOverride))
+//		{
+//			printf("Loading lines from file %s failed!\n", filename.c_str());
+//			delete pBuffers;
+//		}
+//		else
+//		{
+//			g_lineBuffers.push_back(pBuffers);
+//		}
+//	}
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	g_redraw = true;
+//}
+//
+//void TW_CALL ClearLinesCallback(void *clientData)
+//{
+//	ReleaseLineBuffers();
+//	g_redraw = true;
+//}
+//
+//void TW_CALL LoadBallsDialog(void *clientData)
+//{
+//	bool bFullscreen = (!DXUTIsWindowed());
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Load Balls", "*.*\0*.*", filename, false))
+//	{
+//		BallBuffers* pBuffers = new BallBuffers(DXUTGetD3D11Device());
+//		if(!pBuffers->Read(filename))
+//		{
+//			printf("Loading balls from file %s failed!\n", filename.c_str());
+//			delete pBuffers;
+//		}
+//		else
+//		{
+//			g_ballBuffers.push_back(pBuffers);
+//		}
+//	}
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	g_redraw = true;
+//}
+//
+//void TW_CALL ClearBallsCallback(void *clientData)
+//{
+//	ReleaseBallBuffers();
+//	g_redraw = true;
+//}
+//
+//
+//void TW_CALL SetRotation(const void *value, void *clientData)
+//{
+//	const float* pRotationNew = reinterpret_cast<const float*>(value);
+//	g_viewParams.m_rotationQuat.set(pRotationNew[3], pRotationNew[0], pRotationNew[1], pRotationNew[2]);
+//}
+//
+//void TW_CALL GetRotation(void *value, void *clientData)
+//{
+//	reinterpret_cast<float*>(value)[0] = g_viewParams.m_rotationQuat.y();
+//	reinterpret_cast<float*>(value)[1] = g_viewParams.m_rotationQuat.z();
+//	reinterpret_cast<float*>(value)[2] = g_viewParams.m_rotationQuat.w();
+//	reinterpret_cast<float*>(value)[3] = g_viewParams.m_rotationQuat.x();
+//}
+//
+//
+//void TW_CALL SaveScreenshot(void *clientData)
+//{
+//	g_saveScreenshot = true;
+//}
+//
+//void TW_CALL SaveRenderBufferScreenshot(void *clientData)
+//{
+//	g_saveRenderBufferScreenshot = true;
+//}
+//
+//
+//void TW_CALL SaveRenderingParamsDialog(void *clientData)
+//{
+//	bool bFullscreen = (!DXUTIsWindowed());
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	std::string filename;
+//	if ( tum3d::GetFilenameDialog("Save Settings", "*.cfg\0*.cfg", filename, true) ) 
+//	{
+//		filename = tum3d::RemoveExt(filename) + ".cfg";
+//		SaveRenderingParams( filename );
+//	}
+//	
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//}
+//
+//void TW_CALL LoadRenderingParamsDialog(void *clientData)
+//{
+//	bool bFullscreen = (!DXUTIsWindowed());
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();
+//
+//	std::string filename;
+//	if ( tum3d::GetFilenameDialog("Load Settings", "*.cfg\0*.cfg", filename, false) ) 
+//		LoadRenderingParams( filename );
+//
+//	if( bFullscreen ) DXUTToggleFullScreen();	
+//}
+//
+//
+//void TW_CALL SetMemLimitCallback(const void *value, void *clientData)
+//{
+//	g_volume.GetSystemMemoryUsage().SetSystemMemoryLimitMBytes(*reinterpret_cast<const float*>(value));
+//}
+//
+//void TW_CALL GetMemLimitCallback(void *value, void *clientData)
+//{
+//	*reinterpret_cast<float*>(value) = g_volume.GetSystemMemoryUsage().GetSystemMemoryLimitMBytes();
+//}
+//
+//
+//void TW_CALL BuildFlowGraphCallback(void *clientData)
+//{
+//	BuildFlowGraph("flowgraph.txt");
+//}
+//
+//void TW_CALL SaveFlowGraphCallback(void *clientData)
+//{
+//	SaveFlowGraph();
+//}
+//
+//void TW_CALL LoadFlowGraphCallback(void *clientData)
+//{
+//	LoadFlowGraph();
+//}
+//
+//
+//void TW_CALL SetUseAllGPUs(const void *value, void *clientData)
+//{
+//	ReleaseVolumeDependentResources();
+//	ShutdownCudaDevices();
+//
+//	g_useAllGPUs = *reinterpret_cast<const bool*>(value);
+//
+//	InitCudaDevices();
+//	CreateVolumeDependentResources(DXUTGetD3D11Device());
+//}
+//
+//void TW_CALL GetUseAllGPUs(void *value, void *clientData)
+//{
+//	*reinterpret_cast<bool*>(value) = g_useAllGPUs;
+//}
+//
+//
+//void TW_CALL StartImageSequence(void *clientData)
+//{
+//	g_imageSequence.BaseRotationQuat = g_viewParams.m_rotationQuat;
+//	g_imageSequence.BaseTimestep = g_volume.GetCurNearestTimestepIndex();
+//
+//	g_imageSequence.FrameCur = 0;
+//	g_imageSequence.Running = true;
+//}
+//
+//void TW_CALL StopImageSequence(void *clientData)
+//{
+//	g_imageSequence.Running = false;
+//	g_imageSequence.FrameCur = 0;
+//}
+//
+//
+//void TW_CALL StartProfiler(void *clientData)
+//{
+//	cudaProfilerStart();
+//	cudaGetLastError();
+//}
+//
+//void TW_CALL StopProfiler(void *clientData)
+//{
+//	cudaProfilerStop();
+//	cudaGetLastError();
+//}
+//
+//
+//void TW_CALL SetEnableBatchAdvectMode(const void *value, void *clientData)
+//{
+//	bool enable = *reinterpret_cast<const bool*>(value);
+//	eAdvectMode mode = eAdvectMode(uint(clientData));
+//
+//	if(enable) {
+//		g_batchTraceParams.m_advectModes.insert(mode);
+//	} else {
+//		g_batchTraceParams.m_advectModes.erase(mode);
+//	}
+//}
+//
+//void TW_CALL GetEnableBatchAdvectMode(void *value, void *clientData)
+//{
+//	eAdvectMode mode = eAdvectMode(uint(clientData));
+//
+//	bool enabled = (g_batchTraceParams.m_advectModes.count(mode) > 0);
+//
+//	*reinterpret_cast<bool*>(value) = enabled;
+//}
+//
+//void TW_CALL SetEnableBatchFilterMode(const void *value, void *clientData)
+//{
+//	bool enable = *reinterpret_cast<const bool*>(value);
+//	eTextureFilterMode mode = eTextureFilterMode(uint(clientData));
+//
+//	if(enable) {
+//		g_batchTraceParams.m_filterModes.insert(mode);
+//	} else {
+//		g_batchTraceParams.m_filterModes.erase(mode);
+//	}
+//}
+//
+//void TW_CALL GetEnableBatchFilterMode(void *value, void *clientData)
+//{
+//	eTextureFilterMode mode = eTextureFilterMode(uint(clientData));
+//
+//	bool enabled = (g_batchTraceParams.m_filterModes.count(mode) > 0);
+//
+//	*reinterpret_cast<bool*>(value) = enabled;
+//}
+//
+//void StartBatchTracing()
+//{
+//	if(g_batchTrace.VolumeFiles.empty()) {
+//		return;
+//	}
+//
+//	g_tracingManager.CancelTracing();
+//	CloseVolumeFile();
+//
+//	// semi-HACK: disable rendering preview
+//	//g_showPreview = false;
+//
+//	// create outpath if it doesn't exist yet
+//	system((string("mkdir \"") + tum3d::GetPath(g_batchTrace.OutPath) + "\"").c_str());
+//
+//	// save config
+//	ConfigFile config;
+//	g_particleTraceParams.WriteConfig(config, true);
+//	g_batchTraceParams.WriteConfig(config);
+//	config.Write(g_batchTrace.OutPath + "BatchParams.cfg");
+//
+//	g_batchTrace.FileCur = 0;
+//	g_batchTrace.StepCur = 0;
+//	g_batchTrace.Running = true;
+//
+//	std::string filenameStats = g_batchTrace.OutPath + "BatchStats.csv";
+//	g_batchTrace.FileStats.open(filenameStats);
+//	if(!g_batchTrace.FileStats.good()) {
+//		printf("WARNING: Failed opening output file %s\n", filenameStats.c_str());
+//	}
+//	std::string filenameTimings = g_batchTrace.OutPath + "BatchTimings.csv";
+//	g_batchTrace.FileTimings.open(filenameTimings);
+//	if(!g_batchTrace.FileStats.good()) {
+//		printf("WARNING: Failed opening output file %s\n", filenameTimings.c_str());
+//	}
+//
+//	std::vector<std::string> extraColumns;
+//	extraColumns.push_back("Name");
+//	extraColumns.push_back("Bonus");
+//	extraColumns.push_back("Penalty");
+//	TracingManager::Stats::WriteCSVHeader(g_batchTrace.FileStats, extraColumns);
+//	TracingManager::Timings::WriteCSVHeader(g_batchTrace.FileTimings, extraColumns);
+//
+//	printf("\n------ Batch trace started.  File count: %Iu  Step count: %u\n\n", g_batchTrace.VolumeFiles.size(), g_batchTraceParams.GetTotalStepCount());
+//
+//	OpenVolumeFile(g_batchTrace.VolumeFiles[g_batchTrace.FileCur], DXUTGetD3D11Device());
+//	if(!LineModeIsTimeDependent(g_particleTraceParams.m_lineMode) && g_volume.IsCompressed()) {
+//		// semi-HACK: fully load the whole timestep, so we get results consistently without IO
+//		printf("Loading file %u...", g_batchTrace.FileCur);
+//		g_volume.LoadNearestTimestep();
+//		printf("\n");
+//	}
+//	if(g_particleTraceParams.HeuristicUseFlowGraph()) {
+//		LoadOrBuildFlowGraph();
+//	}
+//	g_batchTraceParams.ApplyToTraceParams(g_particleTraceParams, g_batchTrace.StepCur);
+//}
+//
+//void TW_CALL StartBatchTracingChooseFiles(void *clientData = nullptr)
+//{
+//	if(!tum3d::GetMultiFilenameDialog("Choose volume files", "TimeVolume (*.timevol)\0*.timevol\0", g_batchTrace.VolumeFiles))
+//		return;
+//	assert(!g_batchTrace.VolumeFiles.empty());
+//
+//	g_batchTrace.OutPath = tum3d::GetPath(g_batchTrace.VolumeFiles[0]);
+//	//if(!tum3d::GetPathDialog("Choose output folder", g_batchTrace.OutPath))
+//	//	return;
+//
+//	StartBatchTracing();
+//}
+//
+//void TW_CALL StopBatchTracing(void *clientData = nullptr)
+//{
+//	if(g_batchTrace.Running) {
+//		printf("\n------ Batch trace stopped.\n\n");
+//	}
+//
+//	g_batchTrace.Running = false;
+//	g_batchTrace.FileCur = 0;
+//	g_batchTrace.StepCur = 0;
+//}
+//
+//
+//void TW_CALL GetNumOMPThreads(void *value, void *clientData)
+//{
+//	*reinterpret_cast<uint*>(value) = g_threadCount;
+//}
+//
+//void TW_CALL SetNumOMPThreads(const void *value, void *clientData)
+//{
+//	g_threadCount = *reinterpret_cast<const uint*>(value);
+//	omp_set_num_threads(g_threadCount);
+//}
+//
+//void TW_CALL LoadSliceTexture(void *clientData)
+//{
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+//		//release old texture
+//		SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
+//		//create new texture
+//		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
+//		std::wstring wfilename(filename.begin(), filename.end());
+//		ID3D11Resource* tmp = NULL;
+//		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pSliceTexture))) {
+//			std::cout << "Slice texture " << filename << " loaded" << std::endl;
+//			g_particleRenderParams.m_showSlice = true;
+//			g_redraw = true;
+//		}
+//		else {
+//			std::cerr << "Failed to load slice texture" << std::endl;
+//		}
+//		SAFE_RELEASE(tmp);
+//	}
+//}
+//
+//void TW_CALL LoadColorTexture(void *clientData)
+//{
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+//		//release old texture
+//		SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
+//		//create new texture
+//		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
+//		std::wstring wfilename(filename.begin(), filename.end());
+//		ID3D11Resource* tmp = NULL;
+//		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pColorTexture))) {
+//			std::cout << "Color texture " << filename << " loaded" << std::endl;
+//			g_particleRenderParams.m_lineColorMode = eLineColorMode::TEXTURE;
+//			g_redraw = true;
+//		}
+//		else {
+//			std::cerr << "Failed to load color texture" << std::endl;
+//		}
+//		SAFE_RELEASE(tmp);
+//	}
+//}
+//
+//void TW_CALL LoadSeedTexture(void *clientData)
+//{
+//	std::string filename;
+//	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+//		//create new texture
+//		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
+//		std::wstring wfilename(filename.begin(), filename.end());
+//		ID3D11Resource* res = NULL;
+//		//ID3D11ShaderResourceView* srv = NULL;
+//		if (!FAILED(DirectX::CreateWICTextureFromFileEx(pd3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
+//			std::cout << "Seed texture " << filename << " loaded" << std::endl;
+//			//delete old data
+//			delete[] g_particleTraceParams.m_seedTexture.m_colors;
+//			g_particleTraceParams.m_seedTexture.m_colors = NULL;
+//			//Copy to cpu memory
+//			ID3D11Texture2D* tex = NULL;
+//			res->QueryInterface(&tex);
+//			D3D11_TEXTURE2D_DESC desc;
+//			tex->GetDesc(&desc);
+//			g_particleTraceParams.m_seedTexture.m_width = desc.Width;
+//			g_particleTraceParams.m_seedTexture.m_height = desc.Height;
+//			g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
+//			D3D11_MAPPED_SUBRESOURCE mappedResource;
+//			ID3D11DeviceContext* context = NULL;
+//			pd3dDevice->GetImmediateContext(&context);
+//			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
+//				for (int y = 0; y < desc.Width; ++y) {
+//					memcpy(&g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
+//				}
+//				context->Unmap(tex, 0);
+//			}
+//			SAFE_RELEASE(context);
+//			SAFE_RELEASE(tex);
+//			//reset color
+//			g_particleTraceParams.m_seedTexture.m_picked.clear();
+//			//set seed box to domain
+//			SetBoundingBoxToDomainSize(clientData);
+//			std::cout << "Seed texture copied to cpu memory" << std::endl;
+//		}
+//		else {
+//			std::cerr << "Failed to load seed texture" << std::endl;
+//		}
+//		//SAFE_RELEASE(srv);
+//		SAFE_RELEASE(res);
+//	}
+//}
+//
+//
+//void FTLEComputeParticleCount()
+//{
+//	g_particleTraceParams.m_lineCount = g_particleTraceParams.m_ftleResolution * g_particleTraceParams.m_ftleResolution * 6;
+//}
+//
+//void TW_CALL CBSetFTLEEnabled(const void *value, void *clientData)
+//{
+//	g_particleTraceParams.m_ftleEnabled = *reinterpret_cast<const bool*>(value);
+//
+//	if (g_particleTraceParams.m_ftleEnabled)
+//	{
+//		TwDefine("Main/LineCount readonly=true");
+//		TwDefine("Main/LineMode readonly=true");
+//		TwDefine("Main/LineLengthMax readonly=true");
+//		TwDefine("Main/LineLengthMax readonly=true");
+//		TwDefine("Main/SeedingPattern readonly=true"); 
+//		g_particleTraceParams.m_lineMode = eLineMode::LINE_PATH_FTLE;
+//		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
+//		g_particleTraceParams.m_lineLengthMax = 2;
+//		g_particleTraceParams.m_lineAgeMax = 0.1f;
+//		FTLEComputeParticleCount();
+//	}
+//	else
+//	{
+//		g_particleTraceParams.m_lineMode = eLineMode::LINE_STREAM;
+//		g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
+//		TwDefine("Main/LineCount readonly=false");
+//		TwDefine("Main/LineMode readonly=false");
+//		TwDefine("Main/LineLengthMax readonly=false");
+//		TwDefine("Main/SeedingPattern readonly=false");
+//	}
+//}
+//
+//void TW_CALL CBGetFTLEEnabled(void *value, void *clientData)
+//{
+//	*reinterpret_cast<bool*>(value) = g_particleTraceParams.m_ftleEnabled;
+//}
+//
+//void TW_CALL CBSetFTLEResolution(const void *value, void *clientData)
+//{
+//	g_particleTraceParams.m_ftleResolution = *reinterpret_cast<const uint*>(value);
+//
+//	if (g_particleTraceParams.m_ftleEnabled)
+//		FTLEComputeParticleCount();
+//}
+//
+//void TW_CALL CBGetFTLEResolution(void *value, void *clientData)
+//{
+//	*reinterpret_cast<uint*>(value) = g_particleTraceParams.m_ftleResolution;
+//}
+//
+//
+//void TW_CALL CBSetInvertVelocity(const void *value, void *clientData)
+//{
+//	g_particleTraceParams.m_ftleInvertVelocity = *reinterpret_cast<const bool*>(value);
+//}
+//
+//void TW_CALL CBGetInvertVelocity(void *value, void *clientData)
+//{
+//	*reinterpret_cast<bool*>(value) = g_particleTraceParams.m_ftleInvertVelocity;
+//}
+//
+//
+//void TW_CALL CBSetPerspective(const void *value, void *clientData)
+//{
+//	g_projParams.m_perspective = *reinterpret_cast<const bool*>(value);
+//
+//	if (g_projParams.m_perspective)
+//		g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
+//	else
+//		g_projParams.m_fovy = 3.1f;
+//}
+//
+//void TW_CALL CBGetPerspecive(void *value, void *clientData)
+//{
+//	*reinterpret_cast<bool*>(value) = g_projParams.m_perspective;
+//}
+//
+//
+//
+//
+//void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
+//{
+//	TwInit(TW_DIRECT3D11, pDevice);
+//
+//	TwDefine("GLOBAL iconpos=bottomleft iconalign=horizontal");
+//
+//
+//	std::ostringstream strSeedingPatterns;
+//	strSeedingPatterns << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(0));
+//	for (uint i = 1; i < ParticleTraceParams::eSeedPattern::COUNT; i++)
+//		strSeedingPatterns << "," << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(i));
+//	TwType twSeedingPaterns = TwDefineEnumFromString("EnumSeedingPatterns", strSeedingPatterns.str().c_str());
+//
+//
+//	std::ostringstream strFilterModes;
+//	strFilterModes << GetTextureFilterModeName(eTextureFilterMode(0));
+//	for(uint i = 1; i < TEXTURE_FILTER_MODE_COUNT; i++) 
+//		strFilterModes << "," << GetTextureFilterModeName(eTextureFilterMode(i));
+//	TwType twFilterMode = TwDefineEnumFromString("EnumTextureFilterMode", strFilterModes.str().c_str());
+//
+//	//Raycaster only supports the first two modes, linear and cubic
+//	std::ostringstream strFilterModes2;
+//	strFilterModes2 << GetTextureFilterModeName(eTextureFilterMode(0));
+//	for (uint i = 1; i < 2; i++)
+//		strFilterModes2 << "," << GetTextureFilterModeName(eTextureFilterMode(i));
+//	TwType twFilterMode2 = TwDefineEnumFromString("EnumTextureFilterMode2", strFilterModes2.str().c_str());
+//
+//	std::ostringstream strRaycastModes;
+//	strRaycastModes << GetRaycastModeName(eRaycastMode(0));
+//	for(uint i = 1; i < RAYCAST_MODE_COUNT; i++)
+//		strRaycastModes << "," << GetRaycastModeName(eRaycastMode(i));
+//	TwType twRaycastMode = TwDefineEnumFromString("EnumRaycastMode", strRaycastModes.str().c_str());
+//
+//	std::ostringstream strMeasureModes;
+//	strMeasureModes << GetMeasureName(eMeasure(0));
+//	for(uint i = 1; i < MEASURE_COUNT; i++)
+//		strMeasureModes << "," << GetMeasureName(eMeasure(i));
+//	TwType twMeasureMode = TwDefineEnumFromString("EnumMeasureMode", strMeasureModes.str().c_str());
+//
+//	std::ostringstream strColorModes;
+//	strColorModes << GetColorModeName(eColorMode(0));
+//	for(uint i = 1; i < COLOR_MODE_COUNT; i++)
+//		strColorModes << "," << GetColorModeName(eColorMode(i));
+//	TwType twColorMode = TwDefineEnumFromString("EnumColorMode", strColorModes.str().c_str());
+//
+//	std::ostringstream strMeasureComputeModes;
+//	strMeasureComputeModes << GetMeasureComputeModeName(eMeasureComputeMode(0));
+//	for(uint i = 1; i < MEASURE_COMPUTE_COUNT; i++)
+//		strMeasureComputeModes << "," << GetMeasureComputeModeName(eMeasureComputeMode(i));
+//	TwType twMeasureComputeMode = TwDefineEnumFromString("EnumMeasureComputeMode", strMeasureComputeModes.str().c_str());
+//
+//	std::ostringstream strLineRenderModes;
+//	strLineRenderModes << GetLineRenderModeName(eLineRenderMode(0));
+//	for(uint i = 1; i < LINE_RENDER_MODE_COUNT; i++)
+//		strLineRenderModes << "," << GetLineRenderModeName(eLineRenderMode(i));
+//	TwType twLineRenderMode = TwDefineEnumFromString("EnumLineRenderMode", strLineRenderModes.str().c_str());
+//
+//	std::ostringstream strLineColorModes;
+//	strLineColorModes << GetLineColorModeName(eLineColorMode(0));
+//	for (uint i = 1; i < LINE_COLOR_MODE_COUNT; i++)
+//		strLineColorModes << "," << GetLineColorModeName(eLineColorMode(i));
+//	TwType twLineColorMode = TwDefineEnumFromString("EnumLineColorMode", strLineColorModes.str().c_str());
+//
+//	std::ostringstream strParticleRenderModes;
+//	strParticleRenderModes << GetParticleRenderModeName(eParticleRenderMode(0));
+//	for (uint i = 1; i < PARTICLE_RENDER_MODE_COUNT; i++)
+//		strParticleRenderModes << "," << GetParticleRenderModeName(eParticleRenderMode(i));
+//	TwType twParticleRenderMode = TwDefineEnumFromString("EnumParticleRenderMode", strParticleRenderModes.str().c_str());
+//
+//	std::ostringstream strAdvectModes;
+//	strAdvectModes << GetAdvectModeName(eAdvectMode(0));
+//	for(uint i = 1; i < ADVECT_MODE_COUNT; i++) 
+//		strAdvectModes << "," << GetAdvectModeName(eAdvectMode(i));
+//	TwType twAdvectMode = TwDefineEnumFromString("EnumAdvectMode", strAdvectModes.str().c_str());
+//
+//	std::ostringstream strLineModes;
+//	strLineModes << GetLineModeName(eLineMode(0));
+//	for(uint i = 1; i < LINE_MODE_COUNT; i++) 
+//		strLineModes << "," << GetLineModeName(eLineMode(i));
+//	TwType twLineMode = TwDefineEnumFromString("EnumLineMode", strLineModes.str().c_str());
+//
+//	std::ostringstream strHeatMapNormalizationModes;
+//	strHeatMapNormalizationModes << GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(0));
+//	for (uint i = 1; i < HEAT_MAP_NORMALIZATION_MODE_COUNT; i++)
+//		strHeatMapNormalizationModes << "," << GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(i));
+//	TwType twHeatMapNormalizationMode = TwDefineEnumFromString("EnumHeatMapNormalizationMode", strHeatMapNormalizationModes.str().c_str());
+//
+//	// MAIN BAR
+//	g_pTwBarMain = TwNewBar("Main");
+//	std::ostringstream ss;
+//	int iHeight = max(static_cast<int>(uiBBHeight)-40, 200);
+//	ss << "Main label='Main' size='300 " << iHeight << "' position='10 10' text=light valueswidth=100 alpha=235 color='175 175 175'";
+//	TwDefine(ss.str().c_str());
+//
+//	// "global" params: data set and timestep
+//	TwAddButton(g_pTwBarMain, "SelectFile", SelectFile, nullptr, "label='Select file'");
+//	TwAddVarCB(g_pTwBarMain, "Time", TW_TYPE_FLOAT, SetTime, GetTime, nullptr, "label='Time' min=0 max=0 precision=4");
+//	TwAddVarCB(g_pTwBarMain, "Timestep", TW_TYPE_UINT32, SetTimestepIndex, GetTimestepIndex, nullptr, "label='Timestep' min=0 max=0");
+//	int32 c = g_volume.GetTimestepCount() - 1;
+//	TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &c);
+//	TwAddVarCB(g_pTwBarMain, "TimeSpacing", TW_TYPE_FLOAT, SetTimeSpacing, GetTimeSpacing, nullptr, "label='Time Spacing' min=0.001 step=0.001 precision=3");
+//	TwAddButton(g_pTwBarMain, "LoadTimestep", LoadTimestepCallback, nullptr, "label='Preload Timestep' group=MiscSettings");
+//	TwAddButton(g_pTwBarMain, "WriteTimestepRaw", SelectOutputRawFile, nullptr, "label='Write as .raw' group=MiscSettings");
+//	TwAddButton(g_pTwBarMain, "WriteTimestepLA3D", SelectOutputLA3DFile, nullptr, "label='Write as .la3d' group=MiscSettings");
+//
+//	TwAddSeparator(g_pTwBarMain, "", " group=MiscSettings");
+//	TwAddButton(g_pTwBarMain, "SaveSettings", SaveRenderingParamsDialog, nullptr, "label='Save Settings' group=MiscSettings");
+//	TwAddButton(g_pTwBarMain, "LoadSettings", LoadRenderingParamsDialog, nullptr, "label='Load Settings' group=MiscSettings");
+//
+//	TwAddSeparator(g_pTwBarMain, "", " group=MiscSettings");
+//	TwAddVarCB(g_pTwBarMain, "MemLimit", TW_TYPE_FLOAT, SetMemLimitCallback, GetMemLimitCallback, nullptr, "label='Mem Usage Limit (MB)' precision=1 group=MiscSettings");
+//
+//	TwDefine("Main/MiscSettings label='Misc. Settings' opened=false");
+//
+//	// ray casting params
+//	TwAddSeparator(g_pTwBarMain, "", "");
+//
+//	TwAddVarRW(g_pTwBarMain, "RaycastEnabled",	TW_TYPE_BOOLCPP,	&g_raycastParams.m_raycastingEnabled,		"label='Enable' group=RayCast");
+//
+//	TwAddVarRW(g_pTwBarMain, "Source",			twMeasureComputeMode,&g_raycastParams.m_measureComputeMode,		"label='Measure Computation' group=RayCast");
+//
+//	TwAddVarRW(g_pTwBarMain, "Interpolation",	twFilterMode2,		&g_raycastParams.m_textureFilterMode,		"label='Interpolation' group=RayCast");
+//	TwAddVarRW(g_pTwBarMain, "VisMode",			twRaycastMode,		&g_raycastParams.m_raycastMode,				"label='Raycast Mode' group=RayCast");
+//	TwAddVarCB(g_pTwBarMain, "Measure1",		twMeasureMode,		SetMeasure1, GetMeasure1, nullptr,			"label='Measure 1' group=RayCast");
+//	TwAddVarRW(g_pTwBarMain, "MeasureScale1",	TW_TYPE_FLOAT,		&g_raycastParams.m_measureScale1,			"label='Measure 1 Scale' step=0.01 precision=6 group=RayCast");
+//	TwAddVarCB(g_pTwBarMain, "Measure2",		twMeasureMode,		SetMeasure2, GetMeasure2, nullptr,			"label='Measure 2' group=RayCast");
+//	TwAddVarRW(g_pTwBarMain, "MeasureScale2",	TW_TYPE_FLOAT,		&g_raycastParams.m_measureScale2,			"label='Measure 2 Scale' step=0.01 precision=6 group=RayCast");
+//
+//	TwAddVarRW(g_pTwBarMain, "SampleRate",		TW_TYPE_FLOAT,		&g_raycastParams.m_sampleRate,				"label='Sample Rate' min=0.01 max=20.0 step=0.01 group=RayCast");
+//	TwAddVarRW(g_pTwBarMain, "Density",			TW_TYPE_FLOAT,		&g_raycastParams.m_density,					"label='Density' min=0.1 max=1000.0 step=0.1 group=RayCast");
+//	TwAddVarRW(g_pTwBarMain, "Iso1",			TW_TYPE_FLOAT,		&g_raycastParams.m_isoValue1,				"label='IsoValue1' step=0.01 precision=4 group=IsoSettings");
+//	TwAddVarRW(g_pTwBarMain, "IsoColor1",		TW_TYPE_COLOR4F,	&g_raycastParams.m_isoColor1,				"label='IsoColor1' group=IsoSettings");
+//	TwAddVarRW(g_pTwBarMain, "Iso2",			TW_TYPE_FLOAT,		&g_raycastParams.m_isoValue2,				"label='IsoValue2' step=0.01 precision=4 group=IsoSettings");
+//	TwAddVarRW(g_pTwBarMain, "IsoColor2",		TW_TYPE_COLOR4F,	&g_raycastParams.m_isoColor2,				"label='IsoColor2' group=IsoSettings");
+//	TwAddVarRW(g_pTwBarMain, "Iso3",			TW_TYPE_FLOAT,		&g_raycastParams.m_isoValue3,				"label='IsoValue3' step=0.01 precision=4 group=IsoSettings");
+//	TwAddVarRW(g_pTwBarMain, "IsoColor3",		TW_TYPE_COLOR4F,	&g_raycastParams.m_isoColor3,				"label='IsoColor3' group=IsoSettings");
+//	TwAddVarCB(g_pTwBarMain, "Color Mode",		twColorMode,		SetTwColorMode, GetTwColorMode, nullptr,	"label='Color Mode' group=IsoSettings");
+//	TwDefine("Main/IsoSettings label='Iso Settings' group=RayCast");
+//
+//	TwAddVarCB(g_pTwBarMain, "FilterRadius1",	TW_TYPE_UINT32,		SetFilterRadius1, GetFilterRadius1, nullptr,"label='Radius 1' min=0 max=247 step=1 group=Filter");
+//	TwAddVarCB(g_pTwBarMain, "FilterRadius2",	TW_TYPE_UINT32,		SetFilterRadius2, GetFilterRadius2, nullptr,"label='Radius 2' min=0 max=247 step=1 group=Filter");
+//	TwAddVarCB(g_pTwBarMain, "FilterRadius3",	TW_TYPE_UINT32,		SetFilterRadius3, GetFilterRadius3, nullptr,"label='Radius 3' min=0 max=247 step=1 group=Filter");
+//	TwAddVarRW(g_pTwBarMain, "FilterOffset",	TW_TYPE_UINT32,		&g_raycastParams.m_filterOffset,			"label='Filter (Scale) Offset' max=2 group=Filter");
+//	TwDefine("Main/Filter group=RayCast opened=false");
+//
+//	TwAddVarRW(g_pTwBarMain, "ShowClipBox",		TW_TYPE_BOOLCPP,	&g_bRenderClipBox,							"label='Show Clip Box (Red)' group=RayCast");
+//	TwAddVarRW(g_pTwBarMain, "ClipBoxMinX",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMin.x(),			"label='X' min=-1 max=1 step=0.01 group=ClipBoxMin");
+//	TwAddVarRW(g_pTwBarMain, "ClipBoxMinY",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMin.y(),			"label='Y' min=-1 max=1 step=0.01 group=ClipBoxMin");
+//	TwAddVarRW(g_pTwBarMain, "ClipBoxMinZ",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMin.z(),			"label='Z' min=-1 max=1 step=0.01 group=ClipBoxMin");
+//	TwDefine("Main/ClipBoxMin label='Clip Box Min' group=RayCast opened=false");
+//	TwAddVarRW(g_pTwBarMain, "ClipBoxMaxX",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMax.x(),			"label='X' min=-1 max=1 step=0.01 group=ClipBoxMax");
+//	TwAddVarRW(g_pTwBarMain, "ClipBoxMaxY",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMax.y(),			"label='Y' min=-1 max=1 step=0.01 group=ClipBoxMax");
+//	TwAddVarRW(g_pTwBarMain, "ClipBoxMaxZ",		TW_TYPE_FLOAT,		&g_raycastParams.m_clipBoxMax.z(),			"label='Z' min=-1 max=1 step=0.01 group=ClipBoxMax");
+//	TwDefine("Main/ClipBoxMax label='Clip Box Max' group=RayCast opened=false");
+//
+//	TwDefine("Main/RayCast label='Ray Casting' opened=false");
+//
+//
+//	// FTLE
+//	TwAddVarCB(g_pTwBarMain, "FTLEEnabled", TW_TYPE_BOOLCPP, CBSetFTLEEnabled, CBGetFTLEEnabled, nullptr, "label='Enabled' group=FTLE");
+//
+//	TwAddVarRW(g_pTwBarMain, "FTLEScale", TW_TYPE_FLOAT, &g_renderingManager.m_ftleScale, "label='Scale' step=0.01 group=FTLE");
+//
+//	TwAddVarCB(g_pTwBarMain, "InvertVelocity", TW_TYPE_BOOLCPP, CBSetInvertVelocity, CBGetInvertVelocity, nullptr, "label='Invert velocity' group=FTLE");
+//
+//	TwAddVarCB(g_pTwBarMain, "FTLEResolution", TW_TYPE_UINT32, CBSetFTLEResolution, CBGetFTLEResolution, nullptr, "label='Resolution' group=FTLE min=32 max=4096");
+//
+//	TwAddVarRW(g_pTwBarMain, "FTLESliceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSliceY, "label='Slice (Y)' min=-10 step=0.01 precision=4 group=FTLE");
+//	TwAddVarRW(g_pTwBarMain, "FTLESliceAlpha", TW_TYPE_FLOAT, &g_particleRenderParams.m_ftleTextureAlpha, "label='Slice Alpha' min=0 max=1 step=0.01 precision=3 group=FTLE");
+//
+//	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceX", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.x(), "label='X' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
+//	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceY", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.y(), "label='Y' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
+//	TwAddVarRW(g_pTwBarMain, "FTLESeparationDistanceZ", TW_TYPE_FLOAT, &g_particleTraceParams.m_ftleSeparationDistance.z(), "label='Z' min=0.0000000 step=0.0000001 precision=7 group=FTLESeparationDistance");
+//	TwDefine("Main/FTLESeparationDistance label='Separation Distance' group=FTLE opened=false");
+//
+//	TwDefine("Main/FTLE label='FTLE' opened=false");
+//
+//
+//	// particle params
+//	TwAddVarRW(g_pTwBarMain, "Verbose",			TW_TYPE_BOOLCPP,	&g_tracingManager.GetVerbose(),				"label='Verbose' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "ShowSeedBox",		TW_TYPE_BOOLCPP,	&g_bRenderSeedBox,							"label='Show Seed Box (Green)' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "CPUTrace",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_cpuTracing,		"label='CPU Tracing' group=ParticleTraceAdvanced");
+//	TwAddVarCB(g_pTwBarMain, "CPUThreads",		TW_TYPE_UINT32,		SetNumOMPThreads, GetNumOMPThreads, nullptr, "label='# CPU Threads' group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "BrickSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetBrickSlotCountMax(),	"label='Max Brick Slot Count' group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "TimeSlotsMax",	TW_TYPE_UINT32,		&g_tracingManager.GetTimeSlotCountMax(),	"label='Max Time Slot Count' group=ParticleTraceAdvanced");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
+//	TwAddButton(g_pTwBarMain,"SeedToDomain", SetBoundingBoxToDomainSize, NULL,                                  "label='Set Seed Box to Domain' group=ParticleTrace");
+//	TwAddButton(g_pTwBarMain, "LoadSeedTexture", LoadSeedTexture, pDevice, "label='Load Seed Texture' group=ParticleTrace");
+//	TwAddButton(g_pTwBarMain, "SeedTextureInfo", NULL, NULL, "label='Press P to pick the color under the mouse' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "SeedBoxMinX",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.x(),	"label='X' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
+//	TwAddVarRW(g_pTwBarMain, "SeedBoxMinY",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.y(),	"label='Y' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
+//	TwAddVarRW(g_pTwBarMain, "SeedBoxMinZ",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxMin.z(),	"label='Z' min=-1 max=1 step=0.01 precision=3 group=SeedBoxMin");
+//	TwDefine("Main/SeedBoxMin label='Seed Box Min' group=ParticleTrace opened=false");
+//	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeX",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.x(),	"label='X' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
+//	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeY",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.y(),	"label='Y' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
+//	TwAddVarRW(g_pTwBarMain, "SeedBoxSizeZ",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_seedBoxSize.z(),	"label='Z' min=0 max=2 step=0.01 precision=3 group=SeedBoxSize");
+//	TwDefine("Main/SeedBoxSize label='Seed Box Size' group=ParticleTrace opened=false");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
+//	
+//	TwAddVarRW(g_pTwBarMain, "SeedingPattern",  twSeedingPaterns,	&g_particleTraceParams.m_seedPattern,		"label='Seeding Pattern' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "AdvectMode",		twAdvectMode,		&g_particleTraceParams.m_advectMode,		"label='Advection' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "DenseOutput",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enableDenseOutput,	"label='Dense Output' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "TraceInterpol",	twFilterMode,		&g_particleTraceParams.m_filterMode,		"label='Interpolation' group=ParticleTrace");
+//	//TwAddVarRW(g_pTwBarMain, "LineMode",		twLineMode,			&g_particleTraceParams.m_lineMode,			"label='Line Mode' group=ParticleTrace");
+//	TwAddVarCB(g_pTwBarMain, "LineMode",		twLineMode,
+//		[](const void* valueToSet, void* clientData) {
+//			g_particleTraceParams.m_lineMode = *((eLineMode*)valueToSet);
+//			if (LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
+//				//force render mode to 'particles' and preview to true
+//				g_particleRenderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
+//				g_showPreview = true;
+//			}
+//			if (LineModeGenerateAlwaysNewSeeds(g_particleTraceParams.m_lineMode)) {
+//				//new seeds are always generated -> color-by-line does not make sense, switch to color by age
+//				if (g_particleRenderParams.m_lineColorMode == eLineColorMode::LINE_ID)
+//					g_particleRenderParams.m_lineColorMode = eLineColorMode::AGE;
+//			}
+//		},
+//		[](void* value, void* clientData) {
+//			*((eLineMode*) value) = g_particleTraceParams.m_lineMode;
+//		}, 
+//		NULL, "label='Line Mode' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "LineCount",		TW_TYPE_UINT32,		&g_particleTraceParams.m_lineCount,			"label='Line Count' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "LineLengthMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_lineLengthMax,		"label='Max Line Length' min=2 group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "LineAgeMax",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_lineAgeMax,		"label='Max Line Age' min=0 precision=4 step=0.01 group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "MinVelocity",		TW_TYPE_FLOAT,		&g_particleTraceParams.m_minVelocity,		"label='Min Velocity' min=0 precision=2 step=0.01 group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "ParticlesPerSecond",TW_TYPE_FLOAT,	&g_particleTraceParams.m_particlesPerSecond,"label='Particles per second' min=0 step=0.01 group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "AdvectDeltaT",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaT,		"label='Advection Delta T' min=0 precision=5 step=0.001 group=ParticleTrace");
+//	TwAddButton(g_pTwBarMain, "SeedManyParticles", [](void* data) {
+//		g_tracingManager.SeedManyParticles();
+//	}, NULL, "label='Seed many particles' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "CellChangeThreshold", TW_TYPE_FLOAT,  &g_particleTraceParams.m_cellChangeThreshold, "label='Cell Change Time Threshold' min=0 precision=5 step=0.001 group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "AdvectErrorTol",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectErrorTolerance,"label='Advection Error Tolerance (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMin",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMin,	"label='Advection Delta T Min' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "AdvectDeltaTMax",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_advectDeltaTMax,	"label='Advection Delta T Max' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "AdvectStepsMax",	TW_TYPE_UINT32,		&g_particleTraceParams.m_advectStepsPerRound,"label='Advect Steps per Round' min=0 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "PurgeTimeout",	TW_TYPE_UINT32,		&g_particleTraceParams.m_purgeTimeoutInRounds,"label='Brick Purge Timeout' min=0 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "HeuristicBonus",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicBonusFactor,"label='Heuristic: Bonus Factor' min=0 step=0.01 precision=3 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "HeuristicPenalty",TW_TYPE_FLOAT,		&g_particleTraceParams.m_heuristicPenaltyFactor,"label='Heuristic: Penalty Factor' min=0 step=0.01 precision=3 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "HeuristicFlags",	TW_TYPE_UINT32,		&g_particleTraceParams.m_heuristicFlags,	"label='Heuristic: Flags' group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "OutputPosDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputPosDiff,		"label='Output Pos Diff (Voxels)' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "OutputTimeDiff",	TW_TYPE_FLOAT,		&g_particleTraceParams.m_outputTimeDiff,	"label='Output Time Diff' min=0 precision=5 step=0.001 group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "WaitForDisk",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_waitForDisk,		"label='Wait for Disk' group=ParticleTraceAdvanced");
+//
+//	TwAddVarRW(g_pTwBarMain, "Prefetching",		TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_enablePrefetching,	"label='Prefetching' group=ParticleTraceAdvanced");
+//	TwAddVarRW(g_pTwBarMain, "UpsampledVolume",	TW_TYPE_BOOLCPP,	&g_particleTraceParams.m_upsampledVolumeHack,"label='Upsampled Volume Hack' group=ParticleTraceAdvanced");
+//	TwDefine("Main/ParticleTraceAdvanced label='Advanced Settings' group=ParticleTrace opened=false");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
+//	TwAddButton(g_pTwBarMain, "Retrace", Retrace, nullptr, "label='Retrace' group=ParticleTrace");
+//	TwAddVarRW(g_pTwBarMain, "TracingPaused", TW_TYPE_BOOLCPP, &g_particleTracingPaused, "label='Paused (SPACE)' group=ParticleTrace key=SPACE");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTrace");
+//
+//	// IO
+//	TwAddButton(g_pTwBarMain, "SaveLines", SaveLinesDialog, nullptr, "label='Save Traced Lines' group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "LoadLines", LoadLinesDialog, nullptr, "label='Load Lines' group=ParticleTraceIO");
+//	TwAddVarRW(g_pTwBarMain,  "LineID", TW_TYPE_INT32, &g_lineIDOverride,"label='Line ID Override' min=-1 group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "ClearLines", ClearLinesCallback, nullptr, "label='Clear Loaded Lines' group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "LoadBalls", LoadBallsDialog, nullptr, "label='Load Balls' group=ParticleTraceIO");
+//	TwAddVarRW(g_pTwBarMain, "BallsRadius", TW_TYPE_FLOAT, &g_ballRadius, "label='Ball Radius' group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "ClearBalls", ClearBallsCallback, nullptr, "label='Clear Loaded Balls' group=ParticleTraceIO");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "FlowGraph", BuildFlowGraphCallback, nullptr, "label='Build Flow Graph' group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "SaveFlowGraph", SaveFlowGraphCallback, nullptr, "label='Save Flow Graph' group=ParticleTraceIO");
+//	TwAddButton(g_pTwBarMain, "LoadFlowGraph", LoadFlowGraphCallback, nullptr, "label='Load Flow Graph' group=ParticleTraceIO");
+//	TwDefine("Main/ParticleTraceIO label='Extra IO' group=ParticleTrace opened=false");
+//
+//	TwDefine("Main/ParticleTrace label='Particle Tracing' opened=false");
+//
+//	//Rendering
+//
+//	TwAddVarRW(g_pTwBarMain, "ParticleEnabled",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_linesEnabled,		"label='Enable' group=ParticleRender");
+//	//TwAddVarRW(g_pTwBarMain, "LightDirView",	TW_TYPE_DIR3F,		&g_particleRenderParams.m_lightDirView,		"label='Light Dir (View Space)' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "LineRenderMode",	twLineRenderMode,	&g_particleRenderParams.m_lineRenderMode,	"label='Line Render Mode' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "RibbonWidth",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_ribbonWidth,		"label='Ribbon Width' min=0 step=0.01 group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "TubeRadius",		TW_TYPE_FLOAT,		&g_particleRenderParams.m_tubeRadius,		"label='Tube Radius' min=0 step=0.01 group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "ParticleSize",    TW_TYPE_FLOAT,      &g_particleRenderParams.m_particleSize,     "label='Particle Size' group=ParticleRender min=0 step=0.01");
+//	TwAddVarRW(g_pTwBarMain, "RadiusFromVel",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_tubeRadiusFromVelocity, "label='Display Velocity' group=ParticleRender"); //"label='Tube Radius from Velocity' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "ReferenceVel",	TW_TYPE_FLOAT,		&g_particleRenderParams.m_referenceVelocity,"label='Reference Velocity' min=0.001 step=0.01 precision=3 group=ParticleRender");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "ParticleRenderMode", twParticleRenderMode, &g_particleRenderParams.m_particleRenderMode, "label='Particle Render Mode' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "ParticleTransparency", TW_TYPE_FLOAT, &g_particleRenderParams.m_particleTransparency, "label='Particle Transparency' group=ParticleRender min=0 max=1 step=0.01");
+//	TwAddVarRW(g_pTwBarMain, "SortParticles",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_sortParticles,	"label='Sort Particles' group=ParticleRender");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "ColorMode",		twLineColorMode,	&g_particleRenderParams.m_lineColorMode,	"label='Color Mode' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "Color0",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color0,			"label='Color 0' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "Color1",			TW_TYPE_COLOR3F,	&g_particleRenderParams.m_color1,			"label='Color 1' group=ParticleRender");
+//	TwAddButton(g_pTwBarMain, "LoadColorTexture", LoadColorTexture, pDevice,                                    "label='Load Color Texture' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "RenderMeasure",   twMeasureMode,      &g_particleRenderParams.m_measure,          "label='Measure' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "RenderMeasureScale", TW_TYPE_FLOAT,	&g_particleRenderParams.m_measureScale,		"label='Measure Scale' step=0.01 precision=6 group=ParticleRender");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "TimeStripes",		TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_timeStripes,		"label='Time Stripes' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "TimeStripeLength",TW_TYPE_FLOAT,		&g_particleRenderParams.m_timeStripeLength,	"label='Time Stripe Length' min=0.001 step=0.001 group=ParticleRender");
+//	TwAddSeparator(g_pTwBarMain, "", "group=ParticleRender");
+//	TwAddButton(g_pTwBarMain, "LoadSliceTexture", LoadSliceTexture, pDevice, "label='Load Slice Texture' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "ShowSlices",      TW_TYPE_BOOLCPP,    &g_particleRenderParams.m_showSlice,        "label='Show Slice' group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "SlicePosition",   TW_TYPE_FLOAT,      &g_particleRenderParams.m_slicePosition,    "label='Slice Position' step=0.001 group=ParticleRender");
+//	TwAddVarRW(g_pTwBarMain, "SliceAlpha",      TW_TYPE_FLOAT,      &g_particleRenderParams.m_sliceAlpha,       "label='Slice Transparency' step=0.01 min=0 max=1 group=ParticleRender");
+//	TwDefine("Main/ParticleRender label='Rendering' opened=false");
+//
+//	// Heat Map
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRecording", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRecording,
+//		"label='Enable Recording' group='Heat Map'");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableRendering", TW_TYPE_BOOLCPP, &g_heatMapParams.m_enableRendering,
+//		"label='Enable Rendering' group='Heat Map'");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_AutoReset", TW_TYPE_BOOLCPP, &g_heatMapParams.m_autoReset,
+//		"label='Auto Reset' group='Heat Map'");
+//	TwAddButton(g_pTwBarMain, "HeatMap_Reset", [](void* data) {
+//			g_heatMapManager.ClearChannels();
+//			g_redraw = true;
+//		}, 
+//		NULL, "label='Reset (C)' group='Heat Map' key=c");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_Normalize", twHeatMapNormalizationMode, &g_heatMapParams.m_normalizationMode,
+//		"label='Normalization' group='Heat Map'");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_StepSize", TW_TYPE_FLOAT, &g_heatMapParams.m_stepSize,
+//		"label='Step Size' min=0.001 step=0.001 group='Heat Map'");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_DensityScale", TW_TYPE_FLOAT, &g_heatMapParams.m_densityScale,
+//		"label='Density Scale' min=0 step=0.01 group='Heat Map'");
+//	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel1", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[0],
+//		"label='First displayed channel (1)' group='Heat Map'");
+//	TwAddVarRO(g_pTwBarMain, "HeatMap_Channel2", TW_TYPE_COLOR32, &g_heatMapParams.m_renderedChannels[1],
+//		"label='Second displayed channel (2)' group='Heat Map'");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_EnableIsosurface", TW_TYPE_BOOLCPP, &g_heatMapParams.m_isosurface,
+//		"label='Isosurface Rendering' group='Heat Map'");
+//	TwAddVarRW(g_pTwBarMain, "HeatMap_Isovalue", TW_TYPE_FLOAT, &g_heatMapParams.m_isovalue,
+//		"label='Isovalue' min=0 max=1 step=0.001 group='Heat Map'");
+//
+//	TwDefine("Main/'Heat Map' label='Heat Map' opened=false");
+//
+//	// bounding boxes
+//	
+//	TwAddVarRW(g_pTwBarMain, "DomainBoxThickness", TW_TYPE_FLOAT,	&g_renderingManager.m_DomainBoxThickness,	"label='Domain Box Thickness' min=0.0 step=0.0001 group=MiscRendering");
+//	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
+//	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)' group=MiscRendering");
+//
+//	TwAddVarRW(g_pTwBarMain, "FixedLightDir",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_FixedLightDir,	"label='Fixed Light Pos' group=Light");
+//	TwAddVarRW(g_pTwBarMain, "LightDirX", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.x(), "label='X' min=-1 max=1 step=0.1 group=Light");
+//	TwAddVarRW(g_pTwBarMain, "LightDirY", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.y(), "label='Y' min=-1 max=1 step=0.1 group=Light");
+//	TwAddVarRW(g_pTwBarMain, "LightDirZ", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.z(), "label='Z' min=-1 max=1 step=0.1 group=Light");
+//	TwDefine("Main/Light label='Light' opened=false group=MiscRendering");
+//
+//	// view params
+//	TwAddSeparator(g_pTwBarMain, "", "");
+//	TwAddVarRW(g_pTwBarMain, "Supersample",		TW_TYPE_FLOAT,		&g_renderBufferSizeFactor,		"label='SuperSample Factor' min=0.5 max=8 step=0.5 group=MiscRendering");
+//
+//	//TwAddVarRW(g_pTwBarMain, "Perspective",		TW_TYPE_BOOLCPP, &g_projParams.m_perspective, "label='Perspective' group=MiscRendering");
+//	TwAddVarCB(g_pTwBarMain, "Perspective",		TW_TYPE_BOOLCPP, CBSetPerspective, CBGetPerspecive, nullptr, "label='Perspective' group=MiscRendering");
+//	
+//	//TwAddVarRW(g_pTwBarMain, "AspectRatio",		TW_TYPE_FLOAT,		&g_projParams.m_aspectRatio,	"label='Aspect Ratio' min=0 step=0.01 group=MiscRendering");
+//	TwAddVarRW(g_pTwBarMain, "FoVY",			TW_TYPE_FLOAT,		&g_projParams.m_fovy,			"label='FoVY' min=0 step=0.01 group=MiscRendering");
+//
+//	TwAddVarRW(g_pTwBarMain, "LookAtX",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.x(),		"label='X' group=LookAt");
+//	TwAddVarRW(g_pTwBarMain, "LookAtY",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.y(),		"label='Y' group=LookAt");
+//	TwAddVarRW(g_pTwBarMain, "LookAtZ",			TW_TYPE_FLOAT,		&g_viewParams.m_lookAt.z(),		"label='Z' group=LookAt");
+//	TwAddVarRW(g_pTwBarMain, "ViewDistance",	TW_TYPE_FLOAT,		&g_viewParams.m_viewDistance,	"label='View Distance' min=0 step=0.01 group=MiscRendering");
+//	TwDefine("Main/LookAt label='LookAt' opened=false group=MiscRendering");
+//	TwAddVarCB(g_pTwBarMain, "Rotation",		TW_TYPE_QUAT4F,	SetRotation, GetRotation, nullptr,	"label='Rotation' opened=false group=MiscRendering");
+//	TwAddButton(g_pTwBarMain, "ResetView", ResetView, nullptr, "label='Reset View' group=MiscRendering");
+//	TwAddVarRW(g_pTwBarMain, "BackColor",		TW_TYPE_COLOR3F,	&g_backgroundColor,	"label='Background Color' opened=false group=MiscRendering");
+//	TwAddVarRW(g_pTwBarMain, "StereoEnable",	TW_TYPE_BOOLCPP,	&g_stereoParams.m_stereoEnabled,"label='Enable' group=Stereo");
+//	TwAddVarRW(g_pTwBarMain, "StereoEyeDist",	TW_TYPE_FLOAT,		&g_stereoParams.m_eyeDistance,	"label='Eye Distance' min=0 step=0.001 group=Stereo");
+//	TwDefine("Main/Stereo label='Stereo 3D' opened=false group=MiscRendering");
+//	TwDefine("Main/MiscRendering label='Misc Rendering Settings' opened=false");
+//
+//	// screenshot
+//	TwAddButton(g_pTwBarMain, "SaveScreenshot", SaveScreenshot, nullptr, "label='Save Screenshot' key=s");
+//	TwAddButton(g_pTwBarMain, "SaveRBScreenshot", SaveRenderBufferScreenshot, nullptr, "label='Save RenderBuffer' key=r");
+//
+//
+//	// other stuff
+//	TwAddSeparator(g_pTwBarMain, "", "");
+//	TwAddVarRW(g_pTwBarMain, "Preview", TW_TYPE_BOOLCPP, &g_showPreview, "label='Rendering Preview'");
+//	//TwAddVarCB(g_pTwBarMain, "UseAllGPUs", TW_TYPE_BOOLCPP, SetUseAllGPUs, GetUseAllGPUs, nullptr, "label='Use all GPUs'");
+//
+//	TwAddSeparator(g_pTwBarMain, "", "");
+//	TwAddButton(g_pTwBarMain, "Redraw", Redraw, nullptr, "label='Redraw'");
+//
+//	TwAddSeparator(g_pTwBarMain, "", "");
+//	TwAddButton(g_pTwBarMain, "StartProfiler", StartProfiler, nullptr, "label='Start CUDA Profiler'");
+//	TwAddButton(g_pTwBarMain, "StopProfiler", StopProfiler, nullptr, "label='Stop CUDA Profiler'");
+//
+//
+//	// IMAGE SEQUENCE RECORDER BAR
+//	g_pTwBarImageSequence = TwNewBar("ImageSequence");
+//	TwDefine("ImageSequence label='Image Sequence' size='260 180' text=light iconified=true");
+//
+//	TwAddVarRW(g_pTwBarImageSequence, "FrameCount", TW_TYPE_INT32, &g_imageSequence.FrameCount, "label='Frame Count' min=1");
+//	TwAddVarRW(g_pTwBarImageSequence, "AngleInc", TW_TYPE_FLOAT, &g_imageSequence.AngleInc, "label='Rotation per Frame' step=0.1");
+//	TwAddVarRW(g_pTwBarImageSequence, "ViewDistInc", TW_TYPE_FLOAT, &g_imageSequence.ViewDistInc, "label='Distance offset per Frame' step=0.001");
+//	TwAddVarRW(g_pTwBarImageSequence, "FramesPerTimestep", TW_TYPE_INT32, &g_imageSequence.FramesPerTimestep, "label='Frames per Timestep' min=1");
+//	TwAddVarRW(g_pTwBarImageSequence, "Record", TW_TYPE_BOOLCPP, &g_imageSequence.Record, "label='Record'");
+//	TwAddVarRW(g_pTwBarImageSequence, "FromRenderbuffer", TW_TYPE_BOOLCPP, &g_imageSequence.FromRenderBuffer, "label='Grab RenderBuffer'");
+//	TwAddButton(g_pTwBarImageSequence, "StartSequence", StartImageSequence, nullptr, "label='Start'");
+//	TwAddButton(g_pTwBarImageSequence, "StopSequence", StopImageSequence, nullptr, "label='Stop'");
+//	TwAddVarRO(g_pTwBarImageSequence, "FrameCur", TW_TYPE_INT32, &g_imageSequence.FrameCur, "label='Current Frame'");
+//
+//
+//	// BATCH TRACING BAR
+//	g_pTwBarBatchTrace = TwNewBar("BatchTracing");
+//	TwDefine("BatchTracing label='Batch Tracing' size='260 480' text=light iconified=true");
+//
+//	for(uint i = 0; i < ADVECT_MODE_COUNT; i++)
+//	{
+//		std::ostringstream strName;
+//		strName << "AdvectMode" << i;
+//		std::ostringstream strDef;
+//		strDef << "label='" << GetAdvectModeName(eAdvectMode(i)) << "' group=Advection";
+//		TwAddVarCB(g_pTwBarBatchTrace, strName.str().c_str(), TW_TYPE_BOOLCPP, SetEnableBatchAdvectMode, GetEnableBatchAdvectMode, (void*)(i), strDef.str().c_str());
+//	}
+//	for(uint i = 0; i < TEXTURE_FILTER_MODE_COUNT; i++)
+//	{
+//		std::ostringstream strName;
+//		strName << "FilterMode" << i;
+//		std::ostringstream strDef;
+//		strDef << "label='" << GetTextureFilterModeName(eTextureFilterMode(i)) << "' group=Filtering";
+//		TwAddVarCB(g_pTwBarBatchTrace, strName.str().c_str(), TW_TYPE_BOOLCPP, SetEnableBatchFilterMode, GetEnableBatchFilterMode, (void*)(i), strDef.str().c_str());
+//	}
+//	TwAddVarRW(g_pTwBarBatchTrace, "DeltaTMin", TW_TYPE_FLOAT, &g_batchTraceParams.m_deltaTMin, "label='Delta T Min' min=0 precision=5 step=0.001");
+//	TwAddVarRW(g_pTwBarBatchTrace, "DeltaTMax", TW_TYPE_FLOAT, &g_batchTraceParams.m_deltaTMax, "label='Delta T Max' min=0 precision=5 step=0.001");
+//	TwAddVarRW(g_pTwBarBatchTrace, "ErrorToleranceMin", TW_TYPE_FLOAT, &g_batchTraceParams.m_errorToleranceMin, "label='Error Tolerance Min' min=0 precision=5 step=0.001");
+//	TwAddVarRW(g_pTwBarBatchTrace, "ErrorToleranceMax", TW_TYPE_FLOAT, &g_batchTraceParams.m_errorToleranceMax, "label='Error Tolerance Max' min=0 precision=5 step=0.001");
+//	TwAddVarRW(g_pTwBarBatchTrace, "QualitySteps", TW_TYPE_UINT32, &g_batchTraceParams.m_qualityStepCount, "label='Quality Steps'");
+//	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicFactorMin", TW_TYPE_FLOAT, &g_batchTraceParams.m_heuristicFactorMin, "label='Heuristic Factor Min' precision=1 step=1");
+//	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicFactorMax", TW_TYPE_FLOAT, &g_batchTraceParams.m_heuristicFactorMax, "label='Heuristic Factor Max' precision=1 step=1");
+//	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicSteps", TW_TYPE_UINT32, &g_batchTraceParams.m_heuristicStepCount, "label='Heuristic Steps'");
+//	TwAddVarRW(g_pTwBarBatchTrace, "HeuristicBPSeparate", TW_TYPE_BOOLCPP, &g_batchTraceParams.m_heuristicBPSeparate, "label='Heuristic B/P Separate'");
+//	TwAddVarRW(g_pTwBarBatchTrace, "WriteLinebufs", TW_TYPE_BOOLCPP, &g_batchTrace.WriteLinebufs, "label='Write .linebuf files'");
+//	TwAddButton(g_pTwBarBatchTrace, "StartBatch", StartBatchTracingChooseFiles, nullptr, "label='Start'");
+//	TwAddButton(g_pTwBarBatchTrace, "StopBatch", StopBatchTracing, nullptr, "label='Stop'");
+//}
 #pragma endregion
 
 #pragma region DXUTCallbacks
@@ -1995,59 +2016,59 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 //--------------------------------------------------------------------------------------
 // Reject any D3D11 devices that aren't acceptable by returning false
 //--------------------------------------------------------------------------------------
-bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo, UINT Output, const CD3D11EnumDeviceInfo *DeviceInfo,
-                                       DXGI_FORMAT BackBufferFormat, bool bWindowed, void* pUserContext )
-{
-	bool deviceAcceptable = false;
-
-	IDXGIFactory *pFactory;
-	if(FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)(&pFactory) )))
-		return false;
-
-	// get a candidate DXGI adapter
-	IDXGIAdapter* pAdapter = 0;
-	if(FAILED(pFactory->EnumAdapters(AdapterInfo->AdapterOrdinal, &pAdapter))) {
-		pFactory->Release();
-		return false;
-	}
-
-	// Check if adapter is CUDA capable
-	// query to see if there exists a corresponding compute device
-	cudaError err;
-	int cudaDevice;
-	err = cudaD3D11GetDevice(&cudaDevice, pAdapter);
-	if (err == cudaSuccess) {
-		cudaDeviceProp prop;
-		if(cudaSuccess != cudaGetDeviceProperties(&prop, cudaDevice)) {
-			exit(-1);
-		}
-		if(prop.major >= 2)
-			deviceAcceptable = true;
-	}
-
-	pAdapter->Release();
-	pFactory->Release();
-
-	// clear any errors we got while querying invalid compute devices
-	cudaGetLastError();
-
-	return deviceAcceptable;
-}
-
-
-//--------------------------------------------------------------------------------------
-// Called right before creating a device, allowing the app to modify the device settings as needed
-//--------------------------------------------------------------------------------------
-bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
-{
-	return true;
-}
-
-
+//bool CALLBACK IsD3D11DeviceAcceptable( const CD3D11EnumAdapterInfo *AdapterInfo, UINT Output, const CD3D11EnumDeviceInfo *DeviceInfo,
+//                                       DXGI_FORMAT BackBufferFormat, bool bWindowed, void* pUserContext )
+//{
+//	bool deviceAcceptable = false;
+//
+//	IDXGIFactory *pFactory;
+//	if(FAILED(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)(&pFactory) )))
+//		return false;
+//
+//	// get a candidate DXGI adapter
+//	IDXGIAdapter* pAdapter = 0;
+//	if(FAILED(pFactory->EnumAdapters(AdapterInfo->AdapterOrdinal, &pAdapter))) {
+//		pFactory->Release();
+//		return false;
+//	}
+//
+//	// Check if adapter is CUDA capable
+//	// query to see if there exists a corresponding compute device
+//	cudaError err;
+//	int cudaDevice;
+//	err = cudaD3D11GetDevice(&cudaDevice, pAdapter);
+//	if (err == cudaSuccess) {
+//		cudaDeviceProp prop;
+//		if(cudaSuccess != cudaGetDeviceProperties(&prop, cudaDevice)) {
+//			exit(-1);
+//		}
+//		if(prop.major >= 2)
+//			deviceAcceptable = true;
+//	}
+//
+//	pAdapter->Release();
+//	pFactory->Release();
+//
+//	// clear any errors we got while querying invalid compute devices
+//	cudaGetLastError();
+//
+//	return deviceAcceptable;
+//}
+//
+//
+////--------------------------------------------------------------------------------------
+//// Called right before creating a device, allowing the app to modify the device settings as needed
+////--------------------------------------------------------------------------------------
+//bool CALLBACK ModifyDeviceSettings( DXUTDeviceSettings* pDeviceSettings, void* pUserContext )
+//{
+//	return true;
+//}
+//
+//
 //--------------------------------------------------------------------------------------
 // Create any D3D11 resources that aren't dependent on the back buffer
 //--------------------------------------------------------------------------------------
-HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc, void* pUserContext )
+HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice, void* pUserContext )
 {
 	//wprintf(L"Device: %s\n", DXUTGetDeviceStats());
 
@@ -2089,14 +2110,14 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 	}
 
 
-	InitTwBars(pd3dDevice, pBackBufferSurfaceDesc->Height);
+	//InitTwBars(pd3dDevice, pBackBufferSurfaceDesc->Height);
 
-	if(FAILED(hr = g_tfEdt.onCreateDevice( pd3dDevice ))) {
-		return hr;
-	}
-	g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV(TF_LINE_MEASURES);
-	g_heatMapParams.m_pTransferFunction = g_tfEdt.getSRV(TF_HEAT_MAP);
-	cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(TF_RAYTRACE), cudaGraphicsRegisterFlagsNone));
+	//if(FAILED(hr = g_tfEdt.onCreateDevice( pd3dDevice ))) {
+	//	return hr;
+	//}
+	//g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV(TF_LINE_MEASURES);
+	//g_heatMapParams.m_pTransferFunction = g_tfEdt.getSRV(TF_HEAT_MAP);
+	//cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(TF_RAYTRACE), cudaGraphicsRegisterFlagsNone));
 
 	//TracingBenchmark bench;
 	//bench.RunBenchmark(g_particleTraceParams, 64, 2048, 5, 0);
@@ -2105,13 +2126,12 @@ HRESULT CALLBACK OnD3D11CreateDevice( ID3D11Device* pd3dDevice, const DXGI_SURFA
 
 	return S_OK;
 }
-
-
+//
+//
 //--------------------------------------------------------------------------------------
 // Create any D3D11 resources that depend on the back buffer
 //--------------------------------------------------------------------------------------
-HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapChain,
-                                          const DXGI_SURFACE_DESC* pBackBufferSurfaceDesc, void* pUserContext )
+HRESULT OnD3D11ResizedSwapChain(ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapChain, const D3D11_TEXTURE2D_DESC* pBackBufferSurfaceDesc, void* pUserContext)
 {
 	g_redraw = true;
 
@@ -2161,34 +2181,34 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapCha
 
 
 	// GUI
-	TwWindowSize(g_windowSize.x(), g_windowSize.y());
-	// can't set fontsize before window has been initialized, so do it here instead of init()...
-	TwDefine("GLOBAL fontsize=3 fontresizable=false");
+	//TwWindowSize(g_windowSize.x(), g_windowSize.y());
+	//// can't set fontsize before window has been initialized, so do it here instead of init()...
+	//TwDefine("GLOBAL fontsize=3 fontresizable=false");
 
-	// main gui on left side
-	int posMain[2] = { 10, 10 };
-	int sizeMain[2];
-	TwGetParam(g_pTwBarMain, nullptr, "size", TW_PARAM_INT32, 2, sizeMain);
-	sizeMain[1] = max(static_cast<int>(pBackBufferSurfaceDesc->Height) - 40, 200);
+	//// main gui on left side
+	//int posMain[2] = { 10, 10 };
+	//int sizeMain[2];
+	//TwGetParam(g_pTwBarMain, nullptr, "size", TW_PARAM_INT32, 2, sizeMain);
+	//sizeMain[1] = max(static_cast<int>(pBackBufferSurfaceDesc->Height) - 40, 200);
 
-	TwSetParam(g_pTwBarMain, nullptr, "position", TW_PARAM_INT32, 2, posMain);
-	TwSetParam(g_pTwBarMain, nullptr, "size", TW_PARAM_INT32, 2, sizeMain);
+	//TwSetParam(g_pTwBarMain, nullptr, "position", TW_PARAM_INT32, 2, posMain);
+	//TwSetParam(g_pTwBarMain, nullptr, "size", TW_PARAM_INT32, 2, sizeMain);
 
-	// image sequence recorder in upper right corner
-	int sizeImgSeq[2];
-	TwGetParam(g_pTwBarImageSequence, nullptr, "size", TW_PARAM_INT32, 2, sizeImgSeq);
-	int posImgSeq[2] = { max(10, (int)g_windowSize.x() - sizeImgSeq[0] - 10), 10 };
-	TwSetParam(g_pTwBarImageSequence, nullptr, "position", TW_PARAM_INT32, 2, posImgSeq);
+	//// image sequence recorder in upper right corner
+	//int sizeImgSeq[2];
+	//TwGetParam(g_pTwBarImageSequence, nullptr, "size", TW_PARAM_INT32, 2, sizeImgSeq);
+	//int posImgSeq[2] = { max(10, (int)g_windowSize.x() - sizeImgSeq[0] - 10), 10 };
+	//TwSetParam(g_pTwBarImageSequence, nullptr, "position", TW_PARAM_INT32, 2, posImgSeq);
 
-	g_tfEdt.onResizeSwapChain( pBackBufferSurfaceDesc->Width, pBackBufferSurfaceDesc->Height );
+	//g_tfEdt.onResizeSwapChain( pBackBufferSurfaceDesc->Width, pBackBufferSurfaceDesc->Height );
 
-	// batch tracing in middle right
-	int sizeBatch[2];
-	TwGetParam(g_pTwBarBatchTrace, nullptr, "size", TW_PARAM_INT32, 2, sizeBatch);
-	int posBatch[2] = { max(10, (int)g_windowSize.x() - sizeBatch[0] - 10), max(10, ((int)g_windowSize.y() - sizeBatch[1]) / 2 - 10) };
-	TwSetParam(g_pTwBarBatchTrace, nullptr, "position", TW_PARAM_INT32, 2, posBatch);
+	//// batch tracing in middle right
+	//int sizeBatch[2];
+	//TwGetParam(g_pTwBarBatchTrace, nullptr, "size", TW_PARAM_INT32, 2, sizeBatch);
+	//int posBatch[2] = { max(10, (int)g_windowSize.x() - sizeBatch[0] - 10), max(10, ((int)g_windowSize.y() - sizeBatch[1]) / 2 - 10) };
+	//TwSetParam(g_pTwBarBatchTrace, nullptr, "position", TW_PARAM_INT32, 2, posBatch);
 
-	g_tfEdt.onResizeSwapChain( pBackBufferSurfaceDesc->Width, pBackBufferSurfaceDesc->Height );
+	//g_tfEdt.onResizeSwapChain( pBackBufferSurfaceDesc->Width, pBackBufferSurfaceDesc->Height );
 
 
 	return S_OK;
@@ -2196,22 +2216,22 @@ HRESULT CALLBACK OnD3D11ResizedSwapChain( ID3D11Device* pd3dDevice, IDXGISwapCha
 
 
 // save a screenshot from the framebuffer
-void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
-{
-	ID3D11Resource* pSwapChainTex;
-	DXUTGetD3D11RenderTargetView()->GetResource(&pSwapChainTex);
-	pd3dImmediateContext->CopyResource(g_pStagingTex, pSwapChainTex);
-	SAFE_RELEASE(pSwapChainTex);
-
-	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
-	pd3dImmediateContext->Map(g_pStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
-
-	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
-
-	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
-
-	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
-}
+//void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
+//{
+//	ID3D11Resource* pSwapChainTex;
+//	DXUTGetD3D11RenderTargetView()->GetResource(&pSwapChainTex);
+//	pd3dImmediateContext->CopyResource(g_pStagingTex, pSwapChainTex);
+//	SAFE_RELEASE(pSwapChainTex);
+//
+//	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
+//	pd3dImmediateContext->Map(g_pStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
+//
+//	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
+//
+//	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
+//
+//	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
+//}
 
 // save a screenshot from the (possibly higher-resolution) render buffer
 void SaveRenderBufferScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
@@ -2234,19 +2254,15 @@ void SaveRenderBufferScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const
 	pd3dImmediateContext->Unmap(g_pRenderBufferStagingTex, 0);
 }
 
-
-
 float Luminance(const Vec3f& color)
 {
 	return 0.2126f * color.x() + 0.7152f * color.y() + 0.0722f * color.z();
 }
 
-
 //--------------------------------------------------------------------------------------
 // Render the scene using the D3D11 device
 //--------------------------------------------------------------------------------------
-void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext,
-                                  double fTime, float fElapsedTime, void* pUserContext )
+void OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImmediateContext, double fTime, float fElapsedTime, void* pUserContext )
 {
 	//fflush(stdout);
 
@@ -2255,18 +2271,15 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	static bool s_isTracing = false;
 	static bool s_isRendering = false;
 
-
-
 	clock_t curTime = clock();
 
 	// Clear render target and the depth stencil
 	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
-	ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-	ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
-	pd3dImmediateContext->ClearRenderTargetView( pRTV, ClearColor );
-	pd3dImmediateContext->ClearDepthStencilView( pDSV, D3D11_CLEAR_DEPTH, 1.0f, 0 );
-
+	//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
+	//ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
+	pd3dImmediateContext->ClearRenderTargetView( g_mainRenderTargetView, ClearColor );
+	pd3dImmediateContext->ClearDepthStencilView(g_mainDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	static std::string volumeFilePrev = "";
 	bool volumeChanged = (g_volume.GetFilename() != volumeFilePrev);
@@ -2364,23 +2377,23 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 	}
 
 
-	if(g_tfEdt.getTimestamp() != g_tfTimestamp) 
-	{
-		g_redraw = true;
-		g_lastRenderParamsUpdate = curTime;
-		g_tfTimestamp = g_tfEdt.getTimestamp();
-	}
+	//if(g_tfEdt.getTimestamp() != g_tfTimestamp) 
+	//{
+	//	g_redraw = true;
+	//	g_lastRenderParamsUpdate = curTime;
+	//	g_tfTimestamp = g_tfEdt.getTimestamp();
+	//}
 
 
 	// Get raycast params from the TF Editor's UI
-	g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale(TF_RAYTRACE);
-	g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin(TF_RAYTRACE);
-	g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax(TF_RAYTRACE);
-	g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin(TF_LINE_MEASURES);
-	g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax(TF_LINE_MEASURES);
-	g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale(TF_HEAT_MAP);
-	g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin(TF_HEAT_MAP);
-	g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax(TF_HEAT_MAP);
+	//g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale(TF_RAYTRACE);
+	//g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin(TF_RAYTRACE);
+	//g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax(TF_RAYTRACE);
+	//g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin(TF_LINE_MEASURES);
+	//g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax(TF_LINE_MEASURES);
+	//g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale(TF_HEAT_MAP);
+	//g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin(TF_HEAT_MAP);
+	//g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax(TF_HEAT_MAP);
 
 	static FilterParams filterParamsPrev;
 	bool filterParamsChanged = (g_filterParams != filterParamsPrev);
@@ -2830,8 +2843,8 @@ void CALLBACK OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext*
 		pd3dImmediateContext->PSSetShaderResources(0, 1, pNullSRV);
 
 		// reset render target
-		ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-		pd3dImmediateContext->OMSetRenderTargets(1, &pRTV, DXUTGetD3D11DepthStencilView());
+		//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
+		//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
 	}
 
 
@@ -2843,7 +2856,7 @@ NoVolumeLoaded:
 
 	// copy last finished image into back buffer
 	ID3D11Resource* pSwapChainTex;
-	DXUTGetD3D11RenderTargetView()->GetResource(&pSwapChainTex);
+	g_mainRenderTargetView->GetResource(&pSwapChainTex);
 	pd3dImmediateContext->CopyResource(pSwapChainTex, g_pRaycastFinishedTex);
 	SAFE_RELEASE(pSwapChainTex);
 
@@ -2865,21 +2878,21 @@ NoVolumeLoaded:
 
 
 	// Draw Transfer function
-	if (g_bRenderUI && !g_saveScreenshot)
-	{
-		g_tfEdt.setVisible(
-			(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
-			|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE)
-			|| (g_heatMapParams.m_enableRendering));
-		//Draw Transfer function editor
-		g_tfEdt.onFrameRender((float)fTime, fElapsedTime);
-	}
+	//if (g_bRenderUI && !g_saveScreenshot)
+	//{
+	//	g_tfEdt.setVisible(
+	//		(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
+	//		|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE)
+	//		|| (g_heatMapParams.m_enableRendering));
+	//	//Draw Transfer function editor
+	//	g_tfEdt.onFrameRender((float)fTime, fElapsedTime);
+	//}
 
 	// save screenshot before drawing progress bar and gui
 	if(g_saveScreenshot) {
 		std::wstring filenameW = tum3d::FindNextSequenceNameEX(L"screenshot", L"png", CSysTools::GetExePath());
 		std::string filename(filenameW.begin(), filenameW.end());
-		SaveScreenshot(pd3dImmediateContext, filename);
+		//SaveScreenshot(pd3dImmediateContext, filename);
 
 		g_saveScreenshot = false;
 	}
@@ -2902,7 +2915,7 @@ NoVolumeLoaded:
 				if(g_imageSequence.FromRenderBuffer) {
 					SaveRenderBufferScreenshot(pd3dImmediateContext, filename);
 				} else {
-					SaveScreenshot(pd3dImmediateContext, filename);
+					//SaveScreenshot(pd3dImmediateContext, filename);
 				}
 			}
 
@@ -3107,29 +3120,28 @@ NoVolumeLoaded:
 	if(g_bRenderUI)
 	{
 		// switch to dark text for bright backgrounds
-		if(Luminance(g_backgroundColor.xyz()) > 0.7f) {
-			TwDefine("Main text=dark");
-			TwDefine("ImageSequence text=dark");
-		} else {
-			TwDefine("Main text=light");
-			TwDefine("ImageSequence text=light");
-		}
+		//if(Luminance(g_backgroundColor.xyz()) > 0.7f) {
+		//	TwDefine("Main text=dark");
+		//	TwDefine("ImageSequence text=dark");
+		//} else {
+		//	TwDefine("Main text=light");
+		//	TwDefine("ImageSequence text=light");
+		//}
 
-		TwRefreshBar(g_pTwBarMain);
-		TwRefreshBar(g_pTwBarImageSequence);
-		TwDraw();
+		//TwRefreshBar(g_pTwBarMain);
+		//TwRefreshBar(g_pTwBarImageSequence);
+		//TwDraw();
 	}
 }
-
 
 //--------------------------------------------------------------------------------------
 // Release D3D11 resources created in OnD3D11ResizedSwapChain 
 //--------------------------------------------------------------------------------------
-void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
+void OnD3D11ReleasingSwapChain( void* pUserContext )
 {
 	g_windowSize.x() = 0;
 	g_windowSize.y() = 0;
-	TwWindowSize(0, 0);
+	//TwWindowSize(0, 0);
 
 	ResizeRenderBuffer(nullptr);
 
@@ -3138,22 +3150,25 @@ void CALLBACK OnD3D11ReleasingSwapChain( void* pUserContext )
 	SAFE_RELEASE(g_pRaycastFinishedRTV);
 	SAFE_RELEASE(g_pRaycastFinishedTex);
 
-	g_tfEdt.onReleasingSwapChain();
+	//g_tfEdt.onReleasingSwapChain();
 }
 
 
 //--------------------------------------------------------------------------------------
 // Release D3D11 resources created in OnD3D11CreateDevice 
 //--------------------------------------------------------------------------------------
-void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
+void OnD3D11DestroyDevice( void* pUserContext )
 {
-	cudaSafeCall(cudaGraphicsUnregisterResource(g_pTfEdtSRVCuda));
-	g_pTfEdtSRVCuda = nullptr;
-	g_tfEdt.onDestroyDevice();
+	if (g_pTfEdtSRVCuda != nullptr)
+	{
+		cudaSafeCall(cudaGraphicsUnregisterResource(g_pTfEdtSRVCuda));
+		g_pTfEdtSRVCuda = nullptr;
+	}
+	//g_tfEdt.onDestroyDevice();
 
-	TwTerminate();
-	g_pTwBarImageSequence = nullptr;
-	g_pTwBarMain = nullptr;
+	//TwTerminate();
+	//g_pTwBarImageSequence = nullptr;
+	//g_pTwBarMain = nullptr;
 
 
 	ReleaseVolumeDependentResources();
@@ -3181,7 +3196,7 @@ void CALLBACK OnD3D11DestroyDevice( void* pUserContext )
 //--------------------------------------------------------------------------------------
 // Call if device was removed.  Return true to find a new device, false to quit
 //--------------------------------------------------------------------------------------
-bool CALLBACK OnDeviceRemoved( void* pUserContext )
+bool OnDeviceRemoved( void* pUserContext )
 {
 	return true;
 }
@@ -3243,290 +3258,289 @@ bool PickSeed(unsigned int* pSeed, Vec3f* pIntersection) {
 //--------------------------------------------------------------------------------------
 // Handle key presses
 //--------------------------------------------------------------------------------------
-void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
-{
-	if (nChar == VK_RSHIFT || nChar == VK_SHIFT) {
-		g_keyboardShiftPressed = bKeyDown;
-	}
-
-	if(bKeyDown)
-	{
-		switch(nChar)
-		{
-			case VK_RETURN :
-			{
-				if(bAltDown) DXUTToggleFullScreen();
-				break;
-			}
-			case 'U' : 
-			{
-				g_bRenderUI = !g_bRenderUI; 
-				break;
-			}
-			case VK_F5 :
-			{
-				SaveRenderingParams("quicksave.cfg");
-				break;
-			}
-			case VK_F6 :
-			//case VK_F9 :
-			{
-				LoadRenderingParams("quicksave.cfg");
-				break;
-			}
-			case 'P' : 
-			{
-				unsigned int color;
-				Vec3f pos;
-				bool ret = PickSeed(&color, &pos);
-
-				//Test if seed texture is loaded
-				if (g_particleTraceParams.m_seedTexture.m_colors == NULL) {
-					//no texture, just adjust seed box
-					g_particleTraceParams.m_seedBoxMin = pos - Vec3f(0.05f);
-					g_particleTraceParams.m_seedBoxSize = Vec3f(0.1f);
-				}
-				else {
-					//a seed texture was found
-					//check if intersection is in the volume
-					if (ret) {
-						if (g_keyboardShiftPressed) {
-							if (g_particleTraceParams.m_seedTexture.m_picked.count(color)==0)
-								g_particleTraceParams.m_seedTexture.m_picked.insert(color);
-							else //toggle selection status
-								g_particleTraceParams.m_seedTexture.m_picked.erase(color);
-						} else {
-							g_particleTraceParams.m_seedTexture.m_picked.clear();
-							g_particleTraceParams.m_seedTexture.m_picked.insert(color);
-						}
-					} else {
-						if (!g_keyboardShiftPressed) {
-							g_particleTraceParams.m_seedTexture.m_picked.clear(); //disable seed from texture
-						}
-					}
-					//update heat map params
-					g_heatMapParams.m_recordTexture = g_particleTraceParams.m_seedTexture;
-					//check if the rendered channels are still alive
-					if (g_heatMapParams.m_recordTexture.m_picked.count(g_heatMapParams.m_renderedChannels[0]) == 0) {
-						if (g_heatMapParams.m_recordTexture.m_picked.empty()) {
-							g_heatMapParams.m_renderedChannels[0] = 0;
-						}
-						else {
-							g_heatMapParams.m_renderedChannels[0] = *g_heatMapParams.m_recordTexture.m_picked.begin();
-						}
-					}
-					if (g_heatMapParams.m_recordTexture.m_picked.count(g_heatMapParams.m_renderedChannels[1]) == 0) {
-						g_heatMapParams.m_renderedChannels[1] = 0;
-					}
-				}
-
-				break;
-			}
-			case '1':
-			case '2':
-			{
-				//Update rendered channel
-				int channel = nChar - '1';
-				
-				unsigned int color;
-				Vec3f pos;
-				bool ret = PickSeed(&color, &pos);
-				if (ret) {
-					g_heatMapParams.m_renderedChannels[channel] = color;
-				}
-				else {
-					g_heatMapParams.m_renderedChannels[channel] = 0;
-				}
-
-				break;
-			}
-			default : return;
-		}
-	}
-}
-
-
-// NOTE: OnKeyboard and OnMouse are *not* registered as DXUT callbacks because this doesn't work well with AntTweakBar
-//--------------------------------------------------------------------------------------
-// Handle mouse button presses
-//--------------------------------------------------------------------------------------
-void OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddleButtonDown,
-              bool bSideButton1Down, bool bSideButton2Down, int nMouseWheelDelta,
-              int xPos, int yPos, bool bCtrlDown, bool bShiftDown, bool bHandledByGUI )
-{
-	static bool bLeftButtonDownPrev = bLeftButtonDown;
-	static bool bRightButtonDownPrev = bRightButtonDown;
-	static bool bMiddleButtonDownPrev = bMiddleButtonDown;
-	static int xPosPrev = xPos;
-	static int yPosPrev = yPos;
-
-	g_mouseScreenPosition = Vec2f((xPos / (float)g_windowSize.x()) * 2 - 1, -((yPos / (float)g_windowSize.y()) * 2 - 1));
-
-	if(!bHandledByGUI && !g_imageSequence.Running) {
-		int xPosDelta = xPos - xPosPrev;
-		int yPosDelta = yPos - yPosPrev;
-
-		float xDelta = float(xPosDelta) / float(g_windowSize.y()); // g_windowSize.y() not a typo: consistent speed in x and y
-		float yDelta = float(yPosDelta) / float(g_windowSize.y());
-
-		Mat4f inverseView;
-		tum3D::invert4x4(g_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f), inverseView);
-		Vec3f majorX, majorY;
-		GetMajorWorldPlane(Vec3f(1.0f, 0.0f, 0.0f), Vec3f(0.0f, 1.0f, 0.0f), inverseView, majorX, majorY);
-
-		if(bLeftButtonDown && bLeftButtonDownPrev) {
-			// rotate
-			Vec4f rotationX;
-			tum3D::rotationQuaternion(xDelta * PI, Vec3f(0.0f, 1.0f, 0.0f), rotationX);
-			Vec4f rotationY;
-			tum3D::rotationQuaternion(yDelta * PI, Vec3f(1.0f, 0.0f, 0.0f), rotationY);
-
-			//add to global rotation
-			Vec4f temp;
-			tum3D::multQuaternion(rotationX, g_rotationX, temp); g_rotationX = temp;
-			tum3D::multQuaternion(rotationY, g_rotationY, temp); g_rotationY = temp;
-
-			//combine and set to view params
-			tum3D::multQuaternion(g_rotationY, g_rotationX, temp);
-			tum3D::multQuaternion(temp, g_rotation, g_viewParams.m_rotationQuat);
-			//tum3D::multQuaternion(g_rotationY, g_rotationX, g_viewParams.m_rotationQuat);
-		}
-		if (!bLeftButtonDown && bLeftButtonDownPrev) {
-			//mouse released, so store the current rotation and reset the partial rotation
-			//This is needed so that the trackball starts with a new projection
-			g_rotation = g_viewParams.m_rotationQuat;
-			g_rotationX = Vec4f(1, 0, 0, 0);
-			g_rotationY = Vec4f(1, 0, 0, 0);
-			printf("push rotation\n");
-		}
-		if(bMiddleButtonDown && bMiddleButtonDownPrev) {
-			if(bShiftDown) {
-				// scale seed region
-				Vec3f expX = majorX *  xDelta;
-				Vec3f expY = majorY * -yDelta;
-				Vec3f scalingX(pow(4.0f, expX.x()), pow(4.0f, expX.y()), pow(4.0f, expX.z()));
-				Vec3f scalingY(pow(4.0f, expY.x()), pow(4.0f, expY.y()), pow(4.0f, expY.z()));
-				g_particleTraceParams.ScaleSeedBox(scalingX * scalingY);
-			} else {
-				// zoom
-				g_viewParams.m_viewDistance *= pow(5.0f, -yDelta);
-			}
-		}
-		if(bRightButtonDown && bRightButtonDownPrev) {
-			if(bShiftDown) {
-				// move seed region
-				Vec3f translation = xDelta * majorX - yDelta * majorY;
-				g_particleTraceParams.MoveSeedBox(translation);
-			} else {
-				// move domain/camera
-				Mat3f rotationMat;
-				tum3D::convertQuaternionToRotMat(g_viewParams.m_rotationQuat, rotationMat);
-				Vec3f xVec = rotationMat.getRow(0);
-				Vec3f yVec = rotationMat.getRow(1);
-				g_viewParams.m_lookAt -= tan(0.5f * g_projParams.m_fovy) * g_viewParams.m_viewDistance * (xDelta * xVec - yDelta * yVec);
-			}
-		}
-	}
-
-	// update "previous" state for next call
-	bLeftButtonDownPrev = bLeftButtonDown;
-	bRightButtonDownPrev = bRightButtonDown;
-	bMiddleButtonDownPrev = bMiddleButtonDown;
-	xPosPrev = xPos;
-	yPosPrev = yPos;
-}
+//void OnKeyboard( UINT nChar, bool bKeyDown, bool bAltDown, bool bHandledByGUI )
+//{
+//	if (nChar == VK_RSHIFT || nChar == VK_SHIFT) {
+//		g_keyboardShiftPressed = bKeyDown;
+//	}
+//
+//	if(bKeyDown)
+//	{
+//		switch(nChar)
+//		{
+//			case VK_RETURN :
+//			{
+//				if(bAltDown) DXUTToggleFullScreen();
+//				break;
+//			}
+//			case 'U' : 
+//			{
+//				g_bRenderUI = !g_bRenderUI; 
+//				break;
+//			}
+//			case VK_F5 :
+//			{
+//				SaveRenderingParams("quicksave.cfg");
+//				break;
+//			}
+//			case VK_F6 :
+//			//case VK_F9 :
+//			{
+//				LoadRenderingParams("quicksave.cfg");
+//				break;
+//			}
+//			case 'P' : 
+//			{
+//				unsigned int color;
+//				Vec3f pos;
+//				bool ret = PickSeed(&color, &pos);
+//
+//				//Test if seed texture is loaded
+//				if (g_particleTraceParams.m_seedTexture.m_colors == NULL) {
+//					//no texture, just adjust seed box
+//					g_particleTraceParams.m_seedBoxMin = pos - Vec3f(0.05f);
+//					g_particleTraceParams.m_seedBoxSize = Vec3f(0.1f);
+//				}
+//				else {
+//					//a seed texture was found
+//					//check if intersection is in the volume
+//					if (ret) {
+//						if (g_keyboardShiftPressed) {
+//							if (g_particleTraceParams.m_seedTexture.m_picked.count(color)==0)
+//								g_particleTraceParams.m_seedTexture.m_picked.insert(color);
+//							else //toggle selection status
+//								g_particleTraceParams.m_seedTexture.m_picked.erase(color);
+//						} else {
+//							g_particleTraceParams.m_seedTexture.m_picked.clear();
+//							g_particleTraceParams.m_seedTexture.m_picked.insert(color);
+//						}
+//					} else {
+//						if (!g_keyboardShiftPressed) {
+//							g_particleTraceParams.m_seedTexture.m_picked.clear(); //disable seed from texture
+//						}
+//					}
+//					//update heat map params
+//					g_heatMapParams.m_recordTexture = g_particleTraceParams.m_seedTexture;
+//					//check if the rendered channels are still alive
+//					if (g_heatMapParams.m_recordTexture.m_picked.count(g_heatMapParams.m_renderedChannels[0]) == 0) {
+//						if (g_heatMapParams.m_recordTexture.m_picked.empty()) {
+//							g_heatMapParams.m_renderedChannels[0] = 0;
+//						}
+//						else {
+//							g_heatMapParams.m_renderedChannels[0] = *g_heatMapParams.m_recordTexture.m_picked.begin();
+//						}
+//					}
+//					if (g_heatMapParams.m_recordTexture.m_picked.count(g_heatMapParams.m_renderedChannels[1]) == 0) {
+//						g_heatMapParams.m_renderedChannels[1] = 0;
+//					}
+//				}
+//
+//				break;
+//			}
+//			case '1':
+//			case '2':
+//			{
+//				//Update rendered channel
+//				int channel = nChar - '1';
+//				
+//				unsigned int color;
+//				Vec3f pos;
+//				bool ret = PickSeed(&color, &pos);
+//				if (ret) {
+//					g_heatMapParams.m_renderedChannels[channel] = color;
+//				}
+//				else {
+//					g_heatMapParams.m_renderedChannels[channel] = 0;
+//				}
+//
+//				break;
+//			}
+//			default : return;
+//		}
+//	}
+//}
+//
+//
+//// NOTE: OnKeyboard and OnMouse are *not* registered as DXUT callbacks because this doesn't work well with AntTweakBar
+////--------------------------------------------------------------------------------------
+//// Handle mouse button presses
+////--------------------------------------------------------------------------------------
+//void OnMouse( bool bLeftButtonDown, bool bRightButtonDown, bool bMiddleButtonDown,
+//              bool bSideButton1Down, bool bSideButton2Down, int nMouseWheelDelta,
+//              int xPos, int yPos, bool bCtrlDown, bool bShiftDown, bool bHandledByGUI )
+//{
+//	static bool bLeftButtonDownPrev = bLeftButtonDown;
+//	static bool bRightButtonDownPrev = bRightButtonDown;
+//	static bool bMiddleButtonDownPrev = bMiddleButtonDown;
+//	static int xPosPrev = xPos;
+//	static int yPosPrev = yPos;
+//
+//	g_mouseScreenPosition = Vec2f((xPos / (float)g_windowSize.x()) * 2 - 1, -((yPos / (float)g_windowSize.y()) * 2 - 1));
+//
+//	if(!bHandledByGUI && !g_imageSequence.Running) {
+//		int xPosDelta = xPos - xPosPrev;
+//		int yPosDelta = yPos - yPosPrev;
+//
+//		float xDelta = float(xPosDelta) / float(g_windowSize.y()); // g_windowSize.y() not a typo: consistent speed in x and y
+//		float yDelta = float(yPosDelta) / float(g_windowSize.y());
+//
+//		Mat4f inverseView;
+//		tum3D::invert4x4(g_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f), inverseView);
+//		Vec3f majorX, majorY;
+//		GetMajorWorldPlane(Vec3f(1.0f, 0.0f, 0.0f), Vec3f(0.0f, 1.0f, 0.0f), inverseView, majorX, majorY);
+//
+//		if(bLeftButtonDown && bLeftButtonDownPrev) {
+//			// rotate
+//			Vec4f rotationX;
+//			tum3D::rotationQuaternion(xDelta * PI, Vec3f(0.0f, 1.0f, 0.0f), rotationX);
+//			Vec4f rotationY;
+//			tum3D::rotationQuaternion(yDelta * PI, Vec3f(1.0f, 0.0f, 0.0f), rotationY);
+//
+//			//add to global rotation
+//			Vec4f temp;
+//			tum3D::multQuaternion(rotationX, g_rotationX, temp); g_rotationX = temp;
+//			tum3D::multQuaternion(rotationY, g_rotationY, temp); g_rotationY = temp;
+//
+//			//combine and set to view params
+//			tum3D::multQuaternion(g_rotationY, g_rotationX, temp);
+//			tum3D::multQuaternion(temp, g_rotation, g_viewParams.m_rotationQuat);
+//			//tum3D::multQuaternion(g_rotationY, g_rotationX, g_viewParams.m_rotationQuat);
+//		}
+//		if (!bLeftButtonDown && bLeftButtonDownPrev) {
+//			//mouse released, so store the current rotation and reset the partial rotation
+//			//This is needed so that the trackball starts with a new projection
+//			g_rotation = g_viewParams.m_rotationQuat;
+//			g_rotationX = Vec4f(1, 0, 0, 0);
+//			g_rotationY = Vec4f(1, 0, 0, 0);
+//			printf("push rotation\n");
+//		}
+//		if(bMiddleButtonDown && bMiddleButtonDownPrev) {
+//			if(bShiftDown) {
+//				// scale seed region
+//				Vec3f expX = majorX *  xDelta;
+//				Vec3f expY = majorY * -yDelta;
+//				Vec3f scalingX(pow(4.0f, expX.x()), pow(4.0f, expX.y()), pow(4.0f, expX.z()));
+//				Vec3f scalingY(pow(4.0f, expY.x()), pow(4.0f, expY.y()), pow(4.0f, expY.z()));
+//				g_particleTraceParams.ScaleSeedBox(scalingX * scalingY);
+//			} else {
+//				// zoom
+//				g_viewParams.m_viewDistance *= pow(5.0f, -yDelta);
+//			}
+//		}
+//		if(bRightButtonDown && bRightButtonDownPrev) {
+//			if(bShiftDown) {
+//				// move seed region
+//				Vec3f translation = xDelta * majorX - yDelta * majorY;
+//				g_particleTraceParams.MoveSeedBox(translation);
+//			} else {
+//				// move domain/camera
+//				Mat3f rotationMat;
+//				tum3D::convertQuaternionToRotMat(g_viewParams.m_rotationQuat, rotationMat);
+//				Vec3f xVec = rotationMat.getRow(0);
+//				Vec3f yVec = rotationMat.getRow(1);
+//				g_viewParams.m_lookAt -= tan(0.5f * g_projParams.m_fovy) * g_viewParams.m_viewDistance * (xDelta * xVec - yDelta * yVec);
+//			}
+//		}
+//	}
+//
+//	// update "previous" state for next call
+//	bLeftButtonDownPrev = bLeftButtonDown;
+//	bRightButtonDownPrev = bRightButtonDown;
+//	bMiddleButtonDownPrev = bMiddleButtonDown;
+//	xPosPrev = xPos;
+//	yPosPrev = yPos;
+//}
 
 
 //--------------------------------------------------------------------------------------
 // Handle messages to the application
 //--------------------------------------------------------------------------------------
-LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
-                          bool* pbNoFurtherProcessing, void* pUserContext )
-{
-	bool bHandledByGUI = false;
-
-	*pbNoFurtherProcessing = g_tfEdt.msgProc( hWnd, uMsg, wParam, lParam );
-	if(*pbNoFurtherProcessing) {
-		bHandledByGUI = true;
-	}
-
-	if(g_bRenderUI) // only handle UI events if it is visible
-	{
-		if(TwEventWin(hWnd, uMsg, wParam, lParam))
-		{
-			bHandledByGUI = true;
-			*pbNoFurtherProcessing = true;
-			// don't return, still pass event to keyboard/mouse callbacks (so they can keep their state valid)
-		}
-	}
-
-	// Copied from DXUT: Consolidate the keyboard messages and pass them to the app's keyboard callback
-	if( uMsg == WM_KEYDOWN ||
-	    uMsg == WM_SYSKEYDOWN ||
-	    uMsg == WM_KEYUP ||
-	    uMsg == WM_SYSKEYUP )
-	{
-		bool bKeyDown = ( uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN );
-		DWORD dwMask = ( 1 << 29 );
-		bool bAltDown = ( ( lParam & dwMask ) != 0 );
-		//bool bShiftDown = ((nMouseButtonState & MK_SHIFT) != 0);
-
-		OnKeyboard( ( UINT )wParam, bKeyDown, bAltDown, bHandledByGUI );
-	}
-
-	// Copied from DXUT: Consolidate the mouse button messages and pass them to the app's mouse callback
-	if( uMsg == WM_LBUTTONDOWN ||
-	    uMsg == WM_LBUTTONUP ||
-	    uMsg == WM_LBUTTONDBLCLK ||
-	    uMsg == WM_MBUTTONDOWN ||
-	    uMsg == WM_MBUTTONUP ||
-	    uMsg == WM_MBUTTONDBLCLK ||
-	    uMsg == WM_RBUTTONDOWN ||
-	    uMsg == WM_RBUTTONUP ||
-	    uMsg == WM_RBUTTONDBLCLK ||
-	    uMsg == WM_XBUTTONDOWN ||
-	    uMsg == WM_XBUTTONUP ||
-	    uMsg == WM_XBUTTONDBLCLK ||
-	    uMsg == WM_MOUSEWHEEL ||
-	    uMsg == WM_MOUSEMOVE )
-	{
-		int xPos = ( short )LOWORD( lParam );
-		int yPos = ( short )HIWORD( lParam );
-
-		if( uMsg == WM_MOUSEWHEEL )
-		{
-			// WM_MOUSEWHEEL passes screen mouse coords
-			// so convert them to client coords
-			POINT pt;
-			pt.x = xPos; pt.y = yPos;
-			ScreenToClient( hWnd, &pt );
-			xPos = pt.x; yPos = pt.y;
-		}
-
-		int nMouseWheelDelta = 0;
-		if( uMsg == WM_MOUSEWHEEL )
-			nMouseWheelDelta = ( short )HIWORD( wParam );
-
-		int nMouseButtonState = LOWORD( wParam );
-		bool bLeftButton = ( ( nMouseButtonState & MK_LBUTTON ) != 0 );
-		bool bRightButton = ( ( nMouseButtonState & MK_RBUTTON ) != 0 );
-		bool bMiddleButton = ( ( nMouseButtonState & MK_MBUTTON ) != 0 );
-		bool bSideButton1 = ( ( nMouseButtonState & MK_XBUTTON1 ) != 0 );
-		bool bSideButton2 = ( ( nMouseButtonState & MK_XBUTTON2 ) != 0 );
-		bool bCtrlDown = ( ( nMouseButtonState & MK_CONTROL ) != 0 );
-		bool bShiftDown = ( ( nMouseButtonState & MK_SHIFT ) != 0 );
-
-		OnMouse( bLeftButton, bRightButton, bMiddleButton, bSideButton1, bSideButton2, nMouseWheelDelta, xPos, yPos, bCtrlDown, bShiftDown, bHandledByGUI );
-	}
-
-	return 0;
-}
+//LRESULT CALLBACK MsgProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool* pbNoFurtherProcessing, void* pUserContext )
+//{
+//	bool bHandledByGUI = false;
+//
+//	//*pbNoFurtherProcessing = g_tfEdt.msgProc( hWnd, uMsg, wParam, lParam );
+//	//if(*pbNoFurtherProcessing) {
+//	//	bHandledByGUI = true;
+//	//}
+//
+//	if(g_bRenderUI) // only handle UI events if it is visible
+//	{
+//		//if(TwEventWin(hWnd, uMsg, wParam, lParam))
+//		//{
+//		//	bHandledByGUI = true;
+//		//	*pbNoFurtherProcessing = true;
+//		//	// don't return, still pass event to keyboard/mouse callbacks (so they can keep their state valid)
+//		//}
+//	}
+//
+//	// Copied from DXUT: Consolidate the keyboard messages and pass them to the app's keyboard callback
+//	if( uMsg == WM_KEYDOWN ||
+//	    uMsg == WM_SYSKEYDOWN ||
+//	    uMsg == WM_KEYUP ||
+//	    uMsg == WM_SYSKEYUP )
+//	{
+//		bool bKeyDown = ( uMsg == WM_KEYDOWN || uMsg == WM_SYSKEYDOWN );
+//		DWORD dwMask = ( 1 << 29 );
+//		bool bAltDown = ( ( lParam & dwMask ) != 0 );
+//		//bool bShiftDown = ((nMouseButtonState & MK_SHIFT) != 0);
+//
+//		OnKeyboard( ( UINT )wParam, bKeyDown, bAltDown, bHandledByGUI );
+//	}
+//
+//	// Copied from DXUT: Consolidate the mouse button messages and pass them to the app's mouse callback
+//	if( uMsg == WM_LBUTTONDOWN ||
+//	    uMsg == WM_LBUTTONUP ||
+//	    uMsg == WM_LBUTTONDBLCLK ||
+//	    uMsg == WM_MBUTTONDOWN ||
+//	    uMsg == WM_MBUTTONUP ||
+//	    uMsg == WM_MBUTTONDBLCLK ||
+//	    uMsg == WM_RBUTTONDOWN ||
+//	    uMsg == WM_RBUTTONUP ||
+//	    uMsg == WM_RBUTTONDBLCLK ||
+//	    uMsg == WM_XBUTTONDOWN ||
+//	    uMsg == WM_XBUTTONUP ||
+//	    uMsg == WM_XBUTTONDBLCLK ||
+//	    uMsg == WM_MOUSEWHEEL ||
+//	    uMsg == WM_MOUSEMOVE )
+//	{
+//		int xPos = ( short )LOWORD( lParam );
+//		int yPos = ( short )HIWORD( lParam );
+//
+//		if( uMsg == WM_MOUSEWHEEL )
+//		{
+//			// WM_MOUSEWHEEL passes screen mouse coords
+//			// so convert them to client coords
+//			POINT pt;
+//			pt.x = xPos; pt.y = yPos;
+//			ScreenToClient( hWnd, &pt );
+//			xPos = pt.x; yPos = pt.y;
+//		}
+//
+//		int nMouseWheelDelta = 0;
+//		if( uMsg == WM_MOUSEWHEEL )
+//			nMouseWheelDelta = ( short )HIWORD( wParam );
+//
+//		int nMouseButtonState = LOWORD( wParam );
+//		bool bLeftButton = ( ( nMouseButtonState & MK_LBUTTON ) != 0 );
+//		bool bRightButton = ( ( nMouseButtonState & MK_RBUTTON ) != 0 );
+//		bool bMiddleButton = ( ( nMouseButtonState & MK_MBUTTON ) != 0 );
+//		bool bSideButton1 = ( ( nMouseButtonState & MK_XBUTTON1 ) != 0 );
+//		bool bSideButton2 = ( ( nMouseButtonState & MK_XBUTTON2 ) != 0 );
+//		bool bCtrlDown = ( ( nMouseButtonState & MK_CONTROL ) != 0 );
+//		bool bShiftDown = ( ( nMouseButtonState & MK_SHIFT ) != 0 );
+//
+//		OnMouse( bLeftButton, bRightButton, bMiddleButton, bSideButton1, bSideButton2, nMouseWheelDelta, xPos, yPos, bCtrlDown, bShiftDown, bHandledByGUI );
+//	}
+//
+//	return 0;
+//}
 
 
 //--------------------------------------------------------------------------------------
 // Handle updates to the scene
 //--------------------------------------------------------------------------------------
-void CALLBACK OnFrameMove( double dTime, float fElapsedTime, void* pUserContext )
+void OnFrameMove( double dTime, float fElapsedTime, void* pUserContext )
 {
 	// check if we should update the window title
 	bool update = false;
@@ -3552,7 +3566,7 @@ void CALLBACK OnFrameMove( double dTime, float fElapsedTime, void* pUserContext 
 	static double s_dStatLastFPSUpdate = 0.0;
 	double dt = dTime - s_dStatLastFPSUpdate;
 	if (dt >= 1.0) {
-		s_fps = DXUTGetFPS();
+		s_fps = ImGui::GetIO().Framerate;
 		s_mspf = 1000.0f / s_fps;
 		s_dStatLastFPSUpdate = dTime;
 		update = true;
@@ -3593,7 +3607,7 @@ void CALLBACK OnFrameMove( double dTime, float fElapsedTime, void* pUserContext 
 		//pos += swprintf_s(str + pos, len - pos, L"   Render (Wall): %.2f ms", s_timings.RenderWall);
 		pos += swprintf_s(str + pos, len - pos, L"   Trace Time: %.2f ms", s_timeTrace);
 		pos += swprintf_s(str + pos, len - pos, L"   Render Time: %.2f ms", s_timeRender);
-		SetWindowText(DXUTGetHWND(), str);
+		SetWindowText(g_hwnd, str);
 	}
 }
 
@@ -3601,9 +3615,286 @@ void CALLBACK OnFrameMove( double dTime, float fElapsedTime, void* pUserContext 
 
 #pragma region InitExitMain
 
+D3D11_TEXTURE2D_DESC GetBackBufferSurfaceDesc()
+{
+	//IDXGISurface* pBackBuffer;
+	//g_pSwapChain->GetBuffer(0, __uuidof(IDXGISurface), (LPVOID*)&pBackBuffer);
+
+	//DXGI_SURFACE_DESC backBufferSurfaceDesc;
+	//pBackBuffer->GetDesc(&backBufferSurfaceDesc);
+
+	//return backBufferSurfaceDesc;
+
+	ID3D11Texture2D* pBackBuffer;
+	HRESULT hr = g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+	//if (FAILED(hr))
+	//	return hr;
+	D3D11_TEXTURE2D_DESC backBufferSurfaceDesc;
+	pBackBuffer->GetDesc(&backBufferSurfaceDesc);
+
+	SAFE_RELEASE(pBackBuffer);
+
+	return backBufferSurfaceDesc;
+}
+
 bool InitApp()
 {
 	return GetCudaDevices();
+}
+
+void SetupImGui()
+{
+	ImGui_ImplWin32_EnableDpiAwareness();
+
+	// Setup Dear ImGui binding
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
+	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
+	//io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;     // FIXME-DPI: THIS CURRENTLY DOESN'T WORK AS EXPECTED. DON'T USE IN USER APP!
+	io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports; // FIXME-DPI
+	io.ConfigResizeWindowsFromEdges = true;
+	io.ConfigDockingWithShift = true;
+
+	if (!ImGui_ImplWin32_Init(g_hwnd))
+		std::cerr << "Failed to initialize 'ImGui_ImplWin32'" << std::endl;
+
+	//ID3D11Device* device = DXUTGetD3D11Device();
+	//ID3D11DeviceContext* deviceContext;
+
+	//device->GetImmediateContext(&deviceContext);
+
+	if (!ImGui_ImplDX11_Init(g_pd3dDevice, g_pd3dDeviceContext))
+		std::cerr << "Failed to initialize 'ImGui_ImplDX11'" << std::endl;
+
+	//SAFE_RELEASE(deviceContext);
+
+	// Setup style
+	ImGui::GetStyle().WindowRounding = 0.0f;
+	ImGui::StyleColorsDark();
+	//ImGui::StyleColorsClassic();
+
+	// Load Fonts
+	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
+	// - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
+	// - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+	// - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+	// - Read 'misc/fonts/README.txt' for more instructions and details.
+	// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+	//io.Fonts->AddFontDefault();
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+	//IM_ASSERT(font != NULL);
+}
+
+void ImGuiCleanup()
+{
+	ImGui_ImplDX11_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+}
+
+//--------------------------------------------------------------------------------------
+// Sets the viewport, render target view, and depth stencil view.
+//--------------------------------------------------------------------------------------
+HRESULT SetupD3D11Views()
+{
+	HRESULT hr = S_OK;
+
+	// Setup the viewport to match the backbuffer
+	D3D11_VIEWPORT vp;
+	vp.Width = (FLOAT)GetBackBufferSurfaceDesc().Width;
+	vp.Height = (FLOAT)GetBackBufferSurfaceDesc().Height;
+	vp.MinDepth = 0;
+	vp.MaxDepth = 1;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+	g_pd3dDeviceContext->RSSetViewports(1, &vp);
+
+	// Set the render targets
+	auto pRTV = g_mainRenderTargetView;
+	auto pDSV = g_mainDepthStencilView;
+	g_pd3dDeviceContext->OMSetRenderTargets(1, &pRTV, pDSV);
+
+	return hr;
+}
+
+
+//--------------------------------------------------------------------------------------
+// Creates a render target view, and depth stencil texture and view.
+//--------------------------------------------------------------------------------------
+HRESULT CreateD3D11Views()
+{
+	HRESULT hr = S_OK;
+
+	// Get the back buffer and desc
+	ID3D11Texture2D* pBackBuffer;
+	//hr = g_pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
+	hr = g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+	if (FAILED(hr))
+		return hr;
+
+	hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
+
+	//D3D11_TEXTURE2D_DESC backBufferSurfaceDesc;
+	//pBackBuffer->GetDesc(&backBufferSurfaceDesc);
+
+	// Create the render target view
+	//hr = g_pd3dDevice->CreateRenderTargetView(pBackBuffer, nullptr, &g_mainRenderTargetView);
+	SAFE_RELEASE(pBackBuffer);
+
+	if (FAILED(hr))
+		return hr;
+
+	//if (pDeviceSettings->d3d11.AutoCreateDepthStencil)
+	{
+		// Create depth stencil texture
+		D3D11_TEXTURE2D_DESC descDepth;
+		descDepth.Width = GetBackBufferSurfaceDesc().Width;
+		descDepth.Height = GetBackBufferSurfaceDesc().Height;
+		descDepth.MipLevels = 1;
+		descDepth.ArraySize = 1;
+		descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		descDepth.SampleDesc.Count = 1;
+		descDepth.SampleDesc.Quality = 0;
+		descDepth.Usage = D3D11_USAGE_DEFAULT;
+		descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+		descDepth.CPUAccessFlags = 0;
+		descDepth.MiscFlags = 0;
+
+		SAFE_RELEASE(g_pDepthStencil);
+
+		hr = g_pd3dDevice->CreateTexture2D(&descDepth, nullptr, &g_pDepthStencil);
+		if (FAILED(hr))
+			return hr;
+		//DXUT_SetDebugName(pDepthStencil, "DXUT");
+
+		// Create the depth stencil view
+		D3D11_DEPTH_STENCIL_VIEW_DESC descDSV;
+		descDSV.Format = descDepth.Format;
+		descDSV.Flags = 0;
+		if (descDepth.SampleDesc.Count > 1)
+			descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
+		else
+			descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+		descDSV.Texture2D.MipSlice = 0;
+		hr = g_pd3dDevice->CreateDepthStencilView(g_pDepthStencil, &descDSV, &g_mainDepthStencilView);
+		if (FAILED(hr))
+			return hr;
+	}
+
+	hr = SetupD3D11Views();
+	if (FAILED(hr))
+		return hr;
+
+	return hr;
+}
+
+void CreateRenderTarget()
+{
+	ID3D11Texture2D* pBackBuffer;
+	g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+	g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
+	pBackBuffer->Release();
+}
+
+void CleanupRenderTarget()
+{
+	if (g_mainRenderTargetView) { g_mainRenderTargetView->Release(); g_mainRenderTargetView = NULL; }
+	if (g_mainDepthStencilView) { g_mainDepthStencilView->Release(); g_mainDepthStencilView = NULL; }
+}
+
+HRESULT CreateDeviceD3D(HWND hWnd)
+{
+	// Setup swap chain
+	DXGI_SWAP_CHAIN_DESC sd;
+	ZeroMemory(&sd, sizeof(sd));
+	sd.BufferCount = 2;
+	sd.BufferDesc.Width = 0;
+	sd.BufferDesc.Height = 0;
+	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	sd.BufferDesc.RefreshRate.Numerator = 60;
+	sd.BufferDesc.RefreshRate.Denominator = 1;
+	sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	sd.OutputWindow = hWnd;
+	sd.SampleDesc.Count = 1;
+	sd.SampleDesc.Quality = 0;
+	sd.Windowed = TRUE;
+	sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+
+	UINT createDeviceFlags = 0;
+	//createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+	D3D_FEATURE_LEVEL featureLevel;
+	const D3D_FEATURE_LEVEL featureLevelArray[2] = { D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_0, };
+	if (D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, createDeviceFlags, featureLevelArray, 2, D3D11_SDK_VERSION, &sd, &g_pSwapChain, &g_pd3dDevice, &featureLevel, &g_pd3dDeviceContext) != S_OK)
+		return E_FAIL;
+
+	//CreateRenderTarget();
+	if (CreateD3D11Views() != S_OK)
+		std::cout << "Something went wrong!" << std::endl;
+
+	return S_OK;
+}
+
+void CleanupDeviceD3D()
+{
+	OnD3D11DestroyDevice(nullptr);
+
+	CleanupRenderTarget();
+	if (g_pSwapChain) { g_pSwapChain->Release(); g_pSwapChain = NULL; }
+	if (g_pd3dDeviceContext) { g_pd3dDeviceContext->Release(); g_pd3dDeviceContext = NULL; }
+	if (g_pd3dDevice) { g_pd3dDevice->Release(); g_pd3dDevice = NULL; }
+}
+
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
+{
+	if (ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
+		return true;
+
+	switch (msg)
+	{
+	case WM_SIZE:
+		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
+		{
+			std::cout << "RESIZE " << (UINT)LOWORD(lParam) << ", " << (UINT)HIWORD(lParam) << std::endl;
+			ImGui_ImplDX11_InvalidateDeviceObjects();
+			CleanupRenderTarget();
+			g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
+			//CreateRenderTarget();
+			if (CreateD3D11Views() != S_OK)
+				std::cout << "Something went wrong!" << std::endl;
+			ImGui_ImplDX11_CreateDeviceObjects();
+
+			OnD3D11ResizedSwapChain(g_pd3dDevice, g_pSwapChain, &GetBackBufferSurfaceDesc(), nullptr);
+		}
+		return 0;
+	case WM_SYSCOMMAND:
+		if ((wParam & 0xfff0) == SC_KEYMENU) // Disable ALT application menu
+			return 0;
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+	case WM_DPICHANGED:
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_DpiEnableScaleViewports)
+		{
+			//const int dpi = HIWORD(wParam);
+			//printf("WM_DPICHANGED to %d (%.0f%%)\n", dpi, (float)dpi / 96.0f * 100.0f);
+			const RECT* suggested_rect = (RECT*)lParam;
+			::SetWindowPos(hWnd, NULL, suggested_rect->left, suggested_rect->top, suggested_rect->right - suggested_rect->left, suggested_rect->bottom - suggested_rect->top, SWP_NOZORDER | SWP_NOACTIVATE);
+		}
+		break;
+	}
+	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
 // note: this is called *before* OnD3D11DestroyDevice !!
@@ -3611,6 +3902,11 @@ void ExitApp()
 {
 	CloseVolumeFile();
 	ClearCudaDevices();
+	ImGuiCleanup();
+
+	CleanupDeviceD3D();
+	DestroyWindow(g_hwnd);
+	UnregisterClass(_T("ImGui Example"), g_wc.hInstance);
 }
 
 //--------------------------------------------------------------------------------------
@@ -3628,7 +3924,6 @@ int main(int argc, char* argv[])
 	printf("---- WARNING: DEBUG BUILD - SHIT WILL BE SLOW! ----\n\n");
 #endif
 
-
 	//if(!freopen("log.txt", "w", stdout)) {
 	//	printf("FUBAR\n");
 	//}
@@ -3641,122 +3936,233 @@ int main(int argc, char* argv[])
 	omp_set_num_threads(g_threadCount);
 
 	// Set general DXUT callbacks
-	DXUTSetCallbackMsgProc( MsgProc );
+	//DXUTSetCallbackMsgProc( MsgProc );
 	// do *not* register OnKeyboard and OnMouse!
+	//DXUTSetCallbackFrameMove( OnFrameMove );
+	//DXUTSetCallbackDeviceChanging( ModifyDeviceSettings );
+	//DXUTSetCallbackDeviceRemoved( OnDeviceRemoved );
+	//// Set the D3D11 DXUT callbacks
+	//DXUTSetCallbackD3D11DeviceAcceptable( IsD3D11DeviceAcceptable );
+	//DXUTSetCallbackD3D11DeviceCreated( OnD3D11CreateDevice );
+	//DXUTSetCallbackD3D11SwapChainResized( OnD3D11ResizedSwapChain );
+	//DXUTSetCallbackD3D11FrameRender( OnD3D11FrameRender );
+	//DXUTSetCallbackD3D11SwapChainReleasing( OnD3D11ReleasingSwapChain );
+	//DXUTSetCallbackD3D11DeviceDestroyed( OnD3D11DestroyDevice );
 
-	DXUTSetCallbackFrameMove( OnFrameMove );
+	// Create application window
+	g_wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
+	RegisterClassEx(&g_wc);
+	g_hwnd = CreateWindow(_T("ImGui Example"), _T("Dear ImGui DirectX11 Example"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, g_wc.hInstance, NULL);
 
-	DXUTSetCallbackDeviceChanging( ModifyDeviceSettings );
-	DXUTSetCallbackDeviceRemoved( OnDeviceRemoved );
+	// Initialize Direct3D
+	if (CreateDeviceD3D(g_hwnd) < 0)
+	{
+		CleanupDeviceD3D();
+		UnregisterClass(_T("ImGui Example"), g_wc.hInstance);
+		return 1;
+	}
 
-	// Set the D3D11 DXUT callbacks
-	DXUTSetCallbackD3D11DeviceAcceptable( IsD3D11DeviceAcceptable );
-	DXUTSetCallbackD3D11DeviceCreated( OnD3D11CreateDevice );
-	DXUTSetCallbackD3D11SwapChainResized( OnD3D11ResizedSwapChain );
-	DXUTSetCallbackD3D11FrameRender( OnD3D11FrameRender );
-	DXUTSetCallbackD3D11SwapChainReleasing( OnD3D11ReleasingSwapChain );
-	DXUTSetCallbackD3D11DeviceDestroyed( OnD3D11DestroyDevice );
+	// Show the window
+	ShowWindow(g_hwnd, SW_SHOWDEFAULT);
+	UpdateWindow(g_hwnd);
+
 
 	// Perform application-level initialization
-	if(!InitApp()) {
+	if(!InitApp()) 
 		return EXIT_FAILURE;
-	}
+
+	//DXUTInit( true, true, NULL ); // Parse the command line, show msgboxes on error, no extra command line params
+	//DXUTSetIsInGammaCorrectMode( false );
+	//DXUTSetCursorSettings( true, true ); // Show the cursor and clip it when in full screen
+	//DXUTCreateWindow( L"TurbulenceRenderer" );
+	//DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 1360, 1360 );
 
 
-	DXUTInit( true, true, NULL ); // Parse the command line, show msgboxes on error, no extra command line params
-	DXUTSetIsInGammaCorrectMode( true );
-	DXUTSetCursorSettings( true, true ); // Show the cursor and clip it when in full screen
-	DXUTCreateWindow( L"TurbulenceRenderer" );
-	DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 1360, 1360 );
+	
+
+	OnD3D11CreateDevice(g_pd3dDevice, nullptr);
+
+	SetupImGui();
+
+	OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
+
+	//if(argc > 1 && std::string(argv[1]) == "dumpla3d") {
+	//	if(argc != 4) {
+	//		printf("Usage: %s dumpla3d file.timevol outfile.la3d", argv[0]);
+	//		return 1;
+	//	}
+	//	std::string filenameVol(argv[2]);
+	//	std::string filenameLa3d(argv[3]);
+	//	if(!OpenVolumeFile(filenameVol, DXUTGetD3D11Device())) {
+	//		printf("Failed opening %s\n", filenameVol.c_str());
+	//		return 2;
+	//	}
+	//	// create outpath if it doesn't exist yet
+	//	system((string("mkdir \"") + tum3d::GetPath(filenameLa3d) + "\"").c_str());
+	//	// remove extension
+	//	if(filenameLa3d.substr(filenameLa3d.size() - 5) == ".la3d")
+	//	{
+	//		filenameLa3d = filenameLa3d.substr(0, filenameLa3d.size() - 5);
+	//	}
+	//	// build per-channel filenames
+	//	std::vector<std::string> filenames;
+	//	for(int c = 0; c < g_volume.GetChannelCount(); c++)
+	//	{
+	//		std::ostringstream str;
+	//		str << filenameLa3d << char('X' + c) << ".la3d";
+	//		filenames.push_back(str.str());
+	//	}
+	//	// and write la3d
+	//	if(!g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames)) {
+	//		printf("Failed writing la3ds\n");
+	//		return 3;
+	//	}
+	//	return 0;
+	//}
+	//// parse cmdline
+	//// usage: argv[0] [config.cfg [volume.timevol [batchoutprefix [heuristicflags [options...]]]]]
+	//if(argc > 1)
+	//{
+	//	std::string configFile(argv[1]);
+	//	if(!LoadRenderingParams(configFile))
+	//	{
+	//		printf("Failed loading config from %s\n", configFile.c_str());
+	//		return 1;
+	//	}
+	//}
+	//if(argc > 2)
+	//{
+	//	std::string volumeFile(argv[2]);
+	//	g_batchTrace.VolumeFiles.push_back(volumeFile);
+	//	g_batchTrace.OutPath = tum3d::GetPath(volumeFile);
+	//	if(argc > 3)
+	//	{
+	//		g_batchTrace.OutPath += std::string(argv[3]);
+	//	}
+	//	if(argc > 4)
+	//	{
+	//		g_particleTraceParams.m_heuristicFlags = atoi(argv[4]);
+	//	}
+	//	for(int i = 5; i < argc; i++)
+	//	{
+	//		if(argv[i] == std::string("WriteLinebufs"))
+	//		{
+	//			g_batchTrace.WriteLinebufs = true;
+	//		}
+	//		//else if ... more options?
+	//		else
+	//		{
+	//			printf("WARNING: unknown option \"%s\"\n", argv[i]);
+	//		}
+	//	}
+	//	g_batchTrace.ExitAfterFinishing = true;
+	//	//StartBatchTracing();
+	//}
+
+	//DXUTMainLoop(); // Enter into the DXUT render loop
 
 
-	//OpenVolumeFile("F:\\Turbulence\\IsoHigh\\IsotropicHigh.timevol", DXUTGetD3D11Device());
+	// Main loop
 
+	bool show_demo_window = true;
+	bool show_another_window = false;
+	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-	if(argc > 1 && std::string(argv[1]) == "dumpla3d") {
-		if(argc != 4) {
-			printf("Usage: %s dumpla3d file.timevol outfile.la3d", argv[0]);
-			return 1;
-		}
-		std::string filenameVol(argv[2]);
-		std::string filenameLa3d(argv[3]);
-
-		if(!OpenVolumeFile(filenameVol, DXUTGetD3D11Device())) {
-			printf("Failed opening %s\n", filenameVol.c_str());
-			return 2;
-		}
-
-		// create outpath if it doesn't exist yet
-		system((string("mkdir \"") + tum3d::GetPath(filenameLa3d) + "\"").c_str());
-
-		// remove extension
-		if(filenameLa3d.substr(filenameLa3d.size() - 5) == ".la3d")
-		{
-			filenameLa3d = filenameLa3d.substr(0, filenameLa3d.size() - 5);
-		}
-		// build per-channel filenames
-		std::vector<std::string> filenames;
-		for(int c = 0; c < g_volume.GetChannelCount(); c++)
-		{
-			std::ostringstream str;
-			str << filenameLa3d << char('X' + c) << ".la3d";
-			filenames.push_back(str.str());
-		}
-		// and write la3d
-		if(!g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames)) {
-			printf("Failed writing la3ds\n");
-			return 3;
-		}
-		return 0;
-	}
-
-
-	// parse cmdline
-	// usage: argv[0] [config.cfg [volume.timevol [batchoutprefix [heuristicflags [options...]]]]]
-	if(argc > 1)
+	MSG msg;
+	ZeroMemory(&msg, sizeof(msg));
+	while (msg.message != WM_QUIT)
 	{
-		std::string configFile(argv[1]);
-		if(!LoadRenderingParams(configFile))
+		// Poll and handle messages (inputs, window resize, etc.)
+		// You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+		// - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+		// - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+		// Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+		if (PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
 		{
-			printf("Failed loading config from %s\n", configFile.c_str());
-			return 1;
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+			continue;
 		}
-	}
-	if(argc > 2)
-	{
-		std::string volumeFile(argv[2]);
-		g_batchTrace.VolumeFiles.push_back(volumeFile);
-		g_batchTrace.OutPath = tum3d::GetPath(volumeFile);
-		if(argc > 3)
+
+		// Start the Dear ImGui frame
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+
+		static float time = 0.0f;
+		time += ImGui::GetIO().DeltaTime;
+
+		OnFrameMove(time, ImGui::GetIO().DeltaTime, nullptr);
+		OnD3D11FrameRender(g_pd3dDevice, g_pd3dDeviceContext, 0.0f, ImGui::GetIO().DeltaTime, nullptr);
+
+		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+		if (show_demo_window)
+			ImGui::ShowDemoWindow(&show_demo_window);
+
+		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
 		{
-			g_batchTrace.OutPath += std::string(argv[3]);
+			static float f = 0.0f;
+			static int counter = 0;
+
+			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+			ImGui::Checkbox("Another Window", &show_another_window);
+
+			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
+			ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+				counter++;
+			ImGui::SameLine();
+			ImGui::Text("counter = %d", counter);
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::End();
 		}
-		if(argc > 4)
+
+		// 3. Show another simple window.
+		if (show_another_window)
 		{
-			g_particleTraceParams.m_heuristicFlags = atoi(argv[4]);
+			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+			ImGui::Text("Hello from another window!");
+			if (ImGui::Button("Close Me"))
+				show_another_window = false;
+			ImGui::End();
 		}
-		for(int i = 5; i < argc; i++)
+
+		// Rendering
+		ImGui::Render();
+
+		g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
+
+		//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+		//g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+		// Update and Render additional Platform Windows
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			if(argv[i] == std::string("WriteLinebufs"))
-			{
-				g_batchTrace.WriteLinebufs = true;
-			}
-			//else if ... more options?
-			else
-			{
-				printf("WARNING: unknown option \"%s\"\n", argv[i]);
-			}
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
 		}
-		g_batchTrace.ExitAfterFinishing = true;
-		StartBatchTracing();
+
+		//g_pSwapChain->Present(1, 0); // Present with vsync
+		g_pSwapChain->Present(0, 0); // Present without vsync
 	}
 
-	DXUTMainLoop(); // Enter into the DXUT render loop
+
+
 
 	// Perform application-level cleanup
 	ExitApp();
 
-	return DXUTGetExitCode();
+	//return DXUTGetExitCode();
+
+	std::cin.get();
+
+	return 0;
 }
 
 #pragma endregion

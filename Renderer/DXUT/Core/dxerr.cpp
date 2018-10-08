@@ -6,7 +6,7 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 //--------------------------------------------------------------------------------------
-#include "dxut.h"
+//#include "dxut.h"
 
 // This version only supports UNICODE.
 
