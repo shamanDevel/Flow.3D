@@ -81,6 +81,9 @@ exit 1</Command>
       <Message>
       </Message>
     </PostBuildEvent>
+    <CudaCompile>
+      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -110,6 +113,9 @@ exit 1</Command>
       <Message>
       </Message>
     </PostBuildEvent>
+    <CudaCompile>
+      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\CompressVolume.h" />

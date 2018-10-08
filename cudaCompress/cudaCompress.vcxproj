@@ -170,7 +170,7 @@ xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_61,sm_61</CodeGeneration>
+      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <Include>
       </Include>
       <PtxAsOptionV>false</PtxAsOptionV>
@@ -231,7 +231,7 @@ xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>
       </Include>
-      <CodeGeneration>compute_61,sm_61</CodeGeneration>
+      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <Defines>
       </Defines>
       <PtxAsOptionV>false</PtxAsOptionV>

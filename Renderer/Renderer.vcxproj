@@ -65,7 +65,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_61,sm_61</CodeGeneration>
+      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
       <PtxAsOptionV>false</PtxAsOptionV>
@@ -120,7 +120,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_61,sm_61</CodeGeneration>
+      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <PtxAsOptionV>false</PtxAsOptionV>
       <Optimization>InheritFromHost</Optimization>
       <Include>%(AdditionalIncludeDirectories)</Include>
@@ -218,6 +218,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <CudaCompile Include="RenderingManager.cu">
       <FileType>CppCode</FileType>
     </CudaCompile>
+    <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="ScreenEffect.cpp" />
     <ClCompile Include="TracingTestData.cpp" />
     <ClCompile Include="TransferFunctionEditor\TransferFunctionEditor.cpp" />
@@ -331,6 +332,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="RaycastMode.h" />
     <ClInclude Include="RaycastParams.h" />
     <ClInclude Include="RenderingManager.h" />
+    <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="ScreenEffect.h" />
     <ClInclude Include="TextureCPU.h" />
     <ClInclude Include="TextureFilterCPU.h" />

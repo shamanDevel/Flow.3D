@@ -62,6 +62,7 @@
 
 #include "FlowGraph.h"
 
+#include "RenderTexture.h"
 
 #include <imgui.h>
 #include <imgui_impl_win32.h>
@@ -157,7 +158,15 @@ static ID3D11DeviceContext*     g_pd3dDeviceContext = NULL;
 static IDXGISwapChain*          g_pSwapChain = NULL;
 static ID3D11RenderTargetView*  g_mainRenderTargetView = NULL;
 static ID3D11DepthStencilView*	g_mainDepthStencilView = NULL;
-static ID3D11Texture2D*			g_pDepthStencil = NULL;
+static ID3D11Texture2D*			g_mainDepthStencilTexture = NULL;
+
+RenderTexture g_renderTexture;
+
+ID3D11Texture2D* m_renderTargetTexture;
+ID3D11RenderTargetView* m_renderTargetView;
+ID3D11ShaderResourceView* m_shaderResourceView;
+
+
 
 Vec2i            g_windowSize(0, 0);
 float            g_renderBufferSizeFactor = 2.0f;
@@ -2131,12 +2140,15 @@ HRESULT OnD3D11CreateDevice( ID3D11Device* pd3dDevice, void* pUserContext )
 //--------------------------------------------------------------------------------------
 // Create any D3D11 resources that depend on the back buffer
 //--------------------------------------------------------------------------------------
-HRESULT OnD3D11ResizedSwapChain(ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapChain, const D3D11_TEXTURE2D_DESC* pBackBufferSurfaceDesc, void* pUserContext)
+HRESULT OnD3D11ResizedSwapChain(ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapChain, int width, int height)
 {
+	g_renderTexture.Release();
+	g_renderTexture.Initialize(pd3dDevice, width, height);
+
 	g_redraw = true;
 
-	g_windowSize.x() = pBackBufferSurfaceDesc->Width;
-	g_windowSize.y() = pBackBufferSurfaceDesc->Height;
+	g_windowSize.x() = width;
+	g_windowSize.y() = height;
 
 
 	ResizeRenderBuffer(pd3dDevice);
@@ -2149,7 +2161,7 @@ HRESULT OnD3D11ResizedSwapChain(ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapC
 	desc.ArraySize = 1;
 	desc.BindFlags = D3D11_BIND_RENDER_TARGET;
 	desc.CPUAccessFlags = 0;
-	desc.Format = pBackBufferSurfaceDesc->Format;
+	desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	desc.MipLevels = 1;
 	desc.MiscFlags = 0;
 	desc.SampleDesc.Count = 1;
@@ -2273,12 +2285,11 @@ void OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImme
 
 	clock_t curTime = clock();
 
-	// Clear render target and the depth stencil
-	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
 	//ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
-	pd3dImmediateContext->ClearRenderTargetView( g_mainRenderTargetView, ClearColor );
+	pd3dImmediateContext->ClearRenderTargetView( g_mainRenderTargetView, clearColor );
 	pd3dImmediateContext->ClearDepthStencilView(g_mainDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	static std::string volumeFilePrev = "";
@@ -2832,7 +2843,9 @@ void OnD3D11FrameRender( ID3D11Device* pd3dDevice, ID3D11DeviceContext* pd3dImme
 		}
 
 		// blit over into "raycast finished" tex
-		pd3dImmediateContext->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
+		g_renderTexture.SetRenderTarget(g_pd3dDeviceContext, nullptr);
+
+		//pd3dImmediateContext->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
 
 		//TODO if g_renderBufferSizeFactor > 2, generate mipmaps first?
 		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
@@ -3644,19 +3657,23 @@ bool InitApp()
 
 void SetupImGui()
 {
-	ImGui_ImplWin32_EnableDpiAwareness();
+	//ImGui_ImplWin32_EnableDpiAwareness();
 
 	// Setup Dear ImGui binding
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+	io.ConfigFlags = 0;
+
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
 	//io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 	//io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;     // FIXME-DPI: THIS CURRENTLY DOESN'T WORK AS EXPECTED. DON'T USE IN USER APP!
-	io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports; // FIXME-DPI
+	//io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports; // FIXME-DPI
+	
 	io.ConfigResizeWindowsFromEdges = true;
 	io.ConfigDockingWithShift = true;
 
@@ -3726,7 +3743,6 @@ HRESULT SetupD3D11Views()
 	return hr;
 }
 
-
 //--------------------------------------------------------------------------------------
 // Creates a render target view, and depth stencil texture and view.
 //--------------------------------------------------------------------------------------
@@ -3769,9 +3785,9 @@ HRESULT CreateD3D11Views()
 		descDepth.CPUAccessFlags = 0;
 		descDepth.MiscFlags = 0;
 
-		SAFE_RELEASE(g_pDepthStencil);
+		SAFE_RELEASE(g_mainDepthStencilTexture);
 
-		hr = g_pd3dDevice->CreateTexture2D(&descDepth, nullptr, &g_pDepthStencil);
+		hr = g_pd3dDevice->CreateTexture2D(&descDepth, nullptr, &g_mainDepthStencilTexture);
 		if (FAILED(hr))
 			return hr;
 		//DXUT_SetDebugName(pDepthStencil, "DXUT");
@@ -3785,7 +3801,7 @@ HRESULT CreateD3D11Views()
 		else
 			descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 		descDSV.Texture2D.MipSlice = 0;
-		hr = g_pd3dDevice->CreateDepthStencilView(g_pDepthStencil, &descDSV, &g_mainDepthStencilView);
+		hr = g_pd3dDevice->CreateDepthStencilView(g_mainDepthStencilTexture, &descDSV, &g_mainDepthStencilView);
 		if (FAILED(hr))
 			return hr;
 	}
@@ -3797,13 +3813,13 @@ HRESULT CreateD3D11Views()
 	return hr;
 }
 
-void CreateRenderTarget()
-{
-	ID3D11Texture2D* pBackBuffer;
-	g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
-	g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
-	pBackBuffer->Release();
-}
+//void CreateRenderTarget()
+//{
+//	ID3D11Texture2D* pBackBuffer;
+//	g_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
+//	g_pd3dDevice->CreateRenderTargetView(pBackBuffer, NULL, &g_mainRenderTargetView);
+//	pBackBuffer->Release();
+//}
 
 void CleanupRenderTarget()
 {
@@ -3865,7 +3881,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_SIZE:
 		if (g_pd3dDevice != NULL && wParam != SIZE_MINIMIZED)
 		{
-			std::cout << "RESIZE " << (UINT)LOWORD(lParam) << ", " << (UINT)HIWORD(lParam) << std::endl;
 			ImGui_ImplDX11_InvalidateDeviceObjects();
 			CleanupRenderTarget();
 			g_pSwapChain->ResizeBuffers(0, (UINT)LOWORD(lParam), (UINT)HIWORD(lParam), DXGI_FORMAT_UNKNOWN, 0);
@@ -3873,8 +3888,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if (CreateD3D11Views() != S_OK)
 				std::cout << "Something went wrong!" << std::endl;
 			ImGui_ImplDX11_CreateDeviceObjects();
-
-			OnD3D11ResizedSwapChain(g_pd3dDevice, g_pSwapChain, &GetBackBufferSurfaceDesc(), nullptr);
 		}
 		return 0;
 	case WM_SYSCOMMAND:
@@ -3897,7 +3910,6 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
-// note: this is called *before* OnD3D11DestroyDevice !!
 void ExitApp()
 {
 	CloseVolumeFile();
@@ -3907,6 +3919,72 @@ void ExitApp()
 	CleanupDeviceD3D();
 	DestroyWindow(g_hwnd);
 	UnregisterClass(_T("ImGui Example"), g_wc.hInstance);
+}
+
+void DockSpace()
+{
+	static bool opt_fullscreen_persistant = true;
+	static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
+	bool opt_fullscreen = opt_fullscreen_persistant;
+
+	// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
+	// because it would be confusing to have two docking targets within each others.
+	ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+	if (opt_fullscreen)
+	{
+		ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImGui::SetNextWindowPos(viewport->Pos);
+		ImGui::SetNextWindowSize(viewport->Size);
+		ImGui::SetNextWindowViewport(viewport->ID);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+		window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+		window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+	}
+
+	// When using ImGuiDockNodeFlags_RenderWindowBg or ImGuiDockNodeFlags_InvisibleDockspace, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
+	if (opt_flags & ImGuiDockNodeFlags_RenderWindowBg)
+		ImGui::SetNextWindowBgAlpha(0.0f);
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+	ImGui::PopStyleVar();
+
+	if (opt_fullscreen)
+		ImGui::PopStyleVar(2);
+
+	// Dockspace
+	ImGuiIO& io = ImGui::GetIO();
+	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+	{
+		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
+		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), opt_flags);
+	}
+	//else
+	//{
+	//	ShowDockingDisabledMessage();
+	//}
+	//
+	//if (ImGui::BeginMenuBar())
+	//{
+	//	if (ImGui::BeginMenu("Docking"))
+	//	{
+	//		// Disabling fullscreen would allow the window to be moved to the front of other windows, 
+	//		// which we can't undo at the moment without finer window depth/z control.
+	//		//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);
+	//		if (ImGui::MenuItem("Flag: NoSplit", "", (opt_flags & ImGuiDockNodeFlags_NoSplit) != 0))                opt_flags ^= ImGuiDockNodeFlags_NoSplit;
+	//		if (ImGui::MenuItem("Flag: NoDockingInCentralNode", "", (opt_flags & ImGuiDockNodeFlags_NoDockingInCentralNode) != 0)) opt_flags ^= ImGuiDockNodeFlags_NoDockingInCentralNode;
+	//		if (ImGui::MenuItem("Flag: PassthruInEmptyNodes", "", (opt_flags & ImGuiDockNodeFlags_PassthruInEmptyNodes) != 0))   opt_flags ^= ImGuiDockNodeFlags_PassthruInEmptyNodes;
+	//		if (ImGui::MenuItem("Flag: RenderWindowBg", "", (opt_flags & ImGuiDockNodeFlags_RenderWindowBg) != 0))         opt_flags ^= ImGuiDockNodeFlags_RenderWindowBg;
+	//		if (ImGui::MenuItem("Flag: PassthruDockspace (all 3 above)", "", (opt_flags & ImGuiDockNodeFlags_PassthruDockspace) == ImGuiDockNodeFlags_PassthruDockspace))
+	//			opt_flags = (opt_flags & ~ImGuiDockNodeFlags_PassthruDockspace) | ((opt_flags & ImGuiDockNodeFlags_PassthruDockspace) == ImGuiDockNodeFlags_PassthruDockspace) ? 0 : ImGuiDockNodeFlags_PassthruDockspace;
+	//		ImGui::Separator();
+	//		ImGui::EndMenu();
+	//	}
+	//	ImGui::EndMenuBar();
+	//}
+
+	ImGui::End();
 }
 
 //--------------------------------------------------------------------------------------
@@ -3978,13 +4056,12 @@ int main(int argc, char* argv[])
 	//DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 1360, 1360 );
 
 
-	
-
 	OnD3D11CreateDevice(g_pd3dDevice, nullptr);
 
 	SetupImGui();
 
-	OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
+	//OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
+	OpenVolumeFile("C:\\Users\\alexf\\Desktop\\pacificvis-stuff\\TimeVol\\turb-data.timevol", g_pd3dDevice);
 
 	//if(argc > 1 && std::string(argv[1]) == "dumpla3d") {
 	//	if(argc != 4) {
@@ -4063,7 +4140,8 @@ int main(int argc, char* argv[])
 
 
 	// Main loop
-
+	bool resizeNextFrame = false;
+	ImVec2 sceneWindowSize;
 	bool show_demo_window = true;
 	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -4089,10 +4167,22 @@ int main(int argc, char* argv[])
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 
+		if (resizeNextFrame)
+		{
+			std::cout << "Scene window resize: " << sceneWindowSize.x << ", " << sceneWindowSize.y << std::endl;
+			resizeNextFrame = false;
+			OnD3D11ResizedSwapChain(g_pd3dDevice, g_pSwapChain, sceneWindowSize.x, sceneWindowSize.y);
+		}
+
+		DockSpace();
+
 		static float time = 0.0f;
 		time += ImGui::GetIO().DeltaTime;
 
 		OnFrameMove(time, ImGui::GetIO().DeltaTime, nullptr);
+
+		g_renderTexture.SetRenderTarget(g_pd3dDeviceContext, g_mainDepthStencilView);
+
 		OnD3D11FrameRender(g_pd3dDevice, g_pd3dDeviceContext, 0.0f, ImGui::GetIO().DeltaTime, nullptr);
 
 		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -4132,6 +4222,64 @@ int main(int argc, char* argv[])
 			ImGui::End();
 		}
 
+
+		// Rendering config window
+		{
+			ImGui::Begin("Rendering Options");
+
+			ImGui::PushItemWidth(175);
+			{
+				if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
+					g_redraw = true;
+
+			}
+			ImGui::PopItemWidth();
+
+			ImGui::End();
+		}
+
+
+		// Scene window
+		{
+			ImGui::Begin("Scene");
+
+			float height;
+			float width;
+
+			ImVec2 availableRegion = ImGui::GetContentRegionAvail();
+
+			if (!ImGui::IsMouseDragging(0))
+			{
+				static ImVec2 lastFrameWindowSize = ImGui::GetContentRegionAvail();
+
+				if (availableRegion.x != lastFrameWindowSize.x || availableRegion.y != lastFrameWindowSize.y)
+				{
+					sceneWindowSize = availableRegion;
+					lastFrameWindowSize = availableRegion;
+					resizeNextFrame = true;
+				}
+			}
+			float windowAspectRatio = availableRegion.x / (float)availableRegion.y;
+
+			if (windowAspectRatio < g_renderTexture.GetAspectRatio())
+			{
+				width = availableRegion.x - 2;
+				height = width * 1.0f / g_renderTexture.GetAspectRatio();
+				ImGui::SetCursorPosY(ImGui::GetCursorPos().y + (availableRegion.y - height) / 2.0f);
+			}
+			else
+			{
+				height = availableRegion.y - 2;
+				width = height * g_renderTexture.GetAspectRatio();
+				ImGui::SetCursorPosX(ImGui::GetCursorPos().x + (availableRegion.x - width) / 2.0f);
+			}
+
+			ImGui::Image((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 25));
+
+			ImGui::End();
+		}
+
+
 		// Rendering
 		ImGui::Render();
 
@@ -4159,8 +4307,6 @@ int main(int argc, char* argv[])
 	ExitApp();
 
 	//return DXUTGetExitCode();
-
-	std::cin.get();
 
 	return 0;
 }
