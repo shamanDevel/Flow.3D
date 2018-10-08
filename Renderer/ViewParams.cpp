@@ -1,4 +1,5 @@
 #include "ViewParams.h"
+#include "Vec.h"
 
 #include <cstring>
 
@@ -70,12 +71,25 @@ void ViewParams::WriteConfig(ConfigFile& config) const
 }
 
 
-Vec3f ViewParams::GetCameraPosition() const
+Vec3f ViewParams::GetViewDir() const
 {
 	Mat4f rotationMat;
 	convertQuaternionToRotMat(m_rotationQuat, rotationMat);
 
-	Vec3f viewDir = -Vec3f(rotationMat.getRow(2));
+	Vec3f v = rotationMat.getRow(2);
+
+	v = normalize(v);
+
+	return v;
+}
+
+Vec3f ViewParams::GetCameraPosition() const
+{
+	//Mat4f rotationMat;
+	//convertQuaternionToRotMat(m_rotationQuat, rotationMat);
+
+	//Vec3f viewDir = -Vec3f(rotationMat.getRow(2));
+	Vec3f viewDir = -GetViewDir();
 	Vec3f eyePos = m_lookAt - viewDir * m_viewDistance;
 
 	return eyePos;

@@ -100,6 +100,9 @@ struct ParticleRenderParams
 	// FTLE stuff
 	bool m_ftleShowTexture;
 	float m_ftleTextureAlpha;
+
+	bool m_FixedLightDir;
+	tum3D::Vec3f m_lightDir;
 };
 
 

@@ -1888,8 +1888,16 @@ void InitTwBars(ID3D11Device* pDevice, UINT uiBBHeight)
 	TwDefine("Main/'Heat Map' label='Heat Map' opened=false");
 
 	// bounding boxes
+	
+	TwAddVarRW(g_pTwBarMain, "DomainBoxThickness", TW_TYPE_FLOAT,	&g_renderingManager.m_DomainBoxThickness,	"label='Domain Box Thickness' min=0.0 step=0.0001 group=MiscRendering");
 	TwAddVarRW(g_pTwBarMain, "ShowDomainBox",	TW_TYPE_BOOLCPP,	&g_bRenderDomainBox,						"label='Show Domain Box (Blue)' group=MiscRendering");
 	TwAddVarRW(g_pTwBarMain, "ShowBrickBoxes",	TW_TYPE_BOOLCPP,	&g_bRenderBrickBoxes,						"label='Show Brick Boxes (Light Blue)' group=MiscRendering");
+
+	TwAddVarRW(g_pTwBarMain, "FixedLightDir",	TW_TYPE_BOOLCPP,	&g_particleRenderParams.m_FixedLightDir,	"label='Fixed Light Pos' group=Light");
+	TwAddVarRW(g_pTwBarMain, "LightDirX", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.x(), "label='X' min=-1 max=1 step=0.1 group=Light");
+	TwAddVarRW(g_pTwBarMain, "LightDirY", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.y(), "label='Y' min=-1 max=1 step=0.1 group=Light");
+	TwAddVarRW(g_pTwBarMain, "LightDirZ", TW_TYPE_FLOAT, &g_particleRenderParams.m_lightDir.z(), "label='Z' min=-1 max=1 step=0.1 group=Light");
+	TwDefine("Main/Light label='Light' opened=false group=MiscRendering");
 
 	// view params
 	TwAddSeparator(g_pTwBarMain, "", "");
@@ -2200,6 +2208,8 @@ void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string
 
 	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
 
+	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
+
 	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
 }
 
@@ -2218,6 +2228,8 @@ void SaveRenderBufferScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const
 	pd3dImmediateContext->Map(g_pRenderBufferStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
 
 	stbi_write_png(filename.c_str(), g_projParams.m_imageWidth, g_projParams.m_imageHeight, 4, mapped.pData, mapped.RowPitch);
+
+	//stbi_write_bmp(filename.c_str(), g_projParams.m_imageWidth, g_projParams.m_imageHeight, 4, mapped.pData);
 
 	pd3dImmediateContext->Unmap(g_pRenderBufferStagingTex, 0);
 }
@@ -3655,7 +3667,7 @@ int main(int argc, char* argv[])
 	DXUTSetIsInGammaCorrectMode( true );
 	DXUTSetCursorSettings( true, true ); // Show the cursor and clip it when in full screen
 	DXUTCreateWindow( L"TurbulenceRenderer" );
-	DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 1280, 1024 );
+	DXUTCreateDevice( D3D_FEATURE_LEVEL_11_0, true, 1360, 1360 );
 
 
 	//OpenVolumeFile("F:\\Turbulence\\IsoHigh\\IsotropicHigh.timevol", DXUTGetD3D11Device());

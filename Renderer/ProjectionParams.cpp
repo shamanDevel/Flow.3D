@@ -120,7 +120,8 @@ Mat4f ProjectionParams::BuildProjectionMatrix(EStereoEye eye, float eyeDistance,
 	if (m_perspective)
 		perspectiveOffCenterProjMatD3D(frustum[0], frustum[1], frustum[2], frustum[3], frustum[4], frustum[5], proj);
 	else
-		orthoOffCenterProjMatD3D(frustum[0], frustum[1], frustum[2], frustum[3], frustum[4], frustum[5], proj);
+		//orthoOffCenterProjMatD3D(frustum[0], frustum[1], frustum[2], frustum[3], frustum[4], frustum[5], proj);
+		orthoOffCenterProjMatD3D(-1.0f, 1.0f, -1.0f, 1.0f, frustum[4], frustum[5], proj);
 
 	return proj;
 }

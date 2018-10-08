@@ -1204,13 +1204,19 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 	ID3D11DeviceContext* pContext = nullptr;
 	m_pDevice->GetImmediateContext(&pContext);
 
-	Vec4f domainBoxColor(0.0f, 0.0f, 1.0f, 1.0f);
+	Vec4f domainBoxColor(1.0f, 1.0f, 1.0f, 1.0f);
 	Vec4f brickBoxColor (0.0f, 0.5f, 1.0f, 1.0f);
 	Vec4f clipBoxColor  (1.0f, 0.0f, 0.0f, 1.0f);
 	Vec4f seedBoxColor  (0.0f, 0.6f, 0.0f, 1.0f);
 	Vec4f coordinateBoxColor(1.0f, 0.0f, 0.0f, 1.0f);
 
-	Vec3f lightPos = m_viewParams.GetCameraPosition();
+
+	Vec3f lightPos;
+
+	if (m_particleRenderParams.m_FixedLightDir)
+		lightPos = normalize(m_particleRenderParams.m_lightDir);
+	else
+		lightPos = m_viewParams.GetCameraPosition();
 
 	Vec3f volumeHalfSizeWorld = m_pVolume->GetVolumeHalfSizeWorld();
 	Vec3f seedBoxMin = m_particleTraceParams.m_seedBoxMin;
@@ -1243,7 +1249,8 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 	bool renderClipBox = m_renderClipBox && m_raycastParams.m_raycastingEnabled;
 	bool renderSeedBox = m_renderSeedBox && m_particleRenderParams.m_linesEnabled;
 	bool renderBrickBoxes = m_renderBrickBoxes;
-	bool renderCoordinates = m_renderDomainBox;
+	//bool renderCoordinates = m_renderDomainBox;
+	bool renderCoordinates = false;
 
 	Vec3f brickSize = m_pVolume->GetBrickSizeWorld();
 	float tubeRadiusLarge  = 0.004f;
@@ -1259,7 +1266,7 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 		viewport.Height /= 2.0f;
 		pContext->RSSetViewports(1, &viewport);
 
-		if(renderDomainBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, tubeRadiusLarge,  blendBehind);
+		if(renderDomainBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, m_DomainBoxThickness,  blendBehind);
 		if(renderClipBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, clipBoxMin,           clipBoxMax,          clipBoxColor,   tubeRadiusMedium, blendBehind);
 		if(renderSeedBox)	m_box.RenderLines(viewLeft, projLeft, lightPos, seedBoxMin,           seedBoxMax,          seedBoxColor,   tubeRadiusMedium, blendBehind);
 		if (renderCoordinates) {
@@ -1271,7 +1278,7 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 		viewport.TopLeftY += viewport.Height;
 		pContext->RSSetViewports(1, &viewport);
 
-		if(renderDomainBox)	m_box.RenderLines(viewRight, projRight, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, tubeRadiusLarge,  blendBehind);
+		if (renderDomainBox)	m_box.RenderLines(viewRight, projRight, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, m_DomainBoxThickness, blendBehind);
 		if(renderClipBox)	m_box.RenderLines(viewRight, projRight, lightPos, clipBoxMin,           clipBoxMax,          clipBoxColor,   tubeRadiusMedium, blendBehind);
 		if(renderSeedBox)	m_box.RenderLines(viewRight, projRight, lightPos, seedBoxMin,           seedBoxMax,          seedBoxColor,   tubeRadiusMedium, blendBehind);
 		if (renderCoordinates) {
@@ -1287,7 +1294,7 @@ void RenderingManager::RenderBoxes(bool enableColor, bool blendBehind)
 
 		pContext->RSSetViewports(1, &viewport);
 
-		if(renderDomainBox)	m_box.RenderLines(view, proj, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, tubeRadiusLarge,  blendBehind);
+		if (renderDomainBox)	m_box.RenderLines(view, proj, lightPos, -volumeHalfSizeWorld, volumeHalfSizeWorld, domainBoxColor, m_DomainBoxThickness, blendBehind);
 		if(renderClipBox)	m_box.RenderLines(view, proj, lightPos, clipBoxMin,           clipBoxMax,          clipBoxColor,   tubeRadiusMedium, blendBehind);
 		if(renderSeedBox)	m_box.RenderLines(view, proj, lightPos, seedBoxMin,           seedBoxMax,          seedBoxColor,   tubeRadiusMedium, blendBehind);
 		if (renderCoordinates) {
@@ -1414,8 +1421,18 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 	// Debug
 	//DebugRenderLines(m_pDevice, pContext, pLineBuffers);
 
+
+	Vec3f lightDir;
+
+	if (m_particleRenderParams.m_FixedLightDir)
+		lightDir = normalize(m_particleRenderParams.m_lightDir);
+	else
+		lightDir = m_viewParams.GetViewDir();
+
+	std::cout << "viewDir(" << lightDir.x() << "," << lightDir.y() << "," << lightDir.z() << ")" << std::endl;
+
 	// common shader vars
-	m_lineEffect.m_pvLightPosVariable->SetFloatVector(m_viewParams.GetCameraPosition());
+	m_lineEffect.m_pvLightPosVariable->SetFloatVector(lightDir);
 	m_lineEffect.m_pfRibbonHalfWidthVariable->SetFloat(0.01f * m_particleRenderParams.m_ribbonWidth * 0.5f);
 	m_lineEffect.m_pfTubeRadiusVariable->SetFloat(0.01f * m_particleRenderParams.m_tubeRadius);
 	m_lineEffect.m_pbTubeRadiusFromVelocityVariable->SetBool(m_particleRenderParams.m_tubeRadiusFromVelocity);
@@ -2126,8 +2143,15 @@ void RenderingManager::RenderBalls(const BallBuffers* pBallBuffers, float radius
 	pContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, 0);
 	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
 
+	Vec3f lightDir;
+
+	if (m_particleRenderParams.m_FixedLightDir)
+		lightDir = normalize(m_particleRenderParams.m_lightDir);
+	else
+		lightDir = m_viewParams.GetViewDir();
+
 	// shader vars
-	m_lineEffect.m_pvLightPosVariable->SetFloatVector(m_viewParams.GetCameraPosition());
+	m_lineEffect.m_pvLightPosVariable->SetFloatVector(lightDir);
 
 	m_lineEffect.m_pvColor0Variable->SetFloatVector(m_particleRenderParams.m_color0);
 	m_lineEffect.m_pvColor1Variable->SetFloatVector(m_particleRenderParams.m_color1);

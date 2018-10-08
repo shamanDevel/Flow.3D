@@ -208,6 +208,9 @@ void ParticleRenderParams::Reset()
 
 	m_ftleShowTexture = true;
 	m_ftleTextureAlpha = 1.0f;
+
+	m_FixedLightDir = false;
+	m_lightDir = tum3D::Vec3f(0.0);
 }
 
 void ParticleRenderParams::ApplyConfig(const ConfigFile& config)

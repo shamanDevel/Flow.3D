@@ -206,7 +206,7 @@ float4 getColor(LineVertex input)
 		//assume xy-plane is in the bounds [-g_vHalfSizeWorld.x, -g_vHalfSizeWorld.y], y-flipped
 		float2 sp = input.seedPos.xy;
 		float2 texCoord = (sp.xy + g_vHalfSizeWorld.xy) / (2*g_vHalfSizeWorld.xy);
-		texCoord.y = 1 - texCoord.y;
+		//texCoord.y = 1 - texCoord.y;
 		color = g_seedColors.SampleLevel(SamplerNearest, texCoord, 0);
 	}
 	else if (g_iColorMode == 3) {
@@ -315,7 +315,8 @@ void gsExtrudeRibbon(in line RibbonGSIn input[2], inout TriangleStream<RibbonPSI
 
 float4 psRibbon(float4 pos : SV_Position, RibbonPSIn input) : SV_Target
 {
-	float3 lightDir = normalize(g_vLightPos - input.posWorld);
+	//float3 lightDir = normalize(g_vLightPos - input.posWorld);
+	float3 lightDir = g_vLightPos;
 	float4 color = input.vcolor;
 	if (g_bTimeStripes) {
 		float segment = floor(input.time / g_fTimeStripeLength);
@@ -438,16 +439,19 @@ void gsExtrudeTube(in line TubeGSIn input[2], inout TriangleStream<TubePSIn> str
 
 float4 psTube(TubePSIn input) : SV_Target
 {
-	float3 lightDir = normalize(g_vLightPos - input.posWorld);
+	//float3 lightDir = normalize(g_vLightPos - input.posWorld);
+	float3 lightDir = g_vLightPos;
 	float4 color = input.vcolor;
-	if (g_bTimeStripes) {
+	if (g_bTimeStripes) 
+	{
 		float segment = floor(input.time / g_fTimeStripeLength);
 		float evenOdd = (segment % 2.0) * 2.0 - 1.0;
 		color.rgb *= 1.0 + 0.1 * evenOdd;
 		color.rgb += 0.25 * evenOdd;
 	}
 	float diffuse = saturate(dot(lightDir, normalize(input.normal)));
-	return float4(diffuse * color.rgb, color.a);
+	//return float4(diffuse * color.rgb, color.a);
+	return float4(diffuse * diffuse * diffuse * color.rgb, color.a);
 }
 
 
@@ -517,7 +521,8 @@ float4 psSphere(SpherePSIn input, out float depth : SV_Depth) : SV_Target
 	depth = projected.z / projected.w;
 
 	float3 normal = (intersection - input.center) / g_fBallRadius;
-	float3 lightDir = normalize(g_vLightPos - intersection);
+	//float3 lightDir = normalize(g_vLightPos - intersection);
+	float3 lightDir = g_vLightPos;
 	float diffuse = saturate(dot(lightDir, normal));
 	return float4((0.3 + 0.7 * diffuse) * g_vColor0.rgb, g_vColor0.a);
 }

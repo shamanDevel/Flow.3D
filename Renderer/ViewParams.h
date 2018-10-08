@@ -24,6 +24,7 @@ struct ViewParams
 	float        m_viewDistance;
 
 	tum3D::Vec3f GetCameraPosition() const;
+	tum3D::Vec3f GetViewDir() const;
 
 	tum3D::Mat4f BuildViewMatrix(EStereoEye eye, float eyeDistance) const;
 	tum3D::Mat4f BuildRotationMatrix() const;

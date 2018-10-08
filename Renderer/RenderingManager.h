@@ -112,6 +112,8 @@ public:
 	D3D11CudaTexture	m_ftleTexture;
 	float				m_ftleScale = 0.02f;
 
+	float				m_DomainBoxThickness = 0.0004f;
+
 private:
 	HRESULT CreateScreenDependentResources();
 	void ReleaseScreenDependentResources();
