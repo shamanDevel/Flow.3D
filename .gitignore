@@ -1,4 +1,4 @@
-########## Old gitignore
+############### Old gitignore
 #*.suo
 #*.ncb
 #*.user
@@ -19,7 +19,13 @@
 #!dll/Release
 #
 #Thumbs.db
-##########
+###############
+
+
+
+
+*.ini
+
 
 
 
