@@ -276,10 +276,19 @@ void ParticleTraceParams::ScaleSeedBox(const Vec3f& scaling)
 	m_seedBoxMin = (center - 0.5f * sizeNew);
 }
 
-
-std::string ParticleTraceParams::GetSeedPatternName(int i)
+const char* ParticleTraceParams::GetSeedPatternName(int i)
 {
-	static const std::string seedpatternNames[eSeedPattern::COUNT] =
+	//static const std::string seedpatternNames[eSeedPattern::COUNT] =
+	//{
+	//	"Random",
+	//	"Regular Grid",
+	//	"FTLE",
+	//};
+
+	//if (i >= eSeedPattern::COUNT)
+	//	return std::string("");
+
+	static const char* seedpatternNames[eSeedPattern::COUNT] =
 	{
 		"Random",
 		"Regular Grid",
@@ -287,7 +296,7 @@ std::string ParticleTraceParams::GetSeedPatternName(int i)
 	};
 
 	if (i >= eSeedPattern::COUNT)
-		return std::string("");
+		return "";
 
 	return seedpatternNames[i];
 }

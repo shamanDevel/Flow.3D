@@ -59,7 +59,7 @@ struct ParticleTraceParams
 	bool m_ftleInvertVelocity;
 
 
-	static std::string GetSeedPatternName(int i);
+	static const char* GetSeedPatternName(int i);
 	enum eSeedPattern
 	{
 		RANDOM = 0,

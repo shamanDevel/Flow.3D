@@ -67,6 +67,7 @@
 #include <imgui.h>
 #include <imgui_impl_win32.h>
 #include <imgui_impl_dx11.h>
+#include <algorithm>
 
 
 //#include "TracingBenchmark.h"
@@ -853,6 +854,60 @@ void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4
 	normalize(vecWorldY);
 }
 
+
+void SetBoundingBoxToDomainSize()
+{
+	g_particleTraceParams.m_seedBoxMin = -g_volume.GetVolumeHalfSizeWorld();
+	g_particleTraceParams.m_seedBoxSize = 2 * g_volume.GetVolumeHalfSizeWorld();
+}
+
+void LoadSeedTexture()
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//create new texture
+		ID3D11Device* pd3dDevice = g_pd3dDevice;
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* res = NULL;
+		//ID3D11ShaderResourceView* srv = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFileEx(pd3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
+			std::cout << "Seed texture " << filename << " loaded" << std::endl;
+			//delete old data
+			delete[] g_particleTraceParams.m_seedTexture.m_colors;
+			g_particleTraceParams.m_seedTexture.m_colors = NULL;
+			//Copy to cpu memory
+			ID3D11Texture2D* tex = NULL;
+			res->QueryInterface(&tex);
+			D3D11_TEXTURE2D_DESC desc;
+			tex->GetDesc(&desc);
+			g_particleTraceParams.m_seedTexture.m_width = desc.Width;
+			g_particleTraceParams.m_seedTexture.m_height = desc.Height;
+			g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ID3D11DeviceContext* context = NULL;
+			pd3dDevice->GetImmediateContext(&context);
+			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
+				for (int y = 0; y < desc.Width; ++y) {
+					memcpy(&g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
+				}
+				context->Unmap(tex, 0);
+			}
+			SAFE_RELEASE(context);
+			SAFE_RELEASE(tex);
+			//reset color
+			g_particleTraceParams.m_seedTexture.m_picked.clear();
+			//set seed box to domain
+			SetBoundingBoxToDomainSize();
+			std::cout << "Seed texture copied to cpu memory" << std::endl;
+		}
+		else {
+			std::cerr << "Failed to load seed texture" << std::endl;
+		}
+		//SAFE_RELEASE(srv);
+		SAFE_RELEASE(res);
+	}
+}
+
 #pragma endregion
 
 #pragma region GUI
@@ -867,12 +922,7 @@ void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4
 //	g_retrace = true;
 //}
 //
-//void TW_CALL SetBoundingBoxToDomainSize(void *clientData)
-//{
-//	g_particleTraceParams.m_seedBoxMin = -g_volume.GetVolumeHalfSizeWorld();
-//	g_particleTraceParams.m_seedBoxSize = 2 * g_volume.GetVolumeHalfSizeWorld();
-//}
-//
+
 //
 //void TW_CALL SetTime(const void *value, void *clientData)
 //{
@@ -1460,51 +1510,6 @@ void GetMajorWorldPlane(const Vec3f& vecViewX, const Vec3f& vecViewY, const Mat4
 //	}
 //}
 //
-//void TW_CALL LoadSeedTexture(void *clientData)
-//{
-//	std::string filename;
-//	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-//		//create new texture
-//		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
-//		std::wstring wfilename(filename.begin(), filename.end());
-//		ID3D11Resource* res = NULL;
-//		//ID3D11ShaderResourceView* srv = NULL;
-//		if (!FAILED(DirectX::CreateWICTextureFromFileEx(pd3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
-//			std::cout << "Seed texture " << filename << " loaded" << std::endl;
-//			//delete old data
-//			delete[] g_particleTraceParams.m_seedTexture.m_colors;
-//			g_particleTraceParams.m_seedTexture.m_colors = NULL;
-//			//Copy to cpu memory
-//			ID3D11Texture2D* tex = NULL;
-//			res->QueryInterface(&tex);
-//			D3D11_TEXTURE2D_DESC desc;
-//			tex->GetDesc(&desc);
-//			g_particleTraceParams.m_seedTexture.m_width = desc.Width;
-//			g_particleTraceParams.m_seedTexture.m_height = desc.Height;
-//			g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
-//			D3D11_MAPPED_SUBRESOURCE mappedResource;
-//			ID3D11DeviceContext* context = NULL;
-//			pd3dDevice->GetImmediateContext(&context);
-//			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
-//				for (int y = 0; y < desc.Width; ++y) {
-//					memcpy(&g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
-//				}
-//				context->Unmap(tex, 0);
-//			}
-//			SAFE_RELEASE(context);
-//			SAFE_RELEASE(tex);
-//			//reset color
-//			g_particleTraceParams.m_seedTexture.m_picked.clear();
-//			//set seed box to domain
-//			SetBoundingBoxToDomainSize(clientData);
-//			std::cout << "Seed texture copied to cpu memory" << std::endl;
-//		}
-//		else {
-//			std::cerr << "Failed to load seed texture" << std::endl;
-//		}
-//		//SAFE_RELEASE(srv);
-//		SAFE_RELEASE(res);
-//	}
 //}
 //
 //
@@ -4060,7 +4065,7 @@ int main(int argc, char* argv[])
 
 	SetupImGui();
 
-	OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
+	//OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
 	//OpenVolumeFile("C:\\Users\\alexf\\Desktop\\pacificvis-stuff\\TimeVol\\turb-data.timevol", g_pd3dDevice);
 
 	//if(argc > 1 && std::string(argv[1]) == "dumpla3d") {
@@ -4190,73 +4195,221 @@ int main(int argc, char* argv[])
 			ImGui::ShowDemoWindow(&show_demo_window);
 
 		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
+		//{
+		//	static float f = 0.0f;
+		//	static int counter = 0;
+
+		//	ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+		//	ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
+		//	ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
+		//	ImGui::Checkbox("Another Window", &show_another_window);
+
+		//	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
+		//	ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+		//	if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+		//		counter++;
+		//	ImGui::SameLine();
+		//	ImGui::Text("counter = %d", counter);
+
+		//	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		//	ImGui::End();
+		//}
+
+		//// 3. Show another simple window.
+		//if (show_another_window)
+		//{
+		//	ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
+		//	ImGui::Text("Hello from another window!");
+		//	if (ImGui::Button("Close Me"))
+		//		show_another_window = false;
+		//	ImGui::End();
+		//}
+
+		const float buttonWidth = 200;
+
+		// Dataset window
+		ImGui::Begin("Dataset");
 		{
-			static float f = 0.0f;
-			static int counter = 0;
+			ImGui::PushItemWidth(-150);
+			{
+				if (ImGui::Button("Select file", ImVec2(buttonWidth, 0)))
+				{
+					std::string filename;
+					if (tum3d::GetFilenameDialog("Select TimeVolume file", "TimeVolume (*.timevol)\0*.timevol\0", filename, false))
+					{
+						CloseVolumeFile();
+						OpenVolumeFile(filename, g_pd3dDevice);
+					}
+				}
 
-			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+				if (g_volume.IsOpen())
+				{
+					ImGui::Spacing();
+					ImGui::Separator();
 
-			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-			ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-			ImGui::Checkbox("Another Window", &show_another_window);
+					if (ImGui::Button("Preload nearest timestep", ImVec2(buttonWidth, 0)))
+					{
+						std::cout << "Loading timestep...";
+						TimerCPU timer;
+						timer.Start();
+						g_volume.LoadNearestTimestep();
+						timer.Stop();
+						std::cout << " done in " << timer.GetElapsedTimeMS() / 1000.0f << "s" << std::endl;
+					}
 
-			ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
-			ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+					int32 timestepMax = g_volume.GetTimestepCount() - 1;
+					float timeSpacing = g_volume.GetTimeSpacing();
+					float timeMax = timeSpacing * float(timestepMax);
 
-			if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-				counter++;
-			ImGui::SameLine();
-			ImGui::Text("counter = %d", counter);
+					float t = g_volume.GetCurTime();
+					if (ImGui::InputFloat("Time", &t, timeSpacing, timeSpacing * 2.0f, 0))
+					{
+						t = std::max(0.0f, std::min(t, timeMax));
 
-			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::End();
+						g_volume.SetCurTime(t);
+					}
+
+					t = g_volume.GetCurNearestTimestepIndex();
+					if (ImGui::SliderFloat("Timestep", &t, 0.0f, timestepMax, "%.0f"))
+					{
+						t = t * g_volume.GetTimeSpacing();
+
+						g_volume.SetCurTime(t);
+					}
+
+					t = g_volume.GetTimeSpacing();
+					if (ImGui::DragFloat("Time spacing", &t, 0.05f, 0.05f, timeMax, "%.2f"))
+					{
+						t = std::max(0.05f, std::min(t, timeMax));
+
+						g_volume.SetTimeSpacing(t);
+					}
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Save as raw", ImVec2(buttonWidth, 0)))
+					{
+						std::string filename;
+						if (tum3d::GetFilenameDialog("Select output file", "Raw (*.raw)\0*.raw\0", filename, true))
+						{
+							// remove extension
+							if (filename.substr(filename.size() - 4) == ".raw")
+								filename = filename.substr(0, filename.size() - 4);
+
+							std::vector<std::string> filenames;
+							for (int c = 0; c < g_volume.GetChannelCount(); c++)
+							{
+								std::ostringstream str;
+								str << filename << char('X' + c) << ".raw";
+								filenames.push_back(str.str());
+							}
+
+							g_renderingManager.WriteCurTimestepToRaws(g_volume, filenames);
+						}
+					}
+
+					if (ImGui::Button("Save as la3d", ImVec2(buttonWidth, 0)))
+					{
+						std::string filename;
+						if (tum3d::GetFilenameDialog("Select output file", "LargeArray3D (*.la3d)\0*.la3d\0", filename, true))
+						{
+							// remove extension
+							if(filename.substr(filename.size() - 5) == ".la3d")
+								filename = filename.substr(0, filename.size() - 5);
+							
+							std::vector<std::string> filenames;
+							for(int c = 0; c < g_volume.GetChannelCount(); c++)
+							{
+								std::ostringstream str;
+								str << filename << char('X' + c) << ".la3d";
+								filenames.push_back(str.str());
+							}
+							g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames);
+						}
+					}
+				}
+			}
+			ImGui::PopItemWidth();
 		}
-
-		// 3. Show another simple window.
-		if (show_another_window)
-		{
-			ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-			ImGui::Text("Hello from another window!");
-			if (ImGui::Button("Close Me"))
-				show_another_window = false;
-			ImGui::End();
-		}
+		ImGui::End();
 
 
 		// Particle tracing config window
+		ImGui::Begin("Tracing Options");
 		{
-			ImGui::Begin("Tracing Options");
-
-			ImGui::PushItemWidth(175);
+			ImGui::PushItemWidth(-150);
 			{
-				if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
-					g_redraw = true;
+				ImGui::Checkbox("Verbose", &g_tracingManager.GetVerbose());
+
+				// Seeding options
+				ImGui::Spacing();
+				ImGui::Separator();
+				{
+					if (ImGui::Button("Load seed texture", ImVec2(buttonWidth, 0)))
+						LoadSeedTexture();
+
+					if (ImGui::Button("Set seed box to domain", ImVec2(buttonWidth, 0)))
+						SetBoundingBoxToDomainSize();
+
+					ImGui::DragFloat3("Seed box min", (float*)&g_particleTraceParams.m_seedBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
+					ImGui::DragFloat3("Seed box size", (float*)&g_particleTraceParams.m_seedBoxSize, 0.005f, 0.0f, 0.0f, "%.3f");
+
+					std::ostringstream strSeedingPatterns;
+					strSeedingPatterns << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(0));
+					for (uint i = 1; i < ParticleTraceParams::eSeedPattern::COUNT; i++)
+						strSeedingPatterns << "," << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(i));
+					//TwType twSeedingPaterns = TwDefineEnumFromString("EnumSeedingPatterns", strSeedingPatterns.str().c_str());
+
+
+					// Simplified one-liner Combo() using an accessor function
+					static auto getter = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= ParticleTraceParams::eSeedPattern::COUNT) return false;
+						*out_str = ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(idx));
+						return true;
+					};
+
+					//struct FuncHolder { static bool ItemGetter(void* data, int idx, const char** out_str) { *out_str = ((const char**)data)[idx]; return true; } };
+					//static int item_current_4 = 0;
+					ImGui::Combo("Seeding pattern", (int*)&g_particleTraceParams.m_seedPattern, getter, nullptr, ParticleTraceParams::eSeedPattern::COUNT);
+				}
+
+
+
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				//if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
+				//	g_redraw = true;
 			}
 			ImGui::PopItemWidth();
-
-			ImGui::End();
 		}
+		ImGui::End();
 
 
 		// Rendering config window
+		ImGui::Begin("Rendering Options");
 		{
-			ImGui::Begin("Rendering Options");
-
-			ImGui::PushItemWidth(175);
+			ImGui::PushItemWidth(-150);
 			{
 				if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
 					g_redraw = true;
+
+				ImGui::Checkbox("Show seed box", &g_bRenderSeedBox);
+				
 			}
 			ImGui::PopItemWidth();
-
-			ImGui::End();
 		}
+		ImGui::End();
 
 
 		// Scene window
+		ImGui::Begin("Scene");
 		{
-			ImGui::Begin("Scene");
-
 			float height;
 			float width;
 
@@ -4289,9 +4442,8 @@ int main(int argc, char* argv[])
 			}
 
 			ImGui::Image((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 25));
-
-			ImGui::End();
 		}
+		ImGui::End();
 
 
 		// Rendering
