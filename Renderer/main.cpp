@@ -4060,8 +4060,8 @@ int main(int argc, char* argv[])
 
 	SetupImGui();
 
-	//OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
-	OpenVolumeFile("C:\\Users\\alexf\\Desktop\\pacificvis-stuff\\TimeVol\\turb-data.timevol", g_pd3dDevice);
+	OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
+	//OpenVolumeFile("C:\\Users\\alexf\\Desktop\\pacificvis-stuff\\TimeVol\\turb-data.timevol", g_pd3dDevice);
 
 	//if(argc > 1 && std::string(argv[1]) == "dumpla3d") {
 	//	if(argc != 4) {
@@ -4223,6 +4223,21 @@ int main(int argc, char* argv[])
 		}
 
 
+		// Particle tracing config window
+		{
+			ImGui::Begin("Tracing Options");
+
+			ImGui::PushItemWidth(175);
+			{
+				if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
+					g_redraw = true;
+			}
+			ImGui::PopItemWidth();
+
+			ImGui::End();
+		}
+
+
 		// Rendering config window
 		{
 			ImGui::Begin("Rendering Options");
@@ -4231,7 +4246,6 @@ int main(int argc, char* argv[])
 			{
 				if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
 					g_redraw = true;
-
 			}
 			ImGui::PopItemWidth();
 
