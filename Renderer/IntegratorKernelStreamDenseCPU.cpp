@@ -245,7 +245,7 @@ void integratorKernelStreamLinesDenseCPU(const LineInfo& lineInfo, eAdvectMode a
 {
 	if(advectMode != ADVECT_RK547M)
 	{
-		printf("integratorKernelStreamLinesDenseCPU: unsupported advect mode %s, using RK547M\n", GetAdvectModeName(advectMode).c_str());
+		printf("integratorKernelStreamLinesDenseCPU: unsupported advect mode %s, using RK547M\n", GetAdvectModeName(advectMode));
 	}
 	switch(filterMode)
 	{
@@ -268,6 +268,6 @@ void integratorKernelStreamLinesDenseCPU(const LineInfo& lineInfo, eAdvectMode a
 			integrateStreamLinesDenseCPU<ADVECT_RK547M, TEXTURE_FILTER_LAGRANGE8>(lineInfo.lineCount);
 			break;
 		default:
-			printf("integratorKernelStreamLinesDenseCPU: unsupported filter mode %s\n", GetTextureFilterModeName(filterMode).c_str());
+			printf("integratorKernelStreamLinesDenseCPU: unsupported filter mode %s\n", GetTextureFilterModeName(filterMode));
 	}
 }

@@ -5,7 +5,8 @@
 
 namespace
 {
-	std::string g_advectModeName[ADVECT_MODE_COUNT + 1] = {
+	//std::string g_advectModeName[ADVECT_MODE_COUNT + 1] = {
+	const char* g_advectModeName[ADVECT_MODE_COUNT + 1] = {
 		"Euler",
 		"Heun",
 		"RK3",
@@ -19,7 +20,7 @@ namespace
 	};
 }
 
-std::string GetAdvectModeName(eAdvectMode advectMode)
+const char* GetAdvectModeName(eAdvectMode advectMode)
 {
 	return g_advectModeName[min(advectMode, ADVECT_MODE_COUNT)];
 }

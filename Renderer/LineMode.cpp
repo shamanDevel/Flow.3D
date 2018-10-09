@@ -5,7 +5,7 @@
 
 namespace
 {
-	std::string g_lineModeName[LINE_MODE_COUNT + 1] = {
+	const char* g_lineModeName[LINE_MODE_COUNT + 1] = {
 		"Stream",
 		"Path",
 		"Particle-Stream",
@@ -16,7 +16,7 @@ namespace
 	};
 }
 
-std::string GetLineModeName(eLineMode mode)
+const char* GetLineModeName(eLineMode mode)
 {
 	return g_lineModeName[min(mode, LINE_MODE_COUNT)];
 }

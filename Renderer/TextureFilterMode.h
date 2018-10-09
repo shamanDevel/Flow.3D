@@ -24,7 +24,7 @@ enum eTextureFilterMode
 	TEXTURE_FILTER_MODE_COUNT,
 	TEXTURE_FILTER_FORCE32 = 0xFFFFFFFF
 };
-std::string GetTextureFilterModeName(eTextureFilterMode filterMode);
+const char* GetTextureFilterModeName(eTextureFilterMode filterMode);
 eTextureFilterMode GetTextureFilterModeFromName(const std::string& name);
 cudaTextureFilterMode GetCudaTextureFilterMode(eTextureFilterMode filterMode);
 uint GetTextureFilterModeCellRadius(eTextureFilterMode filterMode);

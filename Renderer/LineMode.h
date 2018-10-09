@@ -17,7 +17,7 @@ enum eLineMode
 	//LINE_STREAK,
 	LINE_MODE_COUNT
 };
-std::string GetLineModeName(eLineMode mode);
+const char* GetLineModeName(eLineMode mode);
 eLineMode GetLineModeFromName(const std::string& name);
 
 //Returns true if the advection depends on the time, i.e. timesteps in the future are needed

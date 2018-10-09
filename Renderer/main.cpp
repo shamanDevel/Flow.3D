@@ -233,7 +233,7 @@ ScreenEffect			g_screenEffect;
 ProgressBarEffect		g_progressBarEffect;
 
 
-Vec4f		g_backgroundColor(1.0f, 1.0f, 1.0f, 1.0f);
+Vec4f		g_backgroundColor(0.1f, 0.1f, 0.1f, 1.0f);
 
 bool		g_showPreview = true;
 
@@ -3696,9 +3696,14 @@ void SetupImGui()
 	//SAFE_RELEASE(deviceContext);
 
 	// Setup style
+	ImGui::GetStyle().TabRounding = 0.0f;
+	ImGui::GetStyle().ScrollbarRounding = 0.0f;
 	ImGui::GetStyle().WindowRounding = 0.0f;
 	ImGui::StyleColorsDark();
 	//ImGui::StyleColorsClassic();
+
+	ImGui::GetStyle().Colors[ImGuiCol_Tab] = ImVec4(0.125f, 0.243f, 0.404f, 0.863f);
+	ImGui::GetStyle().Colors[ImGuiCol_TitleBgActive] = ImVec4(27/255.0f, 27/255.0f, 27/255.0f, 1.0f);
 
 	// Load Fonts
 	// - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
@@ -3708,10 +3713,10 @@ void SetupImGui()
 	// - Read 'misc/fonts/README.txt' for more instructions and details.
 	// - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
 	//io.Fonts->AddFontDefault();
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-	//io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+	io.Fonts->AddFontFromFileTTF("../resources/Roboto-Medium.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("./resources/DroidSans.ttf", 16.0f);
+	//io.Fonts->AddFontFromFileTTF("./resources/Cousine-Regular.ttf", 16.0f);
+
 	//ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
 	//IM_ASSERT(font != NULL);
 }
@@ -4184,11 +4189,31 @@ int main(int argc, char* argv[])
 		static float time = 0.0f;
 		time += ImGui::GetIO().DeltaTime;
 
-		OnFrameMove(time, ImGui::GetIO().DeltaTime, nullptr);
+		{
+			OnFrameMove(time, ImGui::GetIO().DeltaTime, nullptr);
 
-		g_renderTexture.SetRenderTarget(g_pd3dDeviceContext, g_mainDepthStencilView);
+			g_renderTexture.SetRenderTarget(g_pd3dDeviceContext, g_mainDepthStencilView);
 
-		OnD3D11FrameRender(g_pd3dDevice, g_pd3dDeviceContext, 0.0f, ImGui::GetIO().DeltaTime, nullptr);
+			// save old viewport
+			UINT viewportCount = 1;
+			D3D11_VIEWPORT viewportOld;
+			g_pd3dDeviceContext->RSGetViewports(&viewportCount, &viewportOld);
+
+			// set viewport for offscreen render buffer
+			D3D11_VIEWPORT viewport;
+			viewport.TopLeftX = 0;
+			viewport.TopLeftY = 0;
+			viewport.Width = (FLOAT)g_windowSize.x();
+			viewport.Height = (FLOAT)g_windowSize.y();
+			viewport.MinDepth = 0.0f;
+			viewport.MaxDepth = 1.0f;
+			g_pd3dDeviceContext->RSSetViewports(1, &viewport);
+
+			OnD3D11FrameRender(g_pd3dDevice, g_pd3dDeviceContext, 0.0f, ImGui::GetIO().DeltaTime, nullptr);
+
+			// restore viewport
+			g_pd3dDeviceContext->RSSetViewports(1, &viewportOld);
+		}
 
 		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
 		if (show_demo_window)
@@ -4357,34 +4382,66 @@ int main(int argc, char* argv[])
 					ImGui::DragFloat3("Seed box min", (float*)&g_particleTraceParams.m_seedBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
 					ImGui::DragFloat3("Seed box size", (float*)&g_particleTraceParams.m_seedBoxSize, 0.005f, 0.0f, 0.0f, "%.3f");
 
-					std::ostringstream strSeedingPatterns;
-					strSeedingPatterns << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(0));
-					for (uint i = 1; i < ParticleTraceParams::eSeedPattern::COUNT; i++)
-						strSeedingPatterns << "," << ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(i));
-					//TwType twSeedingPaterns = TwDefineEnumFromString("EnumSeedingPatterns", strSeedingPatterns.str().c_str());
-
-
-					// Simplified one-liner Combo() using an accessor function
-					static auto getter = [](void* data, int idx, const char** out_str)
+					static auto getterSeedingPattern = [](void* data, int idx, const char** out_str)
 					{
 						if (idx >= ParticleTraceParams::eSeedPattern::COUNT) return false;
 						*out_str = ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(idx));
 						return true;
 					};
-
-					//struct FuncHolder { static bool ItemGetter(void* data, int idx, const char** out_str) { *out_str = ((const char**)data)[idx]; return true; } };
-					//static int item_current_4 = 0;
-					ImGui::Combo("Seeding pattern", (int*)&g_particleTraceParams.m_seedPattern, getter, nullptr, ParticleTraceParams::eSeedPattern::COUNT);
+					ImGui::Combo("Seeding pattern", (int*)&g_particleTraceParams.m_seedPattern, getterSeedingPattern, nullptr, ParticleTraceParams::eSeedPattern::COUNT);
 				}
 
-
-
-
+				// Tracing
 				ImGui::Spacing();
 				ImGui::Separator();
+				{
+					static auto getterAdvectMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= ADVECT_MODE_COUNT) return false;
+						*out_str = GetAdvectModeName(eAdvectMode(idx));
+						return true;
+					};
 
-				//if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
-				//	g_redraw = true;
+					ImGui::Combo("Advection", (int*)&g_particleTraceParams.m_advectMode, getterAdvectMode, nullptr, ADVECT_MODE_COUNT);
+					ImGui::Checkbox("Dense output", &g_particleTraceParams.m_enableDenseOutput);
+
+					static auto getterFilterMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= TEXTURE_FILTER_MODE_COUNT) return false;
+						*out_str = GetTextureFilterModeName(eTextureFilterMode(idx));
+						return true;
+					};
+					ImGui::Combo("Interpolation", (int*)&g_particleTraceParams.m_filterMode, getterFilterMode, nullptr, TEXTURE_FILTER_MODE_COUNT);
+
+					static auto getterLineMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= LINE_MODE_COUNT) return false;
+						*out_str = GetLineModeName(eLineMode(idx));
+						return true;
+					};
+					ImGui::Combo("Line mode", (int*)&g_particleTraceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT);
+
+					ImGui::DragInt("Line count", &g_particleTraceParams.m_lineCount, 1.0f, 1.0f, INT_MAX);
+					ImGui::DragInt("Line max lenght", &g_particleTraceParams.m_lineLengthMax, 1.0f, 2.0f, INT_MAX);
+					ImGui::DragFloat("Line max age", &g_particleTraceParams.m_lineAgeMax, 0.05f, 0.0f, FLT_MAX, "%.3f");
+
+					ImGui::DragFloat("Min velocity", &g_particleTraceParams.m_minVelocity, 0.01f, 0.0f, 0.0f, "%.2f");
+					ImGui::DragFloat("Particles per second", &g_particleTraceParams.m_particlesPerSecond, 0.01f, 0.0f, 0.0f, "%.2f");
+					ImGui::DragFloat("Advection Delta T", &g_particleTraceParams.m_advectDeltaT, 0.001f, 0.0f, 0.0f, "%.5f");
+					if (ImGui::Button("Seed many particles", ImVec2(buttonWidth, 0)))
+						g_tracingManager.SeedManyParticles();
+					ImGui::DragFloat("Cell Change Time Threshold", &g_particleTraceParams.m_cellChangeThreshold, 0.001f, 0.0f, 0.0f, "%.5f");
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
+						g_retrace = true;
+
+					if (ImGui::Button(g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
+						g_particleTracingPaused = !g_particleTracingPaused;
+				}
+
 			}
 			ImGui::PopItemWidth();
 		}
@@ -4417,7 +4474,7 @@ int main(int argc, char* argv[])
 
 			if (!ImGui::IsMouseDragging(0))
 			{
-				static ImVec2 lastFrameWindowSize = ImGui::GetContentRegionAvail();
+				static ImVec2 lastFrameWindowSize;
 
 				if (availableRegion.x != lastFrameWindowSize.x || availableRegion.y != lastFrameWindowSize.y)
 				{

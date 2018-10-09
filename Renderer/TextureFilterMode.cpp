@@ -5,7 +5,7 @@
 
 namespace
 {
-	std::string g_textureFilterModeName[TEXTURE_FILTER_MODE_COUNT + 1] = {
+	const char* g_textureFilterModeName[TEXTURE_FILTER_MODE_COUNT + 1] = {
 		"Linear",
 		"Cubic",
 		"Catmull-Rom",
@@ -20,7 +20,7 @@ namespace
 	};
 }
 
-std::string GetTextureFilterModeName(eTextureFilterMode filterMode)
+const char* GetTextureFilterModeName(eTextureFilterMode filterMode)
 {
 	return g_textureFilterModeName[min(filterMode, TEXTURE_FILTER_MODE_COUNT)];
 }

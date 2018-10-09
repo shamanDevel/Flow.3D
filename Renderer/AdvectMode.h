@@ -23,7 +23,7 @@ enum eAdvectMode
 
 	ADVECT_MODE_COUNT
 };
-std::string GetAdvectModeName(eAdvectMode advectMode);
+const char* GetAdvectModeName(eAdvectMode advectMode);
 eAdvectMode GetAdvectModeFromName(const std::string& name);
 
 bool IsAdvectModeAdaptive(eAdvectMode advectMode);

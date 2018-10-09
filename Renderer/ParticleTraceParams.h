@@ -69,8 +69,8 @@ struct ParticleTraceParams
 	};
 	eSeedPattern m_seedPattern;
 
-	uint  m_lineCount;
-	uint  m_lineLengthMax;
+	int  m_lineCount;
+	int  m_lineLengthMax;
 	float m_lineAgeMax;
 	float m_minVelocity;
 
