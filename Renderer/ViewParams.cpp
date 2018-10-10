@@ -10,8 +10,8 @@ ViewParams::ViewParams()
 {
 	Reset();
 
-	m_lookAt = tum3D::Vec3f(0.3f, -0.72f, 0.0f);
-	m_viewDistance = 1.3f;
+	//m_lookAt = tum3D::Vec3f(0.3f, -0.72f, 0.0f);
+	//m_viewDistance = 1.3f;
 }
 
 void ViewParams::Reset()
@@ -70,6 +70,17 @@ void ViewParams::WriteConfig(ConfigFile& config) const
 	config.AddSection(section);
 }
 
+Vec3f ViewParams::GetRightVector() const
+{
+	Mat4f rotationMat;
+	convertQuaternionToRotMat(m_rotationQuat, rotationMat);
+
+	Vec3f v = rotationMat.getRow(0);
+
+	v = normalize(v);
+
+	return v;
+}
 
 Vec3f ViewParams::GetViewDir() const
 {
@@ -82,6 +93,8 @@ Vec3f ViewParams::GetViewDir() const
 
 	return v;
 }
+
+
 
 Vec3f ViewParams::GetCameraPosition() const
 {

@@ -1429,7 +1429,7 @@ void RenderingManager::RenderLines(LineBuffers* pLineBuffers, bool enableColor, 
 	else
 		lightDir = m_viewParams.GetViewDir();
 
-	std::cout << "viewDir(" << lightDir.x() << "," << lightDir.y() << "," << lightDir.z() << ")" << std::endl;
+	//std::cout << "viewDir(" << lightDir.x() << "," << lightDir.y() << "," << lightDir.z() << ")" << std::endl;
 
 	// common shader vars
 	m_lineEffect.m_pvLightPosVariable->SetFloatVector(lightDir);

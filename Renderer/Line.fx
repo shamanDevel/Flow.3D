@@ -450,8 +450,8 @@ float4 psTube(TubePSIn input) : SV_Target
 		color.rgb += 0.25 * evenOdd;
 	}
 	float diffuse = saturate(dot(lightDir, normalize(input.normal)));
-	//return float4(diffuse * color.rgb, color.a);
-	return float4(diffuse * diffuse * diffuse * color.rgb, color.a);
+	return float4(diffuse * color.rgb, color.a);
+	//return float4(diffuse * diffuse * diffuse * color.rgb, color.a);
 }
 
 

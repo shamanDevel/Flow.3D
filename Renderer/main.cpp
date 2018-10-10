@@ -148,6 +148,9 @@ struct BatchTrace
 	bool ExitAfterFinishing;
 } g_batchTrace;
 
+
+void SetBoundingBoxToDomainSize();
+
 #pragma endregion
 
 #pragma region GlobalVariables
@@ -171,9 +174,6 @@ ID3D11ShaderResourceView* m_shaderResourceView;
 
 Vec2i            g_windowSize(0, 0);
 float            g_renderBufferSizeFactor = 2.0f;
-Vec4f            g_rotationX = Vec4f(1, 0, 0, 0);
-Vec4f            g_rotationY = Vec4f(1, 0, 0, 0);
-Vec4f            g_rotation = Vec4f(1, 0, 0, 0);
 bool             g_keyboardShiftPressed = false;
 
 ProjectionParams g_projParams;
@@ -619,6 +619,7 @@ bool OpenVolumeFile(const std::string& filename, ID3D11Device* pDevice)
 
 	LoadFlowGraph();
 
+	SetBoundingBoxToDomainSize();
 
 	return true;
 }
@@ -3680,7 +3681,7 @@ void SetupImGui()
 	//io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports; // FIXME-DPI
 	
 	io.ConfigResizeWindowsFromEdges = true;
-	io.ConfigDockingWithShift = true;
+	io.ConfigDockingWithShift = false;
 
 	if (!ImGui_ImplWin32_Init(g_hwnd))
 		std::cerr << "Failed to initialize 'ImGui_ImplWin32'" << std::endl;
@@ -4070,7 +4071,7 @@ int main(int argc, char* argv[])
 
 	SetupImGui();
 
-	//OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
+	OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol", g_pd3dDevice);
 	//OpenVolumeFile("C:\\Users\\alexf\\Desktop\\pacificvis-stuff\\TimeVol\\turb-data.timevol", g_pd3dDevice);
 
 	//if(argc > 1 && std::string(argv[1]) == "dumpla3d") {
@@ -4215,42 +4216,9 @@ int main(int argc, char* argv[])
 			g_pd3dDeviceContext->RSSetViewports(1, &viewportOld);
 		}
 
-		// 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
+		// Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
 		if (show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
-
-		// 2. Show a simple window that we create ourselves. We use a Begin/End pair to created a named window.
-		//{
-		//	static float f = 0.0f;
-		//	static int counter = 0;
-
-		//	ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
-
-		//	ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
-		//	ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-		//	ImGui::Checkbox("Another Window", &show_another_window);
-
-		//	ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f    
-		//	ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-		//	if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-		//		counter++;
-		//	ImGui::SameLine();
-		//	ImGui::Text("counter = %d", counter);
-
-		//	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		//	ImGui::End();
-		//}
-
-		//// 3. Show another simple window.
-		//if (show_another_window)
-		//{
-		//	ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-		//	ImGui::Text("Hello from another window!");
-		//	if (ImGui::Button("Close Me"))
-		//		show_another_window = false;
-		//	ImGui::End();
-		//}
 
 		const float buttonWidth = 200;
 
@@ -4421,9 +4389,12 @@ int main(int argc, char* argv[])
 					};
 					ImGui::Combo("Line mode", (int*)&g_particleTraceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT);
 
-					ImGui::DragInt("Line count", &g_particleTraceParams.m_lineCount, 1.0f, 1.0f, INT_MAX);
-					ImGui::DragInt("Line max lenght", &g_particleTraceParams.m_lineLengthMax, 1.0f, 2.0f, INT_MAX);
-					ImGui::DragFloat("Line max age", &g_particleTraceParams.m_lineAgeMax, 0.05f, 0.0f, FLT_MAX, "%.3f");
+					if (ImGui::DragInt("Line count", &g_particleTraceParams.m_lineCount, 1.0f, 1.0f, INT_MAX))
+						g_particleTraceParams.m_lineCount = std::max(1, g_particleTraceParams.m_lineCount);
+					if (ImGui::DragInt("Line max lenght", &g_particleTraceParams.m_lineLengthMax, 1.0f, 2.0f, INT_MAX))
+						g_particleTraceParams.m_lineLengthMax = std::max(2, g_particleTraceParams.m_lineLengthMax);
+					if (ImGui::DragFloat("Line max age", &g_particleTraceParams.m_lineAgeMax, 0.05f, 0.0f, FLT_MAX, "%.3f"))
+						g_particleTraceParams.m_lineAgeMax = std::max(0.0f, g_particleTraceParams.m_lineAgeMax);
 
 					ImGui::DragFloat("Min velocity", &g_particleTraceParams.m_minVelocity, 0.01f, 0.0f, 0.0f, "%.2f");
 					ImGui::DragFloat("Particles per second", &g_particleTraceParams.m_particlesPerSecond, 0.01f, 0.0f, 0.0f, "%.2f");
@@ -4464,8 +4435,10 @@ int main(int argc, char* argv[])
 		ImGui::End();
 
 
-		// Scene window
-		ImGui::Begin("Scene");
+		
+
+		// Scene view window
+		ImGui::Begin("Scene view");
 		{
 			float height;
 			float width;
@@ -4499,6 +4472,271 @@ int main(int argc, char* argv[])
 			}
 
 			ImGui::Image((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 25));
+
+
+
+			static float orbitSens = 100.0f;
+			static float panSens = 40.0f;
+			static float zoomSens = 3.25f;
+
+			ImGui::Begin("Debug");
+			{
+				ImGui::SliderFloat("Orbit Sens", &orbitSens, 0.0f, 1000.0f, "%.2f");
+				ImGui::SliderFloat("Pan Sens", &panSens, 0.0f, 100.0f, "%.2f");
+				ImGui::SliderFloat("Zoom Sens", &zoomSens, 0.0f, 100.0f, "%.2f");
+				ImGui::DragFloat("View distance", &g_viewParams.m_viewDistance);
+			}
+			ImGui::End();
+
+			bool userInteraction = false;
+
+			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
+			{
+				// Zoom
+				g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * g_viewParams.m_viewDistance;
+				g_viewParams.m_viewDistance = std::max(0.0f, g_viewParams.m_viewDistance);
+
+				// Orbit
+				if (ImGui::IsMouseDragging(0))
+				{
+					if (ImGui::GetIO().MouseDelta.x != 0 || ImGui::GetIO().MouseDelta.y != 0)
+					{
+						userInteraction = true;
+
+						Vec2d normDelta = Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)g_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)g_windowSize.y());
+
+						Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)orbitSens;
+
+						// Don't trust this code. Seriously, I have no idea how this is working.
+						Vec4f rotationX;
+
+						Vec3f up;
+						rotateVecByQuaternion(Vec3f(0.0f, 0.0f, 1.0f), g_viewParams.m_rotationQuat, up);
+						up = tum3D::normalize(up);
+
+						tum3D::rotationQuaternion((float)(up.y() < 0.0f ? -delta.x() : delta.x()) * PI, up, rotationX);
+						//tum3D::rotationQuaternion(delta.x() * PI, Vec3f(0.0f, 0.0f, 1.0f), rotationX);
+
+						Vec4f rotation = Vec4f(1, 0, 0, 0);
+
+						tum3D::multQuaternion(rotationX, g_viewParams.m_rotationQuat, rotation); g_viewParams.m_rotationQuat = rotation;
+
+						Vec4f rotationY;
+						tum3D::rotationQuaternion((float)delta.y() * PI, Vec3f(1.0f, 0.0f, 0.0f), rotationY);
+
+						tum3D::multQuaternion(rotationY, g_viewParams.m_rotationQuat, rotation); g_viewParams.m_rotationQuat = rotation;
+					}	
+				}
+
+				// Pan on xy plane
+				if (ImGui::IsMouseDragging(2))
+				{
+					if (ImGui::GetIO().MouseDelta.x != 0 || ImGui::GetIO().MouseDelta.y != 0)
+					{
+						userInteraction = true;
+						
+						Vec2d normDelta = Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)g_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)g_windowSize.y());
+
+						Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)g_viewParams.m_viewDistance * (double)panSens;
+
+						Vec2f target = g_viewParams.m_lookAt.xy();
+
+						Vec2f right = g_viewParams.GetRightVector().xy(); right = normalize(right);
+						target = target - right * delta.x();
+
+						Vec2f forward = g_viewParams.GetViewDir().xy(); forward = normalize(forward);
+
+						if (forward.x() == 0.0f && forward.y() == 0.0f)
+						{
+							Vec3f for3d;
+							tum3D::crossProd(Vec3f(0.0f, 0.0f, -g_viewParams.GetViewDir().z()), Vec3f(right.x(), right.y(), 0.0f), for3d);
+							forward = for3d.xy();
+						}
+
+						target = target - forward * delta.y();
+
+						g_viewParams.m_lookAt.x() = target.x();
+						g_viewParams.m_lookAt.y() = target.y();
+					}
+				}
+			}
+
+			ImVec2 sceneViewPos = ImGui::GetWindowPos();
+			ImVec2 sceneViewSize = ImGui::GetWindowSize();
+
+			// Orientation overlay
+			// FIXME-VIEWPORT-ABS: Select a default viewport
+			const float DISTANCE = 10.0f;
+			static int corner = 3;
+
+			ImVec2 window_pos = ImVec2((corner & 1) ? (sceneViewPos.x + sceneViewSize.x - DISTANCE) : (sceneViewPos.x + DISTANCE), (corner & 2) ? (sceneViewPos.y + sceneViewSize.y - DISTANCE) : (sceneViewPos.y + DISTANCE));
+			ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
+
+			ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+			ImGui::SetNextWindowViewport(ImGui::GetWindowViewport()->ID);
+
+			static bool p_open = true;
+
+			ImGui::SetNextWindowBgAlpha(0.1f); // Transparent background
+			if (ImGui::Begin("Example: Simple Overlay", &p_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
+			{
+				static auto makeRotationFromDir = [](Vec3f direction)
+				{
+					tum3D::Mat3f mat;
+
+					Vec3f up(0.0f, 0.0f, 1.0f);
+
+					Vec3f xaxis;
+					tum3D::crossProd(up, direction, xaxis);
+					xaxis = normalize(xaxis);
+
+					Vec3f yaxis;
+					tum3D::crossProd(direction, xaxis, yaxis);
+					yaxis = normalize(yaxis);
+
+					mat.get(0, 0) = xaxis.x();
+					mat.get(1, 0) = yaxis.x();
+					mat.get(2, 0) = direction.x();
+
+					mat.get(0, 1) = xaxis.y();
+					mat.get(1, 1) = yaxis.y();
+					mat.get(2, 1) = direction.y();
+
+					mat.get(0, 2) = xaxis.z();
+					mat.get(1, 2) = yaxis.z();
+					mat.get(2, 2) = direction.z();
+
+					return mat;
+				};
+
+				Vec3f dir = Vec3f(0.0f, 0.0f, 0.0f);
+
+				const float _epsilon = 0.001f;
+
+				ImVec4 bColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_Button];
+				ImVec4 tColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_Text];
+				ImVec4 fColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_FrameBg];
+
+				if (!ImGui::IsWindowHovered()) { bColor.w = 0.2f; tColor.w = 0.2f; fColor.w = 0.2f; }
+
+				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, bColor);
+				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, tColor);
+				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, fColor);
+
+				ImVec2 bsize(60, 0);
+				if (ImGui::Button("Right", bsize))
+					dir = Vec3f(-1.0f, 0.0f, _epsilon);
+				ImGui::SameLine();
+				if (ImGui::Button("Top0", bsize))
+					dir = Vec3f(0.5f, 0.5f, 0.5f);
+				ImGui::SameLine();
+				if (ImGui::Button("Bottom0", bsize))
+					dir = Vec3f(0.5f, 0.5f, -0.5f);
+
+				if (ImGui::Button("Left", bsize))
+					dir = Vec3f(1.0f, 0.0f, _epsilon);
+				ImGui::SameLine();
+				if (ImGui::Button("Top1", bsize))
+					dir = Vec3f(0.5f, -0.5f, 0.5f);
+				ImGui::SameLine();
+				if (ImGui::Button("Bottom1", bsize))
+					dir = Vec3f(0.5f, -0.5f, -0.5f);
+
+				if (ImGui::Button("Top", bsize))
+					dir = Vec3f(_epsilon, 0.0f, 1.0f);
+				ImGui::SameLine();
+				if (ImGui::Button("Top2", bsize))
+					dir = Vec3f(-0.5f, -0.5f, 0.5f);
+				ImGui::SameLine();
+				if (ImGui::Button("Bottom2", bsize))
+					dir = Vec3f(-0.5f, -0.5f, -0.5f);
+
+				if (ImGui::Button("Bottom", bsize))
+					dir = Vec3f(_epsilon, 0.0f, -1.0f);
+				ImGui::SameLine();
+				if (ImGui::Button("Top3", bsize))
+					dir = Vec3f(-0.5f, 0.5f, 0.5f);
+				ImGui::SameLine();
+				if (ImGui::Button("Bottom3", bsize))
+					dir = Vec3f(-0.5f, 0.5f, -0.5f);
+
+				if (ImGui::Button("Back", bsize))
+					dir = Vec3f(_epsilon, 1.0f, 0.0f);
+				ImGui::SameLine();
+				if (ImGui::Button("Front", bsize))
+					dir = Vec3f(_epsilon, -1.0f, 0.0f);
+
+				ImGui::Separator();
+
+				ImGui::PushItemWidth(100);
+				ImGui::DragFloat3("Pivot", (float*)&g_viewParams.m_lookAt, 0.01f, 0.0f, 0.0f, "%.2f");
+				ImGui::PopItemWidth();
+				ImGui::SameLine();
+				if (ImGui::Button("Reset", ImVec2(-1, 0)))
+					g_viewParams.m_lookAt = Vec3f(0.0f, 0.0f, 0.0f);
+
+				ImGui::PopStyleColor(3);
+
+				static Vec4f targetQuat;
+				static bool interp = false;
+				static float rotInterpSpeed = 5.0f;
+
+				//ImGui::SliderFloat("rotInterpSpeed", &rotInterpSpeed, 0.0f, 50.0f);
+				//ImGui::Checkbox("Interp", &interp);
+
+				if (dir.normSqr() != 0.0f)
+				{
+					dir = normalize(dir);
+					tum3D::convertRotMatToQuaternion(makeRotationFromDir(dir), targetQuat);
+
+					interp = true;
+				}
+
+				if (userInteraction) interp = false;
+			
+				if (interp)
+				{
+					Vec4f res;
+					g_viewParams.m_rotationQuat = tum3D::slerpQuaternion(rotInterpSpeed * ImGui::GetIO().DeltaTime, g_viewParams.m_rotationQuat, targetQuat, res);
+
+					if (std::abs(tum3D::dotProd(targetQuat, g_viewParams.m_rotationQuat)) > 1.0f - 0.000001f) // Epsilon
+						interp = false;
+				}
+
+
+				//ImGui::Text("Simple overlay\n" "in the corner of the screen.\n" "(right-click to change position)");
+				//ImGui::Separator();
+				//if (ImGui::IsMousePosValid())
+				//	ImGui::Text("Mouse Position: (%.1f,%.1f)", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+				//else
+				//	ImGui::Text("Mouse Position: <invalid>");
+				
+				if (ImGui::BeginPopupContextWindow())
+				{
+					if (ImGui::MenuItem("Top-left", NULL, corner == 0)) corner = 0;
+					if (ImGui::MenuItem("Top-right", NULL, corner == 1)) corner = 1;
+					if (ImGui::MenuItem("Bottom-left", NULL, corner == 2)) corner = 2;
+					if (ImGui::MenuItem("Bottom-right", NULL, corner == 3)) corner = 3;
+					//if (p_open && ImGui::MenuItem("Close")) p_open = false;
+					ImGui::EndPopup();
+				}
+			}
+			ImGui::End();
+		}
+		ImGui::End();
+
+
+		
+
+
+		
+
+		ImGui::Begin("Debug");
+		{
+			static float sleepAmount = 0.0f;
+			ImGui::SliderFloat("Thread sleep", &sleepAmount, 0.0f, 1000.0f);
+
+			std::this_thread::sleep_for(std::chrono::milliseconds((long long)sleepAmount));
 		}
 		ImGui::End();
 
@@ -4519,8 +4757,8 @@ int main(int argc, char* argv[])
 			ImGui::RenderPlatformWindowsDefault();
 		}
 
-		//g_pSwapChain->Present(1, 0); // Present with vsync
-		g_pSwapChain->Present(0, 0); // Present without vsync
+		g_pSwapChain->Present(1, 0); // Present with vsync
+		//g_pSwapChain->Present(0, 0); // Present without vsync
 	}
 
 
