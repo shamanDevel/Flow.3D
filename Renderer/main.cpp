@@ -4471,9 +4471,6 @@ int main(int argc, char* argv[])
 				ImGui::SetCursorPosX(ImGui::GetCursorPos().x + (availableRegion.x - width) / 2.0f);
 			}
 
-			ImGui::Image((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 25));
-
-
 
 			static float orbitSens = 100.0f;
 			static float panSens = 40.0f;
@@ -4490,7 +4487,12 @@ int main(int argc, char* argv[])
 
 			bool userInteraction = false;
 
-			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
+			// ImageButton prevents mouse dragging from moving the window as well.
+			ImGui::ImageButton((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), 0, ImColor(0, 0, 0, 255), ImColor(255, 255, 255, 255));
+			//ImGui::Image((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 25));
+			
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
+			//if (ImGui::IsWindowHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
 			{
 				// Zoom
 				g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * g_viewParams.m_viewDistance;
@@ -4561,13 +4563,13 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			ImVec2 sceneViewPos = ImGui::GetWindowPos();
-			ImVec2 sceneViewSize = ImGui::GetWindowSize();
+			ImVec2 sceneViewPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowPos().y + ImGui::GetWindowContentRegionMin().y);
+			ImVec2 sceneViewSize = ImVec2(ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowContentRegionMax().y - ImGui::GetWindowContentRegionMin().y);
 
 			// Orientation overlay
 			// FIXME-VIEWPORT-ABS: Select a default viewport
 			const float DISTANCE = 10.0f;
-			static int corner = 3;
+			static int corner = 1;
 
 			ImVec2 window_pos = ImVec2((corner & 1) ? (sceneViewPos.x + sceneViewSize.x - DISTANCE) : (sceneViewPos.x + DISTANCE), (corner & 2) ? (sceneViewPos.y + sceneViewSize.y - DISTANCE) : (sceneViewPos.y + DISTANCE));
 			ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
@@ -4617,72 +4619,71 @@ int main(int argc, char* argv[])
 				ImVec4 tColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_Text];
 				ImVec4 fColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_FrameBg];
 
-				if (!ImGui::IsWindowHovered()) { bColor.w = 0.2f; tColor.w = 0.2f; fColor.w = 0.2f; }
+				if (!ImGui::IsWindowHovered()) { bColor.w = 0.15f; tColor.w = 0.15f; fColor.w = 0.15f; }
 
 				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, bColor);
 				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, tColor);
 				ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, fColor);
+				{
+					ImVec2 bsize(60, 0);
 
-				ImVec2 bsize(60, 0);
-				if (ImGui::Button("Right", bsize))
-					dir = Vec3f(-1.0f, 0.0f, _epsilon);
-				ImGui::SameLine();
-				if (ImGui::Button("Top0", bsize))
-					dir = Vec3f(0.5f, 0.5f, 0.5f);
-				ImGui::SameLine();
-				if (ImGui::Button("Bottom0", bsize))
-					dir = Vec3f(0.5f, 0.5f, -0.5f);
+					if (ImGui::Button("Top", bsize))
+						dir = Vec3f(_epsilon, 0.0f, 1.0f);
+					ImGui::SameLine();
+					if (ImGui::Button("Bottom", bsize))
+						dir = Vec3f(_epsilon, 0.0f, -1.0f);
+					ImGui::SameLine();
+					if (ImGui::Button("Right", bsize))
+						dir = Vec3f(-1.0f, 0.0f, _epsilon);
 
-				if (ImGui::Button("Left", bsize))
-					dir = Vec3f(1.0f, 0.0f, _epsilon);
-				ImGui::SameLine();
-				if (ImGui::Button("Top1", bsize))
-					dir = Vec3f(0.5f, -0.5f, 0.5f);
-				ImGui::SameLine();
-				if (ImGui::Button("Bottom1", bsize))
-					dir = Vec3f(0.5f, -0.5f, -0.5f);
+					if (ImGui::Button("Top0", bsize))
+						dir = Vec3f(0.5f, 0.5f, 0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Bottom0", bsize))
+						dir = Vec3f(0.5f, 0.5f, -0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Left", bsize))
+						dir = Vec3f(1.0f, 0.0f, _epsilon);
 
-				if (ImGui::Button("Top", bsize))
-					dir = Vec3f(_epsilon, 0.0f, 1.0f);
-				ImGui::SameLine();
-				if (ImGui::Button("Top2", bsize))
-					dir = Vec3f(-0.5f, -0.5f, 0.5f);
-				ImGui::SameLine();
-				if (ImGui::Button("Bottom2", bsize))
-					dir = Vec3f(-0.5f, -0.5f, -0.5f);
+					if (ImGui::Button("Top1", bsize))
+						dir = Vec3f(0.5f, -0.5f, 0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Bottom1", bsize))
+						dir = Vec3f(0.5f, -0.5f, -0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Front", bsize))
+						dir = Vec3f(_epsilon, -1.0f, 0.0f);
 
-				if (ImGui::Button("Bottom", bsize))
-					dir = Vec3f(_epsilon, 0.0f, -1.0f);
-				ImGui::SameLine();
-				if (ImGui::Button("Top3", bsize))
-					dir = Vec3f(-0.5f, 0.5f, 0.5f);
-				ImGui::SameLine();
-				if (ImGui::Button("Bottom3", bsize))
-					dir = Vec3f(-0.5f, 0.5f, -0.5f);
+					if (ImGui::Button("Top2", bsize))
+						dir = Vec3f(-0.5f, -0.5f, 0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Bottom2", bsize))
+						dir = Vec3f(-0.5f, -0.5f, -0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Back", bsize))
+						dir = Vec3f(_epsilon, 1.0f, 0.0f);
 
-				if (ImGui::Button("Back", bsize))
-					dir = Vec3f(_epsilon, 1.0f, 0.0f);
-				ImGui::SameLine();
-				if (ImGui::Button("Front", bsize))
-					dir = Vec3f(_epsilon, -1.0f, 0.0f);
+					if (ImGui::Button("Top3", bsize))
+						dir = Vec3f(-0.5f, 0.5f, 0.5f);
+					ImGui::SameLine();
+					if (ImGui::Button("Bottom3", bsize))
+						dir = Vec3f(-0.5f, 0.5f, -0.5f);
 
-				ImGui::Separator();
 
-				ImGui::PushItemWidth(100);
-				ImGui::DragFloat3("Pivot", (float*)&g_viewParams.m_lookAt, 0.01f, 0.0f, 0.0f, "%.2f");
-				ImGui::PopItemWidth();
-				ImGui::SameLine();
-				if (ImGui::Button("Reset", ImVec2(-1, 0)))
-					g_viewParams.m_lookAt = Vec3f(0.0f, 0.0f, 0.0f);
+					ImGui::Separator();
 
+					ImGui::PushItemWidth(100);
+					ImGui::DragFloat3("Pivot", (float*)&g_viewParams.m_lookAt, 0.01f, 0.0f, 0.0f, "%.2f");
+					ImGui::PopItemWidth();
+					ImGui::SameLine();
+					if (ImGui::Button("Reset", ImVec2(-1, 0)))
+						g_viewParams.m_lookAt = Vec3f(0.0f, 0.0f, 0.0f);
+				}
 				ImGui::PopStyleColor(3);
 
 				static Vec4f targetQuat;
 				static bool interp = false;
 				static float rotInterpSpeed = 5.0f;
-
-				//ImGui::SliderFloat("rotInterpSpeed", &rotInterpSpeed, 0.0f, 50.0f);
-				//ImGui::Checkbox("Interp", &interp);
 
 				if (dir.normSqr() != 0.0f)
 				{
@@ -4702,14 +4703,6 @@ int main(int argc, char* argv[])
 					if (std::abs(tum3D::dotProd(targetQuat, g_viewParams.m_rotationQuat)) > 1.0f - 0.000001f) // Epsilon
 						interp = false;
 				}
-
-
-				//ImGui::Text("Simple overlay\n" "in the corner of the screen.\n" "(right-click to change position)");
-				//ImGui::Separator();
-				//if (ImGui::IsMousePosValid())
-				//	ImGui::Text("Mouse Position: (%.1f,%.1f)", ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
-				//else
-				//	ImGui::Text("Mouse Position: <invalid>");
 				
 				if (ImGui::BeginPopupContextWindow())
 				{
@@ -4717,7 +4710,6 @@ int main(int argc, char* argv[])
 					if (ImGui::MenuItem("Top-right", NULL, corner == 1)) corner = 1;
 					if (ImGui::MenuItem("Bottom-left", NULL, corner == 2)) corner = 2;
 					if (ImGui::MenuItem("Bottom-right", NULL, corner == 3)) corner = 3;
-					//if (p_open && ImGui::MenuItem("Close")) p_open = false;
 					ImGui::EndPopup();
 				}
 			}
@@ -4726,10 +4718,7 @@ int main(int argc, char* argv[])
 		ImGui::End();
 
 
-		
 
-
-		
 
 		ImGui::Begin("Debug");
 		{
