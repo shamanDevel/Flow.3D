@@ -2,7 +2,7 @@
 
 namespace
 {
-	std::string g_heatMapNormalizationModeName[HEAT_MAP_NORMALIZATION_MODE_COUNT + 1] = {
+	const char* g_heatMapNormalizationModeName[HEAT_MAP_NORMALIZATION_MODE_COUNT + 1] = {
 		"Off",
 		"Max",
 		"Mean",
@@ -11,7 +11,7 @@ namespace
 	};
 }
 
-std::string GetHeatMapNormalizationModeName(eHeatMapNormalizationMode renderMode)
+const char* GetHeatMapNormalizationModeName(eHeatMapNormalizationMode renderMode)
 {
 	return g_heatMapNormalizationModeName[min(renderMode, HEAT_MAP_NORMALIZATION_MODE_COUNT)];
 }

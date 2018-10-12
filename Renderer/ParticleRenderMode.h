@@ -12,7 +12,7 @@ enum eParticleRenderMode
 	PARTICLE_RENDER_ALPHA,
 	PARTICLE_RENDER_MODE_COUNT
 };
-std::string GetParticleRenderModeName(eParticleRenderMode renderMode);
+const char* GetParticleRenderModeName(eParticleRenderMode renderMode);
 eParticleRenderMode GetParticleRenderModeFromName(const std::string& name);
 
 #endif

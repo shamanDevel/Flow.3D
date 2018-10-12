@@ -13,7 +13,7 @@ enum eHeatMapNormalizationMode
 	NORMALIZATION_MEDIAN,
 	HEAT_MAP_NORMALIZATION_MODE_COUNT
 };
-std::string GetHeatMapNormalizationModeName(eHeatMapNormalizationMode renderMode);
+const char* GetHeatMapNormalizationModeName(eHeatMapNormalizationMode renderMode);
 eHeatMapNormalizationMode GetHeatMapNormalizationModeFromName(const std::string& name);
 
 #endif

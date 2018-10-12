@@ -280,7 +280,7 @@ cudaGraphicsResource*   g_pTfEdtSRVCuda = nullptr;
 
 
 // OpenMP thread count (because omp_get_num_threads is stupid)
-uint g_threadCount = 0;
+int g_threadCount = 0;
 
 #pragma endregion
 
@@ -1111,95 +1111,95 @@ void LoadSeedTexture()
 //}
 //
 //
-//void TW_CALL SaveLinesDialog(void *clientData)
-//{
-//	bool bFullscreen = (!DXUTIsWindowed());
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	std::string filename;
-//	if (tum3d::GetFilenameDialog("Save Lines", "*.linebuf\0*.linebuf", filename, true)) 
-//	{
-//		filename = tum3d::RemoveExt(filename) + ".linebuf";
-//		float posOffset = 0.0f;
-//		if(g_particleTraceParams.m_upsampledVolumeHack)
-//		{
-//			// upsampled volume is offset by half a grid spacing...
-//			float gridSpacingWorld = 2.0f / float(g_volume.GetVolumeSize().maximum());
-//			posOffset = 0.5f * gridSpacingWorld;
-//		}
-//		if(!g_tracingManager.GetResult()->Write(filename, posOffset))
-//		{
-//			printf("Saving lines to file %s failed!\n", filename.c_str());
-//		}
-//	}
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//}
-//
-//void TW_CALL LoadLinesDialog(void *clientData)
-//{
-//	bool bFullscreen = (!DXUTIsWindowed());
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	std::string filename;
-//	if (tum3d::GetFilenameDialog("Load Lines", "*.linebuf\0*.linebuf", filename, false))
-//	{
-//		LineBuffers* pBuffers = new LineBuffers(DXUTGetD3D11Device());
-//		if(!pBuffers->Read(filename, g_lineIDOverride))
-//		{
-//			printf("Loading lines from file %s failed!\n", filename.c_str());
-//			delete pBuffers;
-//		}
-//		else
-//		{
-//			g_lineBuffers.push_back(pBuffers);
-//		}
-//	}
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	g_redraw = true;
-//}
-//
-//void TW_CALL ClearLinesCallback(void *clientData)
-//{
-//	ReleaseLineBuffers();
-//	g_redraw = true;
-//}
-//
-//void TW_CALL LoadBallsDialog(void *clientData)
-//{
-//	bool bFullscreen = (!DXUTIsWindowed());
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	std::string filename;
-//	if (tum3d::GetFilenameDialog("Load Balls", "*.*\0*.*", filename, false))
-//	{
-//		BallBuffers* pBuffers = new BallBuffers(DXUTGetD3D11Device());
-//		if(!pBuffers->Read(filename))
-//		{
-//			printf("Loading balls from file %s failed!\n", filename.c_str());
-//			delete pBuffers;
-//		}
-//		else
-//		{
-//			g_ballBuffers.push_back(pBuffers);
-//		}
-//	}
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	g_redraw = true;
-//}
-//
-//void TW_CALL ClearBallsCallback(void *clientData)
-//{
-//	ReleaseBallBuffers();
-//	g_redraw = true;
-//}
+void SaveLinesDialog()
+{
+	//bool bFullscreen = (!DXUTIsWindowed());
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Save Lines", "*.linebuf\0*.linebuf", filename, true)) 
+	{
+		filename = tum3d::RemoveExt(filename) + ".linebuf";
+		float posOffset = 0.0f;
+		if(g_particleTraceParams.m_upsampledVolumeHack)
+		{
+			// upsampled volume is offset by half a grid spacing...
+			float gridSpacingWorld = 2.0f / float(g_volume.GetVolumeSize().maximum());
+			posOffset = 0.5f * gridSpacingWorld;
+		}
+		if(!g_tracingManager.GetResult()->Write(filename, posOffset))
+		{
+			printf("Saving lines to file %s failed!\n", filename.c_str());
+		}
+	}
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+}
+
+void LoadLinesDialog()
+{
+	//bool bFullscreen = (!DXUTIsWindowed());
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Lines", "*.linebuf\0*.linebuf", filename, false))
+	{
+		LineBuffers* pBuffers = new LineBuffers(g_pd3dDevice);
+		if(!pBuffers->Read(filename, g_lineIDOverride))
+		{
+			printf("Loading lines from file %s failed!\n", filename.c_str());
+			delete pBuffers;
+		}
+		else
+		{
+			g_lineBuffers.push_back(pBuffers);
+		}
+	}
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	g_redraw = true;
+}
+
+void ClearLinesCallback()
+{
+	ReleaseLineBuffers();
+	g_redraw = true;
+}
+
+void LoadBallsDialog()
+{
+	//bool bFullscreen = (!DXUTIsWindowed());
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Balls", "*.*\0*.*", filename, false))
+	{
+		BallBuffers* pBuffers = new BallBuffers(g_pd3dDevice);
+		if(!pBuffers->Read(filename))
+		{
+			printf("Loading balls from file %s failed!\n", filename.c_str());
+			delete pBuffers;
+		}
+		else
+		{
+			g_ballBuffers.push_back(pBuffers);
+		}
+	}
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	g_redraw = true;
+}
+
+void ClearBallsCallback()
+{
+	ReleaseBallBuffers();
+	g_redraw = true;
+}
 //
 //
 //void TW_CALL SetRotation(const void *value, void *clientData)
@@ -1228,34 +1228,34 @@ void LoadSeedTexture()
 //}
 //
 //
-//void TW_CALL SaveRenderingParamsDialog(void *clientData)
-//{
-//	bool bFullscreen = (!DXUTIsWindowed());
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	std::string filename;
-//	if ( tum3d::GetFilenameDialog("Save Settings", "*.cfg\0*.cfg", filename, true) ) 
-//	{
-//		filename = tum3d::RemoveExt(filename) + ".cfg";
-//		SaveRenderingParams( filename );
-//	}
-//	
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//}
-//
-//void TW_CALL LoadRenderingParamsDialog(void *clientData)
-//{
-//	bool bFullscreen = (!DXUTIsWindowed());
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();
-//
-//	std::string filename;
-//	if ( tum3d::GetFilenameDialog("Load Settings", "*.cfg\0*.cfg", filename, false) ) 
-//		LoadRenderingParams( filename );
-//
-//	if( bFullscreen ) DXUTToggleFullScreen();	
-//}
+void SaveRenderingParamsDialog()
+{
+	//bool bFullscreen = (!DXUTIsWindowed());
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	std::string filename;
+	if ( tum3d::GetFilenameDialog("Save Settings", "*.cfg\0*.cfg", filename, true) ) 
+	{
+		filename = tum3d::RemoveExt(filename) + ".cfg";
+		SaveRenderingParams( filename );
+	}
+	
+	//if( bFullscreen ) DXUTToggleFullScreen();
+}
+
+void LoadRenderingParamsDialog()
+{
+	//bool bFullscreen = (!DXUTIsWindowed());
+
+	//if( bFullscreen ) DXUTToggleFullScreen();
+
+	std::string filename;
+	if ( tum3d::GetFilenameDialog("Load Settings", "*.cfg\0*.cfg", filename, false) ) 
+		LoadRenderingParams( filename );
+
+	//if( bFullscreen ) DXUTToggleFullScreen();	
+}
 //
 //
 //void TW_CALL SetMemLimitCallback(const void *value, void *clientData)
@@ -1269,20 +1269,20 @@ void LoadSeedTexture()
 //}
 //
 //
-//void TW_CALL BuildFlowGraphCallback(void *clientData)
-//{
-//	BuildFlowGraph("flowgraph.txt");
-//}
-//
-//void TW_CALL SaveFlowGraphCallback(void *clientData)
-//{
-//	SaveFlowGraph();
-//}
-//
-//void TW_CALL LoadFlowGraphCallback(void *clientData)
-//{
-//	LoadFlowGraph();
-//}
+void BuildFlowGraphCallback()
+{
+	BuildFlowGraph("flowgraph.txt");
+}
+
+void SaveFlowGraphCallback()
+{
+	SaveFlowGraph();
+}
+
+void LoadFlowGraphCallback()
+{
+	LoadFlowGraph();
+}
 //
 //
 //void TW_CALL SetUseAllGPUs(const void *value, void *clientData)
@@ -1467,49 +1467,49 @@ void LoadSeedTexture()
 //	omp_set_num_threads(g_threadCount);
 //}
 //
-//void TW_CALL LoadSliceTexture(void *clientData)
-//{
-//	std::string filename;
-//	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-//		//release old texture
-//		SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
-//		//create new texture
-//		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
-//		std::wstring wfilename(filename.begin(), filename.end());
-//		ID3D11Resource* tmp = NULL;
-//		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pSliceTexture))) {
-//			std::cout << "Slice texture " << filename << " loaded" << std::endl;
-//			g_particleRenderParams.m_showSlice = true;
-//			g_redraw = true;
-//		}
-//		else {
-//			std::cerr << "Failed to load slice texture" << std::endl;
-//		}
-//		SAFE_RELEASE(tmp);
-//	}
-//}
-//
-//void TW_CALL LoadColorTexture(void *clientData)
-//{
-//	std::string filename;
-//	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-//		//release old texture
-//		SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
-//		//create new texture
-//		ID3D11Device* pd3dDevice = (ID3D11Device*)clientData;
-//		std::wstring wfilename(filename.begin(), filename.end());
-//		ID3D11Resource* tmp = NULL;
-//		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pColorTexture))) {
-//			std::cout << "Color texture " << filename << " loaded" << std::endl;
-//			g_particleRenderParams.m_lineColorMode = eLineColorMode::TEXTURE;
-//			g_redraw = true;
-//		}
-//		else {
-//			std::cerr << "Failed to load color texture" << std::endl;
-//		}
-//		SAFE_RELEASE(tmp);
-//	}
-//}
+void LoadSliceTexture()
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//release old texture
+		SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
+		//create new texture
+		ID3D11Device* pd3dDevice = g_pd3dDevice;
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* tmp = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pSliceTexture))) {
+			std::cout << "Slice texture " << filename << " loaded" << std::endl;
+			g_particleRenderParams.m_showSlice = true;
+			g_redraw = true;
+		}
+		else {
+			std::cerr << "Failed to load slice texture" << std::endl;
+		}
+		SAFE_RELEASE(tmp);
+	}
+}
+
+void LoadColorTexture()
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//release old texture
+		SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
+		//create new texture
+		ID3D11Device* pd3dDevice = g_pd3dDevice;
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* tmp = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFile(pd3dDevice, wfilename.c_str(), &tmp, &g_particleRenderParams.m_pColorTexture))) {
+			std::cout << "Color texture " << filename << " loaded" << std::endl;
+			g_particleRenderParams.m_lineColorMode = eLineColorMode::TEXTURE;
+			g_redraw = true;
+		}
+		else {
+			std::cerr << "Failed to load color texture" << std::endl;
+		}
+		SAFE_RELEASE(tmp);
+	}
+}
 //
 //}
 //
@@ -2234,22 +2234,22 @@ HRESULT OnD3D11ResizedSwapChain(ID3D11Device* pd3dDevice, IDXGISwapChain* pSwapC
 
 
 // save a screenshot from the framebuffer
-//void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
-//{
-//	ID3D11Resource* pSwapChainTex;
-//	DXUTGetD3D11RenderTargetView()->GetResource(&pSwapChainTex);
-//	pd3dImmediateContext->CopyResource(g_pStagingTex, pSwapChainTex);
-//	SAFE_RELEASE(pSwapChainTex);
-//
-//	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
-//	pd3dImmediateContext->Map(g_pStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
-//
-//	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
-//
-//	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
-//
-//	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
-//}
+void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
+{
+	ID3D11Resource* pSwapChainTex;
+	g_mainRenderTargetView->GetResource(&pSwapChainTex);
+	pd3dImmediateContext->CopyResource(g_pStagingTex, pSwapChainTex);
+	SAFE_RELEASE(pSwapChainTex);
+
+	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
+	pd3dImmediateContext->Map(g_pStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
+
+	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
+
+	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
+
+	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
+}
 
 // save a screenshot from the (possibly higher-resolution) render buffer
 void SaveRenderBufferScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
@@ -2945,8 +2945,8 @@ NoVolumeLoaded:
 				g_imageSequence.FrameCur = 0;
 			} else {
 				float angle = float(g_imageSequence.FrameCur) * g_imageSequence.AngleInc * PI / 180.0f;
-				Vec4f rotationQuatCurFrame; rotationQuaternion(angle, Vec3f(0.0f, 1.0f, 0.0f), rotationQuatCurFrame);
-				multQuaternion(g_imageSequence.BaseRotationQuat, rotationQuatCurFrame, g_viewParams.m_rotationQuat);
+				Vec4f rotationQuatCurFrame; tum3D::rotationQuaternion(angle, Vec3f(0.0f, 1.0f, 0.0f), rotationQuatCurFrame);
+				tum3D::multQuaternion(g_imageSequence.BaseRotationQuat, rotationQuatCurFrame, g_viewParams.m_rotationQuat);
 
 				g_viewParams.m_viewDistance += g_imageSequence.ViewDistInc;
 
@@ -3998,6 +3998,58 @@ void DockSpace()
 	ImGui::End();
 }
 
+
+
+bool g_showRenderingOptionsWindow = true;
+bool g_showTracingOptionsWindow = true;
+bool g_showFTLEWindow = false;
+bool g_showHeatmapWindow = false;
+bool g_showExtraWindow = false;
+bool g_showDatasetWindow = true;
+
+
+
+void MainMenu()
+{
+	if (ImGui::BeginMainMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Load dataset", "CTRL+L"))
+			{
+				std::string filename;
+				if (tum3d::GetFilenameDialog("Select TimeVolume file", "TimeVolume (*.timevol)\0*.timevol\0", filename, false))
+				{
+					CloseVolumeFile();
+					OpenVolumeFile(filename, g_pd3dDevice);
+				}
+			}
+			ImGui::Separator();
+			if (ImGui::MenuItem("Save", "CTRL+S")) {}
+			ImGui::EndMenu();
+		}
+		if (ImGui::BeginMenu("View"))
+		{
+			if (ImGui::MenuItem("Rendering Options", nullptr, g_showRenderingOptionsWindow))
+				g_showRenderingOptionsWindow = !g_showRenderingOptionsWindow;
+			if (ImGui::MenuItem("Tracing Options", nullptr, g_showTracingOptionsWindow))
+				g_showTracingOptionsWindow = !g_showTracingOptionsWindow;
+			if (ImGui::MenuItem("Dataset", nullptr, g_showDatasetWindow))
+				g_showDatasetWindow = !g_showDatasetWindow;
+			if (ImGui::MenuItem("FTLE", nullptr, g_showFTLEWindow))
+				g_showFTLEWindow = !g_showFTLEWindow;
+			if (ImGui::MenuItem("Extra", nullptr, g_showExtraWindow))
+				g_showExtraWindow = !g_showExtraWindow;
+			if (ImGui::MenuItem("Heatmap", nullptr, g_showHeatmapWindow))
+				g_showHeatmapWindow = !g_showHeatmapWindow;
+
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
+	}
+}
+
+
 //--------------------------------------------------------------------------------------
 // Initialize everything and go into a render loop
 //--------------------------------------------------------------------------------------
@@ -4220,225 +4272,604 @@ int main(int argc, char* argv[])
 		if (show_demo_window)
 			ImGui::ShowDemoWindow(&show_demo_window);
 
+		MainMenu();
+
 		const float buttonWidth = 200;
 
 		// Dataset window
-		ImGui::Begin("Dataset");
+		if (g_showDatasetWindow)
 		{
-			ImGui::PushItemWidth(-150);
+			ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+			if (ImGui::Begin("Dataset", &g_showDatasetWindow))
 			{
-				if (ImGui::Button("Select file", ImVec2(buttonWidth, 0)))
+				ImGui::PushItemWidth(-150);
 				{
-					std::string filename;
-					if (tum3d::GetFilenameDialog("Select TimeVolume file", "TimeVolume (*.timevol)\0*.timevol\0", filename, false))
+					if (g_volume.IsOpen())
 					{
-						CloseVolumeFile();
-						OpenVolumeFile(filename, g_pd3dDevice);
-					}
-				}
+						ImGui::Spacing();
+						ImGui::Separator();
 
-				if (g_volume.IsOpen())
-				{
-					ImGui::Spacing();
-					ImGui::Separator();
-
-					if (ImGui::Button("Preload nearest timestep", ImVec2(buttonWidth, 0)))
-					{
-						std::cout << "Loading timestep...";
-						TimerCPU timer;
-						timer.Start();
-						g_volume.LoadNearestTimestep();
-						timer.Stop();
-						std::cout << " done in " << timer.GetElapsedTimeMS() / 1000.0f << "s" << std::endl;
-					}
-
-					int32 timestepMax = g_volume.GetTimestepCount() - 1;
-					float timeSpacing = g_volume.GetTimeSpacing();
-					float timeMax = timeSpacing * float(timestepMax);
-
-					float t = g_volume.GetCurTime();
-					if (ImGui::InputFloat("Time", &t, timeSpacing, timeSpacing * 2.0f, 0))
-					{
-						t = std::max(0.0f, std::min(t, timeMax));
-
-						g_volume.SetCurTime(t);
-					}
-
-					t = g_volume.GetCurNearestTimestepIndex();
-					if (ImGui::SliderFloat("Timestep", &t, 0.0f, timestepMax, "%.0f"))
-					{
-						t = t * g_volume.GetTimeSpacing();
-
-						g_volume.SetCurTime(t);
-					}
-
-					t = g_volume.GetTimeSpacing();
-					if (ImGui::DragFloat("Time spacing", &t, 0.05f, 0.05f, timeMax, "%.2f"))
-					{
-						t = std::max(0.05f, std::min(t, timeMax));
-
-						g_volume.SetTimeSpacing(t);
-					}
-
-					ImGui::Spacing();
-					ImGui::Separator();
-
-					if (ImGui::Button("Save as raw", ImVec2(buttonWidth, 0)))
-					{
-						std::string filename;
-						if (tum3d::GetFilenameDialog("Select output file", "Raw (*.raw)\0*.raw\0", filename, true))
+						if (ImGui::Button("Preload nearest timestep", ImVec2(buttonWidth, 0)))
 						{
-							// remove extension
-							if (filename.substr(filename.size() - 4) == ".raw")
-								filename = filename.substr(0, filename.size() - 4);
-
-							std::vector<std::string> filenames;
-							for (int c = 0; c < g_volume.GetChannelCount(); c++)
-							{
-								std::ostringstream str;
-								str << filename << char('X' + c) << ".raw";
-								filenames.push_back(str.str());
-							}
-
-							g_renderingManager.WriteCurTimestepToRaws(g_volume, filenames);
+							std::cout << "Loading timestep...";
+							TimerCPU timer;
+							timer.Start();
+							g_volume.LoadNearestTimestep();
+							timer.Stop();
+							std::cout << " done in " << timer.GetElapsedTimeMS() / 1000.0f << "s" << std::endl;
 						}
-					}
 
-					if (ImGui::Button("Save as la3d", ImVec2(buttonWidth, 0)))
-					{
-						std::string filename;
-						if (tum3d::GetFilenameDialog("Select output file", "LargeArray3D (*.la3d)\0*.la3d\0", filename, true))
+						int32 timestepMax = g_volume.GetTimestepCount() - 1;
+						float timeSpacing = g_volume.GetTimeSpacing();
+						float timeMax = timeSpacing * float(timestepMax);
+
+						float t = g_volume.GetCurTime();
+						if (ImGui::InputFloat("Time", &t, timeSpacing, timeSpacing * 2.0f, 0))
 						{
-							// remove extension
-							if(filename.substr(filename.size() - 5) == ".la3d")
-								filename = filename.substr(0, filename.size() - 5);
-							
-							std::vector<std::string> filenames;
-							for(int c = 0; c < g_volume.GetChannelCount(); c++)
+							t = std::max(0.0f, std::min(t, timeMax));
+
+							g_volume.SetCurTime(t);
+						}
+
+						t = g_volume.GetCurNearestTimestepIndex();
+						if (ImGui::SliderFloat("Timestep", &t, 0.0f, timestepMax, "%.0f"))
+						{
+							t = t * g_volume.GetTimeSpacing();
+
+							g_volume.SetCurTime(t);
+						}
+
+						t = g_volume.GetTimeSpacing();
+						if (ImGui::DragFloat("Time spacing", &t, 0.05f, 0.05f, timeMax, "%.2f"))
+						{
+							t = std::max(0.05f, std::min(t, timeMax));
+
+							g_volume.SetTimeSpacing(t);
+						}
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						if (ImGui::Button("Save as raw", ImVec2(buttonWidth, 0)))
+						{
+							std::string filename;
+							if (tum3d::GetFilenameDialog("Select output file", "Raw (*.raw)\0*.raw\0", filename, true))
 							{
-								std::ostringstream str;
-								str << filename << char('X' + c) << ".la3d";
-								filenames.push_back(str.str());
+								// remove extension
+								if (filename.substr(filename.size() - 4) == ".raw")
+									filename = filename.substr(0, filename.size() - 4);
+
+								std::vector<std::string> filenames;
+								for (int c = 0; c < g_volume.GetChannelCount(); c++)
+								{
+									std::ostringstream str;
+									str << filename << char('X' + c) << ".raw";
+									filenames.push_back(str.str());
+								}
+
+								g_renderingManager.WriteCurTimestepToRaws(g_volume, filenames);
 							}
-							g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames);
+						}
+
+						if (ImGui::Button("Save as la3d", ImVec2(buttonWidth, 0)))
+						{
+							std::string filename;
+							if (tum3d::GetFilenameDialog("Select output file", "LargeArray3D (*.la3d)\0*.la3d\0", filename, true))
+							{
+								// remove extension
+								if (filename.substr(filename.size() - 5) == ".la3d")
+									filename = filename.substr(0, filename.size() - 5);
+
+								std::vector<std::string> filenames;
+								for (int c = 0; c < g_volume.GetChannelCount(); c++)
+								{
+									std::ostringstream str;
+									str << filename << char('X' + c) << ".la3d";
+									filenames.push_back(str.str());
+								}
+								g_renderingManager.WriteCurTimestepToLA3Ds(g_volume, filenames);
+							}
 						}
 					}
 				}
+				ImGui::PopItemWidth();
 			}
-			ImGui::PopItemWidth();
+			ImGui::End();
 		}
-		ImGui::End();
 
 
 		// Particle tracing config window
-		ImGui::Begin("Tracing Options");
+		if (g_showTracingOptionsWindow)
 		{
-			ImGui::PushItemWidth(-150);
+			ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+			if (ImGui::Begin("Tracing Options", &g_showTracingOptionsWindow))
 			{
-				ImGui::Checkbox("Verbose", &g_tracingManager.GetVerbose());
-
-				// Seeding options
-				ImGui::Spacing();
-				ImGui::Separator();
+				ImGui::PushItemWidth(-150);
 				{
-					if (ImGui::Button("Load seed texture", ImVec2(buttonWidth, 0)))
-						LoadSeedTexture();
+					ImGui::Checkbox("Verbose", &g_tracingManager.GetVerbose());
 
-					if (ImGui::Button("Set seed box to domain", ImVec2(buttonWidth, 0)))
-						SetBoundingBoxToDomainSize();
-
-					ImGui::DragFloat3("Seed box min", (float*)&g_particleTraceParams.m_seedBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
-					ImGui::DragFloat3("Seed box size", (float*)&g_particleTraceParams.m_seedBoxSize, 0.005f, 0.0f, 0.0f, "%.3f");
-
-					static auto getterSeedingPattern = [](void* data, int idx, const char** out_str)
+					// Seeding options
+					ImGui::Spacing();
+					ImGui::Separator();
 					{
-						if (idx >= ParticleTraceParams::eSeedPattern::COUNT) return false;
-						*out_str = ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(idx));
-						return true;
-					};
-					ImGui::Combo("Seeding pattern", (int*)&g_particleTraceParams.m_seedPattern, getterSeedingPattern, nullptr, ParticleTraceParams::eSeedPattern::COUNT);
-				}
+						if (ImGui::Button("Load seed texture", ImVec2(buttonWidth, 0)))
+							LoadSeedTexture();
 
-				// Tracing
-				ImGui::Spacing();
-				ImGui::Separator();
-				{
-					static auto getterAdvectMode = [](void* data, int idx, const char** out_str)
+						if (ImGui::Button("Set seed box to domain", ImVec2(buttonWidth, 0)))
+							SetBoundingBoxToDomainSize();
+
+						ImGui::DragFloat3("Seed box min", (float*)&g_particleTraceParams.m_seedBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
+						ImGui::DragFloat3("Seed box size", (float*)&g_particleTraceParams.m_seedBoxSize, 0.005f, 0.0f, 0.0f, "%.3f");
+
+						static auto getterSeedingPattern = [](void* data, int idx, const char** out_str)
+						{
+							if (idx >= ParticleTraceParams::eSeedPattern::COUNT) return false;
+							*out_str = ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(idx));
+							return true;
+						};
+						ImGui::Combo("Seeding pattern", (int*)&g_particleTraceParams.m_seedPattern, getterSeedingPattern, nullptr, ParticleTraceParams::eSeedPattern::COUNT);
+					}
+
+					// Tracing
+					ImGui::Spacing();
+					ImGui::Separator();
 					{
-						if (idx >= ADVECT_MODE_COUNT) return false;
-						*out_str = GetAdvectModeName(eAdvectMode(idx));
-						return true;
-					};
+						static auto getterAdvectMode = [](void* data, int idx, const char** out_str)
+						{
+							if (idx >= ADVECT_MODE_COUNT) return false;
+							*out_str = GetAdvectModeName(eAdvectMode(idx));
+							return true;
+						};
 
-					ImGui::Combo("Advection", (int*)&g_particleTraceParams.m_advectMode, getterAdvectMode, nullptr, ADVECT_MODE_COUNT);
-					ImGui::Checkbox("Dense output", &g_particleTraceParams.m_enableDenseOutput);
+						ImGui::Combo("Advection", (int*)&g_particleTraceParams.m_advectMode, getterAdvectMode, nullptr, ADVECT_MODE_COUNT);
+						ImGui::Checkbox("Dense output", &g_particleTraceParams.m_enableDenseOutput);
 
-					static auto getterFilterMode = [](void* data, int idx, const char** out_str)
-					{
-						if (idx >= TEXTURE_FILTER_MODE_COUNT) return false;
-						*out_str = GetTextureFilterModeName(eTextureFilterMode(idx));
-						return true;
-					};
-					ImGui::Combo("Interpolation", (int*)&g_particleTraceParams.m_filterMode, getterFilterMode, nullptr, TEXTURE_FILTER_MODE_COUNT);
+						static auto getterFilterMode = [](void* data, int idx, const char** out_str)
+						{
+							if (idx >= TEXTURE_FILTER_MODE_COUNT) return false;
+							*out_str = GetTextureFilterModeName(eTextureFilterMode(idx));
+							return true;
+						};
+						ImGui::Combo("Interpolation", (int*)&g_particleTraceParams.m_filterMode, getterFilterMode, nullptr, TEXTURE_FILTER_MODE_COUNT);
 
-					static auto getterLineMode = [](void* data, int idx, const char** out_str)
-					{
-						if (idx >= LINE_MODE_COUNT) return false;
-						*out_str = GetLineModeName(eLineMode(idx));
-						return true;
-					};
-					ImGui::Combo("Line mode", (int*)&g_particleTraceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT);
+						static auto getterLineMode = [](void* data, int idx, const char** out_str)
+						{
+							if (idx >= LINE_MODE_COUNT) return false;
+							*out_str = GetLineModeName(eLineMode(idx));
+							return true;
+						};
+						ImGui::Combo("Line mode", (int*)&g_particleTraceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT);
 
-					if (ImGui::DragInt("Line count", &g_particleTraceParams.m_lineCount, 1.0f, 1.0f, INT_MAX))
-						g_particleTraceParams.m_lineCount = std::max(1, g_particleTraceParams.m_lineCount);
-					if (ImGui::DragInt("Line max lenght", &g_particleTraceParams.m_lineLengthMax, 1.0f, 2.0f, INT_MAX))
-						g_particleTraceParams.m_lineLengthMax = std::max(2, g_particleTraceParams.m_lineLengthMax);
-					if (ImGui::DragFloat("Line max age", &g_particleTraceParams.m_lineAgeMax, 0.05f, 0.0f, FLT_MAX, "%.3f"))
-						g_particleTraceParams.m_lineAgeMax = std::max(0.0f, g_particleTraceParams.m_lineAgeMax);
+						if (ImGui::DragInt("Line count", &g_particleTraceParams.m_lineCount, 1.0f, 1.0f, INT_MAX))
+							g_particleTraceParams.m_lineCount = std::max(1, g_particleTraceParams.m_lineCount);
+						if (ImGui::DragInt("Line max lenght", &g_particleTraceParams.m_lineLengthMax, 1.0f, 2.0f, INT_MAX))
+							g_particleTraceParams.m_lineLengthMax = std::max(2, g_particleTraceParams.m_lineLengthMax);
+						if (ImGui::DragFloat("Line max age", &g_particleTraceParams.m_lineAgeMax, 0.05f, 0.0f, FLT_MAX, "%.3f"))
+							g_particleTraceParams.m_lineAgeMax = std::max(0.0f, g_particleTraceParams.m_lineAgeMax);
 
-					ImGui::DragFloat("Min velocity", &g_particleTraceParams.m_minVelocity, 0.01f, 0.0f, 0.0f, "%.2f");
-					ImGui::DragFloat("Particles per second", &g_particleTraceParams.m_particlesPerSecond, 0.01f, 0.0f, 0.0f, "%.2f");
-					ImGui::DragFloat("Advection Delta T", &g_particleTraceParams.m_advectDeltaT, 0.001f, 0.0f, 0.0f, "%.5f");
-					if (ImGui::Button("Seed many particles", ImVec2(buttonWidth, 0)))
-						g_tracingManager.SeedManyParticles();
-					ImGui::DragFloat("Cell Change Time Threshold", &g_particleTraceParams.m_cellChangeThreshold, 0.001f, 0.0f, 0.0f, "%.5f");
+						ImGui::DragFloat("Min velocity", &g_particleTraceParams.m_minVelocity, 0.01f, 0.0f, 0.0f, "%.2f");
+						ImGui::DragFloat("Particles per second", &g_particleTraceParams.m_particlesPerSecond, 0.01f, 0.0f, 0.0f, "%.2f");
+						ImGui::DragFloat("Advection Delta T", &g_particleTraceParams.m_advectDeltaT, 0.001f, 0.0f, 0.0f, "%.5f");
+						if (ImGui::Button("Seed many particles", ImVec2(buttonWidth, 0)))
+							g_tracingManager.SeedManyParticles();
+						ImGui::DragFloat("Cell Change Time Threshold", &g_particleTraceParams.m_cellChangeThreshold, 0.001f, 0.0f, 0.0f, "%.5f");
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
+							g_retrace = true;
+
+						if (ImGui::Button(g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
+							g_particleTracingPaused = !g_particleTracingPaused;
+					}
 
 					ImGui::Spacing();
 					ImGui::Separator();
 
-					if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
-						g_retrace = true;
+					ImGui::Checkbox("CPU Tracing", &g_particleTraceParams.m_cpuTracing);
 
-					if (ImGui::Button(g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
-						g_particleTracingPaused = !g_particleTracingPaused;
+					if (ImGui::SliderInt("# CPU Threads", &g_threadCount, 1, 16))
+						omp_set_num_threads(g_threadCount);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					int v = g_tracingManager.GetBrickSlotCountMax();
+					if (ImGui::DragInt("Max Brick Slot Count", &v, 1, 0, INT_MAX))
+						g_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
+
+					v = g_tracingManager.GetTimeSlotCountMax();
+					if (ImGui::DragInt("Max Time Slot Count", &v, 1, 0, INT_MAX))
+						g_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::DragFloat("Advection Error Tolerance (Voxels)", &g_particleTraceParams.m_advectErrorTolerance, 0.001f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_advectErrorTolerance = std::max(0.0f, g_particleTraceParams.m_advectErrorTolerance);
+
+					if (ImGui::DragFloat("Advection Delta T Min", &g_particleTraceParams.m_advectDeltaTMin, 0.001f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_advectDeltaTMin = std::max(0.0f, g_particleTraceParams.m_advectDeltaTMin);
+
+					if (ImGui::DragFloat("Advection Delta T Max", &g_particleTraceParams.m_advectDeltaTMax, 0.001f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_advectDeltaTMax = std::max(0.0f, g_particleTraceParams.m_advectDeltaTMax);
+
+					v = g_particleTraceParams.m_advectStepsPerRound;
+					if (ImGui::DragInt("Advect Steps per Round", &v, 1, 0, INT_MAX, "%d steps"))
+						g_particleTraceParams.m_advectStepsPerRound = (unsigned int)std::max(0, v);
+
+					v = g_particleTraceParams.m_purgeTimeoutInRounds;
+					if (ImGui::DragInt("Brick Purge Timeout", &v, 1, 0, INT_MAX, "%d rounds"))
+						g_particleTraceParams.m_purgeTimeoutInRounds = (unsigned int)std::max(0, v);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					ImGui::Text("Heuristic");
+
+					if (ImGui::DragFloat("Bonus Factor", &g_particleTraceParams.m_heuristicBonusFactor, 0.01f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_heuristicBonusFactor = std::max(0.0f, g_particleTraceParams.m_heuristicBonusFactor);
+
+					if (ImGui::DragFloat("Penalty Factor", &g_particleTraceParams.m_heuristicPenaltyFactor, 0.01f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_heuristicPenaltyFactor = std::max(0.0f, g_particleTraceParams.m_heuristicPenaltyFactor);
+
+					// TODO: this should be a combo, no?
+					v = g_particleTraceParams.m_heuristicFlags;
+					if (ImGui::DragInt("Flags", &v, 1, 0, INT_MAX))
+						g_particleTraceParams.m_heuristicFlags = (unsigned int)std::max(0, v);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::DragFloat("Output Pos Diff (Voxels)", &g_particleTraceParams.m_outputPosDiff, 0.01f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_outputPosDiff = std::max(0.0f, g_particleTraceParams.m_outputPosDiff);
+
+					if (ImGui::DragFloat("Output Time Diff", &g_particleTraceParams.m_outputTimeDiff, 0.01f, 0.0f, FLT_MAX, "%.5f"))
+						g_particleTraceParams.m_outputTimeDiff = std::max(0.0f, g_particleTraceParams.m_outputTimeDiff);
+
+					ImGui::Checkbox("Wait for Disk", &g_particleTraceParams.m_waitForDisk);
+					ImGui::Checkbox("Prefetching", &g_particleTraceParams.m_enablePrefetching);
+					ImGui::Checkbox("Upsampled Volume Hack", &g_particleTraceParams.m_upsampledVolumeHack);
 				}
-
+				ImGui::PopItemWidth();
 			}
-			ImGui::PopItemWidth();
+			ImGui::End();
 		}
-		ImGui::End();
 
+
+		// Extra window
+		if (g_showExtraWindow)
+		{
+			ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+			if (ImGui::Begin("Extra", &g_showExtraWindow))
+			{
+				ImGui::PushItemWidth(-150);
+				{
+					float v = g_volume.GetSystemMemoryUsage().GetSystemMemoryLimitMBytes();
+					if (ImGui::DragFloat("Mem Usage Limit", &v, 10.0f, 0.0f, FLT_MAX, "%.1f MB"))
+						g_volume.GetSystemMemoryUsage().SetSystemMemoryLimitMBytes(std::max(0.0f, v));
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+
+					if (ImGui::Button("Save Traced Lines", ImVec2(buttonWidth, 0)))
+						SaveLinesDialog();
+					if (ImGui::Button("Load Lines", ImVec2(buttonWidth, 0)))
+						LoadLinesDialog();
+
+					if (ImGui::DragInt("Line ID Override", &g_lineIDOverride, 1, -1, INT_MAX))
+						g_lineIDOverride = std::max(-1, g_lineIDOverride);
+
+					if (ImGui::Button("Clear Loaded Lines", ImVec2(buttonWidth, 0)))
+						ClearLinesCallback();
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Load Balls", ImVec2(buttonWidth, 0)))
+						LoadBallsDialog();
+
+					if (ImGui::DragFloat("Ball Radius", &g_ballRadius, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_ballRadius = std::max(0.0f, g_ballRadius);
+
+					if (ImGui::Button("Clear Loaded Balls", ImVec2(buttonWidth, 0)))
+						ClearBallsCallback();
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Build Flow Graph", ImVec2(buttonWidth, 0)))
+						BuildFlowGraphCallback();
+
+					if (ImGui::Button("Save Flow Graph", ImVec2(buttonWidth, 0)))
+						SaveFlowGraphCallback();
+
+					if (ImGui::Button("Load Flow Graph", ImVec2(buttonWidth, 0)))
+						LoadFlowGraphCallback();
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Save Settings", ImVec2(buttonWidth, 0)))
+						SaveRenderingParamsDialog();
+
+					if (ImGui::Button("Load Settings", ImVec2(buttonWidth, 0)))
+						LoadRenderingParamsDialog();
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Save Screenshot", ImVec2(buttonWidth, 0)))
+						g_saveScreenshot = true;
+
+					if (ImGui::Button("Save Renderbuffer", ImVec2(buttonWidth, 0)))
+						g_saveRenderBufferScreenshot = true;
+				}
+				ImGui::PopItemWidth();
+			}
+			ImGui::End();
+		}
+
+		// FTLE window
+		if (g_showFTLEWindow)
+		{
+			ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+			if (ImGui::Begin("FTLE", &g_showFTLEWindow))
+			{
+				ImGui::PushItemWidth(-150);
+				{
+					static auto ftleComputeParticleCount = []()
+					{
+						return g_particleTraceParams.m_lineCount = g_particleTraceParams.m_ftleResolution * g_particleTraceParams.m_ftleResolution * 6;
+					};
+
+					if (ImGui::Checkbox("Enabled", &g_particleTraceParams.m_ftleEnabled))
+					{
+						if (g_particleTraceParams.m_ftleEnabled)
+						{
+							//TwDefine("Main/LineCount readonly=true");
+							//TwDefine("Main/LineMode readonly=true");
+							//TwDefine("Main/LineLengthMax readonly=true");
+							//TwDefine("Main/LineLengthMax readonly=true");
+							//TwDefine("Main/SeedingPattern readonly=true"); 
+							g_particleTraceParams.m_lineMode = eLineMode::LINE_PATH_FTLE;
+							g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
+							g_particleTraceParams.m_lineLengthMax = 2;
+							g_particleTraceParams.m_lineAgeMax = 0.1f;
+							ftleComputeParticleCount();
+						}
+						else
+						{
+							g_particleTraceParams.m_lineMode = eLineMode::LINE_STREAM;
+							g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
+						}
+					}
+
+					ImGui::DragFloat("Scale", &g_renderingManager.m_ftleScale, 0.001f);
+
+					ImGui::Checkbox("Invert velocity", &g_particleTraceParams.m_ftleInvertVelocity);
+
+					int u = g_particleTraceParams.m_ftleResolution;
+					if (ImGui::DragInt("Resolution", &u, 1, 64, INT_MAX))
+					{
+						g_particleTraceParams.m_ftleResolution = std::max(64, u);
+						if (g_particleTraceParams.m_ftleEnabled)
+							ftleComputeParticleCount();
+					}
+
+					ImGui::DragFloat("Slice (Y)", &g_particleTraceParams.m_ftleSliceY, 0.001f);
+
+					ImGui::SliderFloat("Slice Alpha", &g_particleRenderParams.m_ftleTextureAlpha, 0.0f, 1.0f);
+
+					ImGui::DragFloat3("Separation Dist", (float*)&g_particleTraceParams.m_ftleSeparationDistance, 0.0000001f, 0.0f, FLT_MAX, "%.7f");
+				}
+				ImGui::PopItemWidth();
+			}
+			ImGui::End();
+		}
+
+		// Heatmap window
+		if (g_showHeatmapWindow)
+		{
+			ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+			if (ImGui::Begin("Heatmap", &g_showHeatmapWindow))
+			{
+				ImGui::PushItemWidth(-150);
+				{
+					ImGui::Checkbox("Enable Recording", &g_heatMapParams.m_enableRecording);
+					ImGui::Checkbox("Enable Rendering", &g_heatMapParams.m_enableRendering);
+					ImGui::Checkbox("Auto Reset", &g_heatMapParams.m_autoReset);
+
+					if (ImGui::Button("Reset", ImVec2(buttonWidth, 0)))
+					{
+						g_heatMapManager.ClearChannels();
+						g_redraw = true;
+					}
+
+					static auto getterNormalizationMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= HEAT_MAP_NORMALIZATION_MODE_COUNT) return false;
+						*out_str = GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(idx));
+						return true;
+					};
+					ImGui::Combo("Normalization", (int*)&g_heatMapParams.m_normalizationMode, getterNormalizationMode, nullptr, HEAT_MAP_NORMALIZATION_MODE_COUNT);
+
+					if (ImGui::DragFloat("Step Size", &g_heatMapParams.m_stepSize, 0.001f, 0.001f, FLT_MAX))
+						g_heatMapParams.m_stepSize = std::max(0.001f, g_heatMapParams.m_stepSize);
+
+					if (ImGui::DragFloat("Density Scale", &g_heatMapParams.m_densityScale, 0.01f, 0.0f, FLT_MAX))
+						g_heatMapParams.m_densityScale = std::max(0.0f, g_heatMapParams.m_densityScale);
+
+					ImGui::ColorEdit3("First displayed channel (1)", (float*)&g_heatMapParams.m_renderedChannels[0]);
+					ImGui::ColorEdit3("Second displayed channel (2)", (float*)&g_heatMapParams.m_renderedChannels[1]);
+
+					ImGui::Checkbox("Isosurface Rendering", &g_heatMapParams.m_isosurface);
+
+					ImGui::SliderFloat("Isovalue", &g_heatMapParams.m_isovalue, 0.0f, 1.0f);
+				}
+				ImGui::PopItemWidth();
+			}
+			ImGui::End();
+		}
 
 		// Rendering config window
-		ImGui::Begin("Rendering Options");
+		if (g_showRenderingOptionsWindow)
 		{
-			ImGui::PushItemWidth(-150);
+			ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+			if (ImGui::Begin("Rendering Options", &g_showRenderingOptionsWindow))
 			{
-				if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
-					g_redraw = true;
+				ImGui::PushItemWidth(-150);
+				{
+					if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
+						g_redraw = true;
 
-				ImGui::Checkbox("Show seed box", &g_bRenderSeedBox);
-				
+					ImGui::Checkbox("Rendering Preview", &g_showPreview);
+
+					if (ImGui::ColorEdit3("Background color", (float*)&g_backgroundColor))
+						g_redraw = true;
+
+					ImGui::Checkbox("Show Seed Box", &g_bRenderSeedBox);
+					ImGui::Checkbox("Show Domain Box", &g_bRenderDomainBox);
+
+					if (ImGui::DragFloat("Domain Box Thickness", &g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
+					{
+						g_renderingManager.m_DomainBoxThickness = std::max(0.0f, g_renderingManager.m_DomainBoxThickness);
+						g_redraw = true;
+					}
+
+					ImGui::Checkbox("Show Brick Boxes", &g_bRenderBrickBoxes);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					ImGui::Checkbox("Fixed Light Dir", &g_particleRenderParams.m_FixedLightDir);
+
+					ImGui::SliderFloat3("Light Dir", (float*)&g_particleRenderParams.m_lightDir, -1.0f, 1.0f);
+
+					int f = g_renderBufferSizeFactor;
+					if (ImGui::SliderInt("SuperSample Factor", &f, 1.0f, 8.0f))
+						g_renderBufferSizeFactor = f;
+
+					if (ImGui::Checkbox("Perspective", &g_projParams.m_perspective))
+					{
+						if (g_projParams.m_perspective)
+							g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
+						else
+							g_projParams.m_fovy = 3.1f;
+					}
+
+					float degfovy = g_projParams.m_fovy * 180.0f / PI;
+					if (ImGui::SliderFloat("FoVY", &degfovy, 1.0f, 180.0f, "%.2f deg"))
+						g_projParams.m_fovy = degfovy * PI / 180.0f;
+
+					ImGui::Checkbox("Stereo", &g_stereoParams.m_stereoEnabled);
+
+					if (ImGui::DragFloat("Eye Distance", &g_stereoParams.m_eyeDistance, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_stereoParams.m_eyeDistance = std::max(0.0f, g_stereoParams.m_eyeDistance);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					ImGui::Checkbox("Particle rendering", &g_particleRenderParams.m_linesEnabled);
+
+					static auto getterLineRenderMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= LINE_RENDER_MODE_COUNT) return false;
+						*out_str = GetLineRenderModeName(eLineRenderMode(idx));
+						return true;
+					};
+					ImGui::Combo("Line render mode", (int*)&g_particleRenderParams.m_lineRenderMode, getterLineRenderMode, nullptr, LINE_RENDER_MODE_COUNT);
+
+					if (ImGui::DragFloat("Ribbon Width", &g_particleRenderParams.m_ribbonWidth, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_particleRenderParams.m_ribbonWidth = std::max(0.0f, g_particleRenderParams.m_ribbonWidth);
+
+					if (ImGui::DragFloat("Tube Radius", &g_particleRenderParams.m_tubeRadius, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_particleRenderParams.m_tubeRadius = std::max(0.0f, g_particleRenderParams.m_tubeRadius);
+
+					if (ImGui::DragFloat("Particle Size", &g_particleRenderParams.m_particleSize, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_particleRenderParams.m_particleSize = std::max(0.0f, g_particleRenderParams.m_particleSize);
+
+					ImGui::Checkbox("Display Velocity", &g_particleRenderParams.m_tubeRadiusFromVelocity);
+
+					ImGui::DragFloat("Reference Velocity", &g_particleRenderParams.m_referenceVelocity, 0.001f);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					static auto getterParticleRenderMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= PARTICLE_RENDER_MODE_COUNT) return false;
+						*out_str = GetParticleRenderModeName(eParticleRenderMode(idx));
+						return true;
+					};
+					ImGui::Combo("Particle render mode", (int*)&g_particleRenderParams.m_particleRenderMode, getterParticleRenderMode, nullptr, PARTICLE_RENDER_MODE_COUNT);
+
+					if (ImGui::DragFloat("Particle Transparency", &g_particleRenderParams.m_particleTransparency, 0.001f, 0.0f, 1.0f, "%.3f"))
+						g_particleRenderParams.m_particleTransparency = std::min(1.0f, std::max(0.0f, g_particleRenderParams.m_particleTransparency));
+
+					ImGui::Checkbox("Sort Particles", &g_particleRenderParams.m_sortParticles);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+
+					static auto getterLineColorMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= LINE_COLOR_MODE_COUNT) return false;
+						*out_str = GetLineColorModeName(eLineColorMode(idx));
+						return true;
+					};
+					ImGui::Combo("Color Mode", (int*)&g_particleRenderParams.m_lineColorMode, getterLineColorMode, nullptr, LINE_COLOR_MODE_COUNT);
+
+					ImGui::ColorEdit3("Color 0", (float*)&g_particleRenderParams.m_color0);
+					ImGui::ColorEdit3("Color 1", (float*)&g_particleRenderParams.m_color1);
+
+					if (ImGui::Button("Load Color Texture", ImVec2(buttonWidth, 0)))
+						LoadColorTexture();
+
+					static auto getterMeasureMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= MEASURE_COUNT) return false;
+						*out_str = GetMeasureName(eMeasure(idx));
+						return true;
+					};
+					ImGui::Combo("Measure", (int*)&g_particleRenderParams.m_measure, getterMeasureMode, nullptr, MEASURE_COUNT);
+
+					if (ImGui::DragFloat("Measure scale", &g_particleRenderParams.m_measureScale, 0.001f, 0.0f, 1.0f, "%.3f"))
+						g_particleRenderParams.m_measureScale = std::min(1.0f, std::max(0.0f, g_particleRenderParams.m_measureScale));
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					ImGui::Checkbox("Time Stripes", &g_particleRenderParams.m_timeStripes);
+
+					if (ImGui::DragFloat("Time Stripe Length", &g_particleRenderParams.m_timeStripeLength, 0.001f, 0.001f, FLT_MAX, "%.3f"))
+						g_particleRenderParams.m_timeStripeLength = std::max(0.001f, g_particleRenderParams.m_timeStripeLength);
+
+					ImGui::Spacing();
+					ImGui::Separator();
+
+					if (ImGui::Button("Load Slice Texture", ImVec2(buttonWidth, 0)))
+						LoadSliceTexture();
+
+					ImGui::Checkbox("Show Slice", &g_particleRenderParams.m_showSlice);
+
+					ImGui::DragFloat("Slice Position", &g_particleRenderParams.m_slicePosition, 0.001f);
+
+					if (ImGui::DragFloat("Slice Transparency", &g_particleRenderParams.m_sliceAlpha, 0.001f, 0.0f, 1.0f, "%.3f"))
+						g_particleRenderParams.m_sliceAlpha = std::min(1.0f, std::max(0.0f, g_particleRenderParams.m_sliceAlpha));
+				}
+				ImGui::PopItemWidth();
 			}
-			ImGui::PopItemWidth();
+			ImGui::End();
 		}
-		ImGui::End();
 
-
-		
 
 		// Scene view window
-		ImGui::Begin("Scene view");
+		ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
+		if (ImGui::Begin("Scene view"))
 		{
 			float height;
 			float width;

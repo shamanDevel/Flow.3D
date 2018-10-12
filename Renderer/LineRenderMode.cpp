@@ -3,7 +3,7 @@
 
 namespace
 {
-	std::string g_lineRenderModeName[LINE_RENDER_MODE_COUNT + 1] = {
+	const char* g_lineRenderModeName[LINE_RENDER_MODE_COUNT + 1] = {
 		"Line",
 		"Ribbon",
 		"Tube",
@@ -12,7 +12,7 @@ namespace
 	};
 }
 
-std::string GetLineRenderModeName(eLineRenderMode renderMode)
+const char* GetLineRenderModeName(eLineRenderMode renderMode)
 {
 	return g_lineRenderModeName[min(renderMode, LINE_RENDER_MODE_COUNT)];
 }

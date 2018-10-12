@@ -2,7 +2,7 @@
 
 namespace
 {
-	std::string g_particleRenderModeName[PARTICLE_RENDER_MODE_COUNT + 1] = {
+	const char* g_particleRenderModeName[PARTICLE_RENDER_MODE_COUNT + 1] = {
 		"Additive",
 		"Multiplicative",
 		"Alpha",
@@ -10,7 +10,7 @@ namespace
 	};
 }
 
-std::string GetParticleRenderModeName(eParticleRenderMode renderMode)
+const char* GetParticleRenderModeName(eParticleRenderMode renderMode)
 {
 	return g_particleRenderModeName[min(renderMode, PARTICLE_RENDER_MODE_COUNT)];
 }

@@ -15,7 +15,7 @@ enum eLineColorMode
 	MEASURE,
 	LINE_COLOR_MODE_COUNT
 };
-std::string GetLineColorModeName(eLineColorMode renderMode);
+const char* GetLineColorModeName(eLineColorMode renderMode);
 eLineColorMode GetLineColorModeFromName(const std::string& name);
 
 

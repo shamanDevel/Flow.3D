@@ -32,7 +32,7 @@ enum eMeasure
 	MEASURE_COUNT,
 	MEASURE_FORCE32 =  0xFFFFFFFF
 };
-std::string GetMeasureName(eMeasure mode);
+const char* GetMeasureName(eMeasure mode);
 eMeasure GetMeasureFromName(const std::string& name);
 float GetDefaultMeasureScale(eMeasure mode);
 float GetDefaultMeasureQuantStep(eMeasure mode);

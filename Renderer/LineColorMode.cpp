@@ -3,7 +3,7 @@
 
 namespace
 {
-	std::string g_lineColorModeName[LINE_COLOR_MODE_COUNT + 1] = {
+	const char* g_lineColorModeName[LINE_COLOR_MODE_COUNT + 1] = {
 		"Line ID",
 		"Age",
 		"Texture",
@@ -12,7 +12,7 @@ namespace
 	};
 }
 
-std::string GetLineColorModeName(eLineColorMode renderMode)
+const char* GetLineColorModeName(eLineColorMode renderMode)
 {
 	return g_lineColorModeName[min(renderMode, LINE_COLOR_MODE_COUNT)];
 }

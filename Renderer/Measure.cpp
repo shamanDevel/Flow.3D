@@ -1,7 +1,7 @@
 #include "Measure.h"
 
 
-static const std::string g_measureNames[MEASURE_COUNT + 1] =
+static const char* g_measureNames[MEASURE_COUNT + 1] =
 {
 	"Velocity",
 	"Velocity.Z",
@@ -26,7 +26,7 @@ static const std::string g_measureNames[MEASURE_COUNT + 1] =
 	"Unknown"
 };
 
-std::string GetMeasureName(eMeasure mode)
+const char* GetMeasureName(eMeasure mode)
 {
 	return g_measureNames[min(mode, MEASURE_COUNT)];
 }

@@ -15,7 +15,7 @@ enum eLineRenderMode
 	LINE_RENDER_PARTICLES,
 	LINE_RENDER_MODE_COUNT
 };
-std::string GetLineRenderModeName(eLineRenderMode renderMode);
+const char* GetLineRenderModeName(eLineRenderMode renderMode);
 eLineRenderMode GetLineRenderModeFromName(const std::string& name);
 
 
