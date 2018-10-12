@@ -48,7 +48,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\imgui;DXUT/Core;DirectXTK/Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\imgui;DXUT/Core;DirectXTK/Inc;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>
@@ -101,7 +101,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\imgui;DXUT/Core;DirectXTK/Inc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\imgui;DXUT/Core;DirectXTK/Inc;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>
@@ -189,6 +189,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClCompile Include="FilteringManager.cpp" />
     <ClCompile Include="FilterParams.cpp" />
     <ClCompile Include="FlowGraph.cpp" />
+    <ClCompile Include="FlowVisTool.cpp" />
     <ClCompile Include="HeatMap.cpp" />
     <ClCompile Include="HeatMapManager.cpp" />
     <ClCompile Include="HeatMapNormalizationMode.cpp" />
@@ -297,6 +298,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="FilteringManager.h" />
     <ClInclude Include="FilterParams.h" />
     <ClInclude Include="FlowGraph.h" />
+    <ClInclude Include="FlowVisTool.h" />
     <ClInclude Include="HeatCurrent.cuh" />
     <ClInclude Include="HeatMap.h" />
     <ClInclude Include="HeatMapKernel.h" />
