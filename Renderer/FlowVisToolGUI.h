@@ -15,6 +15,7 @@ public:
 	static bool g_showExtraWindow;
 	static bool g_showDatasetWindow;
 	static bool g_show_demo_window;
+	static bool g_showProfilerWindow;
 
 	static int g_threadCount;
 	static int g_lineIDOverride;
@@ -37,6 +38,8 @@ public:
 	static void LoadSeedTexture(FlowVisTool& g_flowVisTool);
 #pragma endregion
 
+	static void RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
+
 	static void DockSpace();
 
 	static void MainMenu(FlowVisTool& g_flowVisTool);
@@ -55,5 +58,5 @@ public:
 
 	static void SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
 
-	static void RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
+	static void ProfilerWindow(FlowVisTool& g_flowVisTool);
 };

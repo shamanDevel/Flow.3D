@@ -5,6 +5,8 @@
 #include <WICTextureLoader.h>
 #include <omp.h>
 #include <fstream>
+#include <vector>
+
 
 bool FlowVisToolGUI::g_showRenderingOptionsWindow = true;
 bool FlowVisToolGUI::g_showTracingOptionsWindow = true;
@@ -12,11 +14,19 @@ bool FlowVisToolGUI::g_showFTLEWindow = false;
 bool FlowVisToolGUI::g_showHeatmapWindow = false;
 bool FlowVisToolGUI::g_showExtraWindow = false;
 bool FlowVisToolGUI::g_showDatasetWindow = true;
-bool FlowVisToolGUI::g_show_demo_window = false;
+bool FlowVisToolGUI::g_show_demo_window = false; 
+bool FlowVisToolGUI::g_showProfilerWindow = true;
+
 
 const float FlowVisToolGUI::buttonWidth = 200;
 int FlowVisToolGUI::g_threadCount = omp_get_num_procs();
 int FlowVisToolGUI::g_lineIDOverride = -1;
+
+
+const int max_frames = 150;
+std::vector<float> frameTimes(max_frames);
+int currentFrameTimeIndex = 0;
+
 
 #pragma region Dialogs
 void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& g_flowVisTool)
@@ -215,6 +225,32 @@ void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& g_flowVisTool)
 }
 #pragma endregion
 
+void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
+{
+	if (g_show_demo_window)
+		ImGui::ShowDemoWindow(&g_show_demo_window);
+
+	MainMenu(g_flowVisTool);
+
+	DatasetWindow(g_flowVisTool);
+	TracingWindow(g_flowVisTool);
+	ExtraWindow(g_flowVisTool);
+	FTLEWindow(g_flowVisTool);
+	HeatmapWindow(g_flowVisTool);
+	RenderingWindow(g_flowVisTool);
+	SceneWindow(g_flowVisTool, resizeNextFrame, sceneWindowSize);
+	ProfilerWindow(g_flowVisTool);
+
+	ImGui::Begin("Debug");
+	{
+		static float sleepAmount = 0.0f;
+		ImGui::SliderFloat("Thread sleep", &sleepAmount, 0.0f, 1000.0f);
+
+		std::this_thread::sleep_for(std::chrono::milliseconds((long long)sleepAmount));
+	}
+	ImGui::End();
+}
+
 void FlowVisToolGUI::DockSpace()
 {
 	static bool opt_fullscreen_persistant = true;
@@ -317,6 +353,8 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
 			ImGui::Separator();
 			if (ImGui::MenuItem("ImGui Demo", nullptr, g_show_demo_window))
 				g_show_demo_window = !g_show_demo_window;
+			if (ImGui::MenuItem("Profiler", nullptr, g_showProfilerWindow))
+				g_showProfilerWindow = !g_showProfilerWindow;
 
 			ImGui::EndMenu();
 		}
@@ -438,6 +476,15 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
+				if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
+					g_flowVisTool.m_retrace = true;
+
+				if (ImGui::Button(g_flowVisTool.g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
+					g_flowVisTool.g_particleTracingPaused = !g_flowVisTool.g_particleTracingPaused;
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
 				ImGui::Checkbox("Verbose", &g_flowVisTool.g_tracingManager.GetVerbose());
 
 				// Seeding options
@@ -505,15 +552,6 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 					if (ImGui::Button("Seed many particles", ImVec2(buttonWidth, 0)))
 						g_flowVisTool.g_tracingManager.SeedManyParticles();
 					ImGui::DragFloat("Cell Change Time Threshold", &g_flowVisTool.g_particleTraceParams.m_cellChangeThreshold, 0.001f, 0.0f, 0.0f, "%.5f");
-
-					ImGui::Spacing();
-					ImGui::Separator();
-
-					if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
-						g_flowVisTool.m_retrace = true;
-
-					if (ImGui::Button(g_flowVisTool.g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
-						g_flowVisTool.g_particleTracingPaused = !g_flowVisTool.g_particleTracingPaused;
 				}
 
 				ImGui::Spacing();
@@ -1217,27 +1255,48 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 	ImGui::PopStyleVar(ImGuiStyleVar_::ImGuiStyleVar_WindowPadding);
 }
 
-void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
+void FlowVisToolGUI::ProfilerWindow(FlowVisTool& g_flowVisTool)
 {
-	if (g_show_demo_window)
-		ImGui::ShowDemoWindow(&g_show_demo_window);
+	currentFrameTimeIndex = (currentFrameTimeIndex + 1) % frameTimes.size();
+	frameTimes[currentFrameTimeIndex] = ImGui::GetIO().DeltaTime * 1000.0f;
 
-	MainMenu(g_flowVisTool);
-
-	DatasetWindow(g_flowVisTool);
-	TracingWindow(g_flowVisTool);
-	ExtraWindow(g_flowVisTool);
-	FTLEWindow(g_flowVisTool);
-	HeatmapWindow(g_flowVisTool);
-	RenderingWindow(g_flowVisTool);
-	SceneWindow(g_flowVisTool, resizeNextFrame, sceneWindowSize);
-
-	ImGui::Begin("Debug");
+	if (g_showProfilerWindow)
 	{
-		static float sleepAmount = 0.0f;
-		ImGui::SliderFloat("Thread sleep", &sleepAmount, 0.0f, 1000.0f);
+		if (ImGui::Begin("Profiler"))
+		{
+			//ImGui::Text("Average %.2f ms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("Current %.2f ms (%.1f FPS)", ImGui::GetIO().DeltaTime * 1000.0f, 1.0f / ImGui::GetIO().DeltaTime);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds((long long)sleepAmount));
+			float max = FLT_MIN;
+			for (size_t i = 0; i < frameTimes.size(); i++)
+				max = std::max(frameTimes[i], max);
+			//max = std::ceil(max * 1.1f);
+			max = std::ceil(max / 5.0f) * 5.0f;
+
+			ImGui::BeginGroup();
+			ImGui::Text("%.0f", max);
+			ImGui::Text(" ");
+			ImGui::Text(" ");
+			ImGui::Text("0");
+			ImGui::EndGroup();
+			
+			// Capture the group size and create widgets using the same size
+			ImVec2 size = ImGui::GetItemRectSize();
+
+			ImGui::SameLine();
+
+			ImGui::PushItemWidth(-1);
+			ImGui::PlotLines("", &frameTimes[0], frameTimes.size(), currentFrameTimeIndex, "", 0.0f, max, ImVec2(0, size.y));
+			ImGui::PopItemWidth();
+
+			ImGui::Separator();
+			ImGui::Spacing();
+
+			ImGui::Text("Window resolution: %dx%d", g_flowVisTool.g_windowSize.x(), g_flowVisTool.g_windowSize.y());
+			ImGui::Text("Viewport resolution: %dx%d", g_flowVisTool.g_projParams.m_imageWidth, g_flowVisTool.g_projParams.m_imageHeight);
+			ImGui::Text("Trace Time: %.2f ms", g_flowVisTool.g_timerTracing.GetElapsedTimeMS());
+			ImGui::Text("Render Time: %.2f ms", g_flowVisTool.g_timerRendering.GetElapsedTimeMS());
+		}
+		ImGui::End();
 	}
-	ImGui::End();
 }

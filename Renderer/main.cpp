@@ -99,37 +99,6 @@ void ClearCudaDevices()
 {
 	g_cudaDevices.clear();
 }
-
-
-void GetMajorWorldPlane(const tum3D::Vec3f& vecViewX, const tum3D::Vec3f& vecViewY, const tum3D::Mat4f& matInv, tum3D::Vec3f& vecWorldX, tum3D::Vec3f& vecWorldY)
-{
-	tum3D::Vec4f transformedX = matInv * tum3D::Vec4f(vecViewX, 0.0f);
-	tum3D::Vec4f transformedY = matInv * tum3D::Vec4f(vecViewY, 0.0f);
-	vecWorldX = transformedX.xyz();
-	vecWorldY = transformedY.xyz();
-
-	tum3D::Vec3f normal; tum3D::crossProd(vecWorldX, vecWorldY, normal);
-
-	// find major axis of normal
-	int normalMajorAxis;
-	if (fabsf(normal.x()) >= fabsf(normal.y()) && fabsf(normal.x()) >= fabsf(normal.z())) {
-		// x axis is maximum
-		normalMajorAxis = 0;
-	} else if (fabsf(normal.y()) >= fabsf(normal.x()) && fabsf(normal.y()) >= fabsf(normal.z())) {
-		// y axis is maximum
-		normalMajorAxis = 1;
-	} else {
-		// z axis is maximum
-		normalMajorAxis = 2;
-	}
-
-	// make x and y orthogonal to normal
-	vecWorldX[normalMajorAxis] = 0.0f;
-	vecWorldY[normalMajorAxis] = 0.0f;
-
-	tum3D::normalize(vecWorldX);
-	tum3D::normalize(vecWorldY);
-}
 #pragma endregion
 
 
@@ -348,80 +317,6 @@ HRESULT OnD3D11CreateDevice()
 //		}
 //	}
 //}
-
-//--------------------------------------------------------------------------------------
-// Handle updates to the scene
-//--------------------------------------------------------------------------------------
-void OnFrameMove( double dTime, float fElapsedTime, void* pUserContext )
-{
-	// check if we should update the window title
-	bool update = false;
-
-	// update if image or window size changed
-	static uint s_imageWidth = 0;
-	static uint s_imageHeight = 0;
-	if (s_imageWidth != g_flowVisTool.g_projParams.m_imageWidth || s_imageHeight != g_flowVisTool.g_projParams.m_imageHeight) {
-		s_imageWidth = g_flowVisTool.g_projParams.m_imageWidth;
-		s_imageHeight = g_flowVisTool.g_projParams.m_imageHeight;
-		update = true;
-	}
-
-	static tum3D::Vec2i s_windowSize(0, 0);
-	if (s_windowSize != g_flowVisTool.g_windowSize) {
-		s_windowSize = g_flowVisTool.g_windowSize;
-		update = true;
-	}
-
-	// update fps once per second
-	static float s_fps = 0.0f;
-	static float s_mspf = 0.0f;
-	static double s_dStatLastFPSUpdate = 0.0;
-	double dt = dTime - s_dStatLastFPSUpdate;
-	if (dt >= 1.0) {
-		s_fps = ImGui::GetIO().Framerate;
-		s_mspf = 1000.0f / s_fps;
-		s_dStatLastFPSUpdate = dTime;
-		update = true;
-	}
-
-	//// update if RenderingManager's timings were updated
-	//const RenderingManager::Timings& timings = g_renderingManager.GetTimings();
-	//static RenderingManager::Timings s_timings;
-	//if (s_timings != timings)
-	//{
-	//	s_timings = timings;
-	//	update = true;
-	//}
-
-	static float s_timeTrace = 0.0f;
-	float timeTraceNew = g_flowVisTool.g_timerTracing.GetElapsedTimeMS();
-	if(s_timeTrace != timeTraceNew)
-	{
-		s_timeTrace = timeTraceNew;
-		update = true;
-	}
-
-	static float s_timeRender = 0.0f;
-	float timeRenderNew = g_flowVisTool.g_timerRendering.GetElapsedTimeMS();
-	if(s_timeRender != timeRenderNew)
-	{
-		s_timeRender = timeRenderNew;
-		update = true;
-	}
-
-	// update window title if something relevant changed
-	if (update) {
-		const size_t len = 512;
-		wchar_t str[len];
-		int pos = swprintf_s(str, L"FlowVisTool %ux%u (%ux%u) @ %.2f fps / %.2f ms", s_windowSize.x(), s_windowSize.y(), s_imageWidth, s_imageHeight, s_fps, s_mspf);
-		//pos += swprintf_s(str + pos, len - pos, L"   Upload/Decomp (GPU): %.2f ms (%.2f-%.2f-%.2f : %u)", s_timings.UploadDecompressGPU.Total, s_timings.UploadDecompressGPU.Min, s_timings.UploadDecompressGPU.Avg, s_timings.UploadDecompressGPU.Max, s_timings.UploadDecompressGPU.Count);
-		//pos += swprintf_s(str + pos, len - pos, L"   Raycast (GPU): %.2f ms (%.2f-%.2f-%.2f : %u)", s_timings.RaycastGPU.Total, s_timings.RaycastGPU.Min, s_timings.RaycastGPU.Avg, s_timings.RaycastGPU.Max, s_timings.RaycastGPU.Count);
-		//pos += swprintf_s(str + pos, len - pos, L"   Render (Wall): %.2f ms", s_timings.RenderWall);
-		pos += swprintf_s(str + pos, len - pos, L"   Trace Time: %.2f ms", s_timeTrace);
-		pos += swprintf_s(str + pos, len - pos, L"   Render Time: %.2f ms", s_timeRender);
-		SetWindowText(g_hwnd, str);
-	}
-}
 
 #pragma endregion
 
@@ -807,12 +702,7 @@ void MainLoop()
 
 		FlowVisToolGUI::DockSpace();
 
-		static float time = 0.0f;
-		time += ImGui::GetIO().DeltaTime;
-
 		{
-			OnFrameMove(time, ImGui::GetIO().DeltaTime, nullptr);
-
 			g_flowVisTool.g_renderTexture.SetRenderTarget(g_pd3dDeviceContext, g_mainDepthStencilView);
 
 			// save old viewport

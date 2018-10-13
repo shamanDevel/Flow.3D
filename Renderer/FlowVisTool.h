@@ -191,24 +191,14 @@ public:
 
 	void SetDXStuff(ID3D11Device* d3dDevice = nullptr, ID3D11DeviceContext* d3dDeviceContex = nullptr, ID3D11RenderTargetView* mainRenderTargetView = nullptr, ID3D11DepthStencilView* mainDepthStencilView = nullptr);
 
-	void DrawProgressBar(ID3D11DeviceContext* context, const tum3D::Vec2f& pos, const tum3D::Vec2f& size, const tum3D::Vec4f& color, float progress);
-	float Luminance(const tum3D::Vec3f& color) { return 0.2126f * color.x() + 0.7152f * color.y() + 0.0722f * color.z(); }
-
-	void BuildFlowGraph(const std::string& filenameTxt = "");
-	bool SaveFlowGraph();
-	bool LoadFlowGraph();
-	void LoadOrBuildFlowGraph();
-
-	void CloseVolumeFile();
-	bool OpenVolumeFile(const std::string& filename);
-
 	void ReleaseVolumeDependentResources();
 	HRESULT CreateVolumeDependentResources();
 
 	void ReleaseLineBuffers();
 	void ReleaseBallBuffers();
 
-	void SetBoundingBoxToDomainSize();
+	void CloseVolumeFile();
+	bool OpenVolumeFile(const std::string& filename);
 
 	HRESULT ResizeRenderBuffer();
 
@@ -219,6 +209,17 @@ public:
 	void OnD3D11DestroyDevice();
 
 	bool InitCudaDevices();
+
+
+
+	void BuildFlowGraph(const std::string& filenameTxt = "");
+	bool SaveFlowGraph();
+	bool LoadFlowGraph();
+	void LoadOrBuildFlowGraph();
+
+	void SetBoundingBoxToDomainSize();
+	void DrawProgressBar(ID3D11DeviceContext* context, const tum3D::Vec2f& pos, const tum3D::Vec2f& size, const tum3D::Vec4f& color, float progress);
+	float Luminance(const tum3D::Vec3f& color) { return 0.2126f * color.x() + 0.7152f * color.y() + 0.0722f * color.z(); }
 
 private:
 	// disable copy and assignment
