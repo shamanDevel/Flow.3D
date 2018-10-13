@@ -219,4 +219,9 @@ public:
 	void OnD3D11DestroyDevice();
 
 	bool InitCudaDevices();
+
+private:
+	// disable copy and assignment
+	FlowVisTool(const FlowVisTool&);
+	FlowVisTool& operator=(const FlowVisTool&);
 };

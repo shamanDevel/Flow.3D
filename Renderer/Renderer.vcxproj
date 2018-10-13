@@ -59,7 +59,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;cudart.lib;AntTweakBar64.lib;comctl32.lib;%(AdditionalDependencies);Effects11d.lib;cudaCompressd.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;cudart.lib;comctl32.lib;%(AdditionalDependencies);Effects11d.lib;cudaCompressd.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <Profile>true</Profile>
     </Link>
@@ -74,10 +74,7 @@
       <GPUDebugInfo>true</GPUDebugInfo>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>@echo $(SolutionDir)dll\$(ConfigurationName)\
-xcopy /y /d  "$(SolutionDir)dll\$(ConfigurationName)\*.dll" "$(TargetDir)"
-
-@echo $(ProjectDir)
+      <Command>@echo $(ProjectDir)
 xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
 
 @echo $(ProjectDir)TransferFunctionEditor\
@@ -98,7 +95,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level1</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\imgui;DXUT/Core;DirectXTK/Inc;$(ProjectDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -113,7 +110,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;cudart.lib;AntTweakBar64.lib;comctl32.lib;%(AdditionalDependencies);Effects11.lib;cudaCompress.lib</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;cudart.lib;comctl32.lib;%(AdditionalDependencies);Effects11.lib;cudaCompress.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <SubSystem>Console</SubSystem>
       <Profile>true</Profile>
@@ -131,10 +128,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
       </AdditionalCompilerOptions>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>@echo $(SolutionDir)dll\$(ConfigurationName)\
-xcopy /y /d  "$(SolutionDir)dll\$(ConfigurationName)\*.dll" "$(TargetDir)"
-
-@echo $(ProjectDir)
+      <Command>@echo $(ProjectDir)
 xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
 
 @echo $(ProjectDir)TransferFunctionEditor\
@@ -178,10 +172,6 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClCompile Include="BoxEffect.cpp" />
     <ClCompile Include="BoxUtils.cpp" />
     <ClCompile Include="DXUT\Core\DDSTextureLoader.cpp" />
-    <ClCompile Include="DXUT\Core\dxerr.cpp" />
-    <ClCompile Include="DXUT\Core\DXUT.cpp" />
-    <ClCompile Include="DXUT\Core\DXUTDevice11.cpp" />
-    <ClCompile Include="DXUT\Core\DXUTmisc.cpp" />
     <ClCompile Include="DXUT\Core\ScreenGrab.cpp" />
     <ClCompile Include="DXUT\Core\WICTextureLoader.cpp" />
     <ClCompile Include="Effect.cpp" />
@@ -189,6 +179,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClCompile Include="FilteringManager.cpp" />
     <ClCompile Include="FilterParams.cpp" />
     <ClCompile Include="FlowGraph.cpp" />
+    <ClCompile Include="FlowVisToolGUI.cpp" />
     <ClCompile Include="FlowVisTool.cpp" />
     <ClCompile Include="HeatMap.cpp" />
     <ClCompile Include="HeatMapManager.cpp" />
@@ -287,10 +278,6 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="cudaTum3D.h" />
     <ClInclude Include="cutil_math.h" />
     <ClInclude Include="DXUT\Core\DDSTextureLoader.h" />
-    <ClInclude Include="DXUT\Core\dxerr.h" />
-    <ClInclude Include="DXUT\Core\DXUT.h" />
-    <ClInclude Include="DXUT\Core\DXUTDevice11.h" />
-    <ClInclude Include="DXUT\Core\DXUTmisc.h" />
     <ClInclude Include="DXUT\Core\ScreenGrab.h" />
     <ClInclude Include="DXUT\Core\WICTextureLoader.h" />
     <ClInclude Include="Effect.h" />
@@ -299,6 +286,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="FilterParams.h" />
     <ClInclude Include="FlowGraph.h" />
     <ClInclude Include="FlowVisTool.h" />
+    <ClInclude Include="FlowVisToolGUI.h" />
     <ClInclude Include="HeatCurrent.cuh" />
     <ClInclude Include="HeatMap.h" />
     <ClInclude Include="HeatMapKernel.h" />

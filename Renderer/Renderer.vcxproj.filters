@@ -2,15 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="DXUT\Core\DXUT.cpp">
-      <Filter>DXUT</Filter>
-    </ClCompile>
-    <ClCompile Include="DXUT\Core\DXUTDevice11.cpp">
-      <Filter>DXUT</Filter>
-    </ClCompile>
-    <ClCompile Include="DXUT\Core\DXUTmisc.cpp">
-      <Filter>DXUT</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
     <ClCompile Include="TimeVolume.cpp" />
     <ClCompile Include="..\shared\CSysTools.cpp">
@@ -118,9 +109,6 @@
     <ClCompile Include="TransferFunctionEditor\TransferFunctionLine.cpp">
       <Filter>TransferFunctionEditor</Filter>
     </ClCompile>
-    <ClCompile Include="DXUT\Core\dxerr.cpp">
-      <Filter>DXUT</Filter>
-    </ClCompile>
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp">
       <Filter>ParticleTracing\CPU</Filter>
     </ClCompile>
@@ -195,6 +183,9 @@
     </ClCompile>
     <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="FlowVisTool.cpp" />
+    <ClCompile Include="FlowVisToolGUI.cpp">
+      <Filter>gui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -248,17 +239,11 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{26a811c5-c29b-42f8-a9da-be0f96ca89e8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="gui">
+      <UniqueIdentifier>{b19d78d2-ae23-478e-9544-25f321fc3575}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DXUT\Core\DXUT.h">
-      <Filter>DXUT</Filter>
-    </ClInclude>
-    <ClInclude Include="DXUT\Core\DXUTDevice11.h">
-      <Filter>DXUT</Filter>
-    </ClInclude>
-    <ClInclude Include="DXUT\Core\DXUTmisc.h">
-      <Filter>DXUT</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\TimeVolumeIO.h" />
     <ClInclude Include="TimeVolume.h" />
     <ClInclude Include="..\include\CSysTools.h">
@@ -428,9 +413,6 @@
     <ClInclude Include="TransferFunctionEditor\TransferFunctionLine.h">
       <Filter>TransferFunctionEditor</Filter>
     </ClInclude>
-    <ClInclude Include="DXUT\Core\dxerr.h">
-      <Filter>DXUT</Filter>
-    </ClInclude>
     <ClInclude Include="AdvectDenseCPU.h">
       <Filter>ParticleTracing\CPU</Filter>
     </ClInclude>
@@ -574,6 +556,9 @@
     </ClInclude>
     <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="FlowVisTool.h" />
+    <ClInclude Include="FlowVisToolGUI.h">
+      <Filter>gui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
