@@ -16,6 +16,7 @@ public:
 	static bool g_showDatasetWindow;
 	static bool g_show_demo_window;
 	static bool g_showProfilerWindow;
+	static bool g_showStatusWindow;
 
 	static int g_threadCount;
 	static int g_lineIDOverride;
@@ -59,4 +60,6 @@ public:
 	static void SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
 
 	static void ProfilerWindow(FlowVisTool& g_flowVisTool);
+
+	static void StatusWindow(FlowVisTool& g_flowVisTool);
 };

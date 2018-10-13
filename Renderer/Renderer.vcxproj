@@ -196,7 +196,6 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClCompile Include="Measure.cpp" />
     <ClCompile Include="ParticleRenderMode.cpp" />
     <ClCompile Include="ParticleRenderParams.cpp" />
-    <ClCompile Include="ProgressBarEffect.cpp" />
     <ClCompile Include="ProjectionParams.cpp" />
     <ClCompile Include="QuadEffect.cpp" />
     <ClCompile Include="Range.cpp" />
@@ -311,7 +310,6 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="Integrator.h" />
     <ClInclude Include="ParticleRenderMode.h" />
     <ClInclude Include="ParticleRenderParams.h" />
-    <ClInclude Include="ProgressBarEffect.h" />
     <ClInclude Include="ProjectionParams.h" />
     <ClInclude Include="QuadEffect.h" />
     <ClInclude Include="Range.h" />
@@ -396,9 +394,6 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <FxCompile Include="Measures.fxh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="ProgressBar.fx">
-      <FileType>Document</FileType>
     </FxCompile>
     <FxCompile Include="Quad.fx" />
     <FxCompile Include="Screen.fx">

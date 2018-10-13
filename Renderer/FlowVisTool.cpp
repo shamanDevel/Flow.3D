@@ -1071,71 +1071,6 @@ NoVolumeLoaded:
 			}
 		}
 	}
-
-
-	// if the current task isn't finished, show progress bar
-	if (s_isFiltering || s_isTracing || s_isRendering)
-	{
-		float pos[2] = { -0.5f, 0.8f };
-		float size[2] = { 1.0f, 0.1f };
-		float color[4] = { 1.0f, 1.0f, 1.0f, 0.7f };
-		if (Luminance(g_backgroundColor.xyz()) > 0.5f) {
-			color[0] = color[1] = color[2] = 0.0f; color[3] = 0.5f;
-		}
-		float progress = 1.0f;
-		if (s_isFiltering) {
-			progress = g_filteringManager.GetFilteringProgress();
-		}
-		else if (s_isTracing) {
-			progress = g_tracingManager.GetTracingProgress();
-		}
-		else if (s_isRendering) {
-			progress = g_renderingManager.GetRenderingProgress();
-		}
-		if (g_useAllGPUs)
-		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
-			{
-				if (i == g_primaryCudaDeviceIndex) continue;
-
-				progress = min(progress, g_cudaDevices[i].pThread->GetProgress());
-			}
-		}
-
-		if (g_stereoParams.m_stereoEnabled) {
-			pos[1] = 0.925f;
-			size[1] *= 0.5f;
-			DrawProgressBar(m_d3dDeviceContex, pos, size, color, progress);
-			pos[1] -= 1.0f;
-			DrawProgressBar(m_d3dDeviceContex, pos, size, color, progress);
-		}
-		else {
-			DrawProgressBar(m_d3dDeviceContex, pos, size, color, progress);
-		}
-	}
-
-	// If any bricks are still being loaded, show progress bar
-	float loadingProgress = g_volume.GetLoadingProgress();
-	if (loadingProgress < 1.0f)
-	{
-		float pos[2] = { -0.5f, 0.75f };
-		float size[2] = { 1.0f, 0.03f };
-		float color[4] = { 1.0f, 1.0f, 1.0f, 0.7f };
-		if (Luminance(g_backgroundColor.xyz()) > 0.5f) {
-			color[0] = color[1] = color[2] = 0.0f; color[3] = 0.5f;
-		}
-
-		if (g_stereoParams.m_stereoEnabled) {
-			pos[1] = 0.9f;
-			size[1] *= 0.5f;
-			DrawProgressBar(m_d3dDeviceContex, pos, size, color, loadingProgress);
-			pos[1] -= 1.0f;
-			DrawProgressBar(m_d3dDeviceContex, pos, size, color, loadingProgress);
-		}
-		else {
-			DrawProgressBar(m_d3dDeviceContex, pos, size, color, loadingProgress);
-		}
-	}
 }
 
 void FlowVisTool::SetDXStuff(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, ID3D11RenderTargetView* mainRenderTargetView, ID3D11DepthStencilView* mainDepthStencilView)
@@ -1144,28 +1079,6 @@ void FlowVisTool::SetDXStuff(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDe
 	m_d3dDeviceContex = d3dDeviceContex;
 	m_mainRenderTargetView = mainRenderTargetView;
 	m_mainDepthStencilView = mainDepthStencilView;
-}
-
-void FlowVisTool::DrawProgressBar(ID3D11DeviceContext* context, const tum3D::Vec2f& pos, const tum3D::Vec2f& size, const tum3D::Vec4f& color, float progress)
-{
-	g_progressBarEffect.m_pvPositionVariable->SetFloatVector(pos);
-	g_progressBarEffect.m_pvSizeVariable->SetFloatVector(size);
-	g_progressBarEffect.m_pvColorVariable->SetFloatVector(color);
-	g_progressBarEffect.m_pfProgressVariable->SetFloat(progress);
-
-	ID3D11Buffer* pNull = nullptr;
-	UINT stride = 0;
-	UINT offset = 0;
-	context->IASetVertexBuffers(0, 0, &pNull, &stride, &offset);
-	context->IASetIndexBuffer(nullptr, DXGI_FORMAT_R16_UINT, 0);
-
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	g_progressBarEffect.m_pTechnique->GetPassByIndex(0)->Apply(0, context);
-	context->Draw(4, 0);
-
-	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINESTRIP);
-	g_progressBarEffect.m_pTechnique->GetPassByIndex(1)->Apply(0, context);
-	context->Draw(5, 0);
 }
 
 HRESULT FlowVisTool::OnD3D11ResizedSwapChain(int width, int height)
@@ -1292,9 +1205,6 @@ void FlowVisTool::OnD3D11DestroyDevice()
 	ReleaseVolumeDependentResources();
 
 	ShutdownCudaDevices();
-
-
-	g_progressBarEffect.SafeRelease();
 
 	g_screenEffect.SafeRelease();
 

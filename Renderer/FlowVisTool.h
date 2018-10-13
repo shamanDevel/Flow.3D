@@ -27,7 +27,6 @@
 #include <TimerCPU.h>
 #include <RenderTexture.h>
 #include <ScreenEffect.h>
-#include <ProgressBarEffect.h>
 
 #include <Vec.h>
 
@@ -176,10 +175,8 @@ public:
 	TimerCPU	g_timerRendering;
 
 	ScreenEffect		g_screenEffect;
-	ProgressBarEffect	g_progressBarEffect;
 
-	//tum3D::Vec4f		g_backgroundColor(0.1f, 0.1f, 0.1f, 1.0f);
-	tum3D::Vec4f		g_backgroundColor;
+	tum3D::Vec4f		g_backgroundColor = tum3D::Vec4f(0.1f, 0.1f, 0.1f, 1.0f);
 
 public:
 	FlowVisTool();
@@ -210,17 +207,13 @@ public:
 
 	bool InitCudaDevices();
 
-
-
 	void BuildFlowGraph(const std::string& filenameTxt = "");
 	bool SaveFlowGraph();
 	bool LoadFlowGraph();
 	void LoadOrBuildFlowGraph();
 
 	void SetBoundingBoxToDomainSize();
-	void DrawProgressBar(ID3D11DeviceContext* context, const tum3D::Vec2f& pos, const tum3D::Vec2f& size, const tum3D::Vec4f& color, float progress);
-	float Luminance(const tum3D::Vec3f& color) { return 0.2126f * color.x() + 0.7152f * color.y() + 0.0722f * color.z(); }
-
+	
 private:
 	// disable copy and assignment
 	FlowVisTool(const FlowVisTool&);

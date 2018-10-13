@@ -16,6 +16,7 @@ bool FlowVisToolGUI::g_showExtraWindow = false;
 bool FlowVisToolGUI::g_showDatasetWindow = true;
 bool FlowVisToolGUI::g_show_demo_window = false; 
 bool FlowVisToolGUI::g_showProfilerWindow = true;
+bool FlowVisToolGUI::g_showStatusWindow = true;
 
 
 const float FlowVisToolGUI::buttonWidth = 200;
@@ -240,6 +241,7 @@ void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame
 	RenderingWindow(g_flowVisTool);
 	SceneWindow(g_flowVisTool, resizeNextFrame, sceneWindowSize);
 	ProfilerWindow(g_flowVisTool);
+	StatusWindow(g_flowVisTool);
 
 	ImGui::Begin("Debug");
 	{
@@ -350,6 +352,8 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
 				g_showExtraWindow = !g_showExtraWindow;
 			if (ImGui::MenuItem("Heatmap", nullptr, g_showHeatmapWindow))
 				g_showHeatmapWindow = !g_showHeatmapWindow;
+			if (ImGui::MenuItem("Status", nullptr, g_showStatusWindow))
+				g_showStatusWindow = !g_showStatusWindow;
 			ImGui::Separator();
 			if (ImGui::MenuItem("ImGui Demo", nullptr, g_show_demo_window))
 				g_show_demo_window = !g_show_demo_window;
@@ -372,8 +376,22 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
-				if (g_flowVisTool.g_volume.IsOpen())
+				if (!g_flowVisTool.g_volume.IsOpen())
 				{
+					ImGui::Text("No dataset available.");
+				}
+				else
+				{
+					ImGui::Text(g_flowVisTool.g_volume.GetFilename().c_str());
+
+					const TimeVolumeInfo& volInfo = g_flowVisTool.g_volume.GetInfo();
+
+					ImGui::Text("Brick count: %d, %d, %d", volInfo.GetBrickCount().x(), volInfo.GetBrickCount().y(), volInfo.GetBrickCount().z());
+					ImGui::Text("World size: %.3f, %.3f, %.3f", volInfo.GetBrickSizeWorld().x(), volInfo.GetBrickSizeWorld().y(), volInfo.GetBrickSizeWorld().z());
+					ImGui::Text("Volume size: %d, %d, %d", volInfo.GetVolumeSize().x(), volInfo.GetVolumeSize().y(), volInfo.GetVolumeSize().z());
+					ImGui::Text("Timestep count: %d", volInfo.GetTimestepCount());
+					ImGui::Text("Time spacing: %.5f", volInfo.GetTimeSpacing());
+
 					ImGui::Spacing();
 					ImGui::Separator();
 
@@ -1296,6 +1314,42 @@ void FlowVisToolGUI::ProfilerWindow(FlowVisTool& g_flowVisTool)
 			ImGui::Text("Viewport resolution: %dx%d", g_flowVisTool.g_projParams.m_imageWidth, g_flowVisTool.g_projParams.m_imageHeight);
 			ImGui::Text("Trace Time: %.2f ms", g_flowVisTool.g_timerTracing.GetElapsedTimeMS());
 			ImGui::Text("Render Time: %.2f ms", g_flowVisTool.g_timerRendering.GetElapsedTimeMS());
+		}
+		ImGui::End();
+	}
+}
+
+void FlowVisToolGUI::StatusWindow(FlowVisTool& g_flowVisTool)
+{
+	if (g_showStatusWindow)
+	{
+		if (ImGui::Begin("Status"))
+		{
+			ImGui::ProgressBar(g_flowVisTool.g_filteringManager.GetFilteringProgress(), ImVec2(0.0f, 0.0f));
+			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+			ImGui::Text("Filtering");
+
+			ImGui::ProgressBar(g_flowVisTool.g_tracingManager.GetTracingProgress(), ImVec2(0.0f, 0.0f));
+			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+			ImGui::Text("Tracing");
+
+			ImGui::ProgressBar(g_flowVisTool.g_renderingManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
+			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+			ImGui::Text("Rendering");
+
+			ImGui::ProgressBar(g_flowVisTool.g_volume.GetLoadingProgress(), ImVec2(0.0f, 0.0f));
+			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+			ImGui::Text("Loading");
+
+			//if (g_useAllGPUs)
+			//{
+			//	for (size_t i = 0; i < g_cudaDevices.size(); i++)
+			//	{
+			//		if (i == g_primaryCudaDeviceIndex) continue;
+
+			//		progress = min(progress, g_cudaDevices[i].pThread->GetProgress());
+			//	}
+			//}
 		}
 		ImGui::End();
 	}

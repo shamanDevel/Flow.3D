@@ -93,9 +93,6 @@
     <ClCompile Include="LineEffect.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="ProgressBarEffect.cpp">
-      <Filter>Shaders</Filter>
-    </ClCompile>
     <ClCompile Include="ScreenEffect.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
@@ -383,9 +380,6 @@
       <Filter>ParticleTracing</Filter>
     </ClInclude>
     <ClInclude Include="LineEffect.h">
-      <Filter>Shaders</Filter>
-    </ClInclude>
-    <ClInclude Include="ProgressBarEffect.h">
       <Filter>Shaders</Filter>
     </ClInclude>
     <ClInclude Include="ScreenEffect.h">
@@ -706,9 +700,6 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Line.fx">
-      <Filter>Shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="ProgressBar.fx">
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="Screen.fx">

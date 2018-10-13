@@ -176,11 +176,6 @@ HRESULT OnD3D11CreateDevice()
 		return hr;
 	}
 
-	if (FAILED(hr = g_flowVisTool.g_progressBarEffect.Create(g_pd3dDevice))) {
-		return hr;
-	}
-
-
 	if (g_flowVisTool.g_volume.IsOpen()) {
 		// this creates the cudaCompress instance etc
 		if (FAILED(hr = g_flowVisTool.CreateVolumeDependentResources())) {
@@ -394,14 +389,16 @@ void ImGuiCustomTheme()
 	colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 	colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
 	colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogram] = ImVec4(0.39f, 0.30f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(0.67f, 0.52f, 0.00f, 1.00f);
 	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
 	colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
 	colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
 	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 	colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+
+
 }
 
 void SetupImGui()
