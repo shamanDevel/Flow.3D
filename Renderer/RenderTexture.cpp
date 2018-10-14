@@ -11,6 +11,7 @@ RenderTexture::RenderTexture()
 	m_shaderResourceView = 0;
 	m_width = -1;
 	m_height = -1;
+	m_isInitialized = false;
 }
 
 
@@ -86,6 +87,8 @@ bool RenderTexture::Initialize(ID3D11Device* device, int textureWidth, int textu
 	m_width = textureWidth;
 	m_height = textureHeight;
 
+	m_isInitialized = true;
+
 	return true;
 }
 
@@ -109,6 +112,8 @@ void RenderTexture::Release()
 		m_renderTargetTexture->Release();
 		m_renderTargetTexture = 0;
 	}
+
+	m_isInitialized = false;
 
 	return;
 }
@@ -144,6 +149,19 @@ void RenderTexture::ClearRenderTarget(ID3D11DeviceContext* deviceContext, ID3D11
 	return;
 }
 
+void RenderTexture::CopyFromTexture(ID3D11DeviceContext* deviceContext, ID3D11Texture2D* tex)
+{
+	// copy last finished image into back buffer
+	ID3D11Resource* pSwapChainTex;
+	m_renderTargetView->GetResource(&pSwapChainTex);
+	deviceContext->CopyResource(pSwapChainTex, tex);
+
+	if (pSwapChainTex)
+	{
+		pSwapChainTex->Release(); 
+		pSwapChainTex = NULL;
+	}
+}
 
 ID3D11ShaderResourceView* RenderTexture::GetShaderResourceView()
 {

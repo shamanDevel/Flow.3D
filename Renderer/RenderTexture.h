@@ -30,11 +30,19 @@ public:
 	void ClearRenderTarget(ID3D11DeviceContext*, ID3D11DepthStencilView*, float, float, float, float);
 	ID3D11ShaderResourceView* GetShaderResourceView();
 
+	void CopyFromTexture(ID3D11DeviceContext*, ID3D11Texture2D* tex);
+
+	bool IsInitialized() { return m_isInitialized; }
+
+	int Width() { return m_width; }
+	int Height() { return m_height; }
+
 private:
 	ID3D11Texture2D* m_renderTargetTexture;
 	ID3D11RenderTargetView* m_renderTargetView;
 	ID3D11ShaderResourceView* m_shaderResourceView;
 
+	bool m_isInitialized;
 	int m_width, m_height;
 };
 

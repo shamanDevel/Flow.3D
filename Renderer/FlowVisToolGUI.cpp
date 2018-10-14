@@ -1304,7 +1304,7 @@ void FlowVisToolGUI::ProfilerWindow(FlowVisTool& g_flowVisTool)
 			ImGui::SameLine();
 
 			ImGui::PushItemWidth(-1);
-			ImGui::PlotLines("", &frameTimes[0], frameTimes.size(), currentFrameTimeIndex, "", 0.0f, max, ImVec2(0, size.y));
+			ImGui::PlotLines("ms", &frameTimes[0], frameTimes.size(), currentFrameTimeIndex, "", 0.0f, max, ImVec2(0, size.y));
 			ImGui::PopItemWidth();
 
 			ImGui::Separator();

@@ -103,8 +103,7 @@ class FlowVisTool
 public:
 	ID3D11Device*			m_d3dDevice = nullptr;
 	ID3D11DeviceContext*	m_d3dDeviceContex = nullptr;
-	ID3D11RenderTargetView*	m_mainRenderTargetView = nullptr;
-	ID3D11DepthStencilView*	m_mainDepthStencilView = nullptr;
+	//ID3D11RenderTargetView*	m_mainRenderTargetView = nullptr;
 
 	// texture to hold results from other GPUs
 	ID3D11Texture2D*			g_pRenderBufferTempTex = nullptr;
@@ -181,15 +180,9 @@ public:
 public:
 	FlowVisTool();
 
-	//void OnInitialize();
-	//void OnExit();
-	//void OnResize();
+	bool Initialize(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, const std::vector<MyCudaDevice>& cudaDevices);
+	void Release();
 	void OnFrame(float deltaTime);
-
-	void SetDXStuff(ID3D11Device* d3dDevice = nullptr, ID3D11DeviceContext* d3dDeviceContex = nullptr, ID3D11RenderTargetView* mainRenderTargetView = nullptr, ID3D11DepthStencilView* mainDepthStencilView = nullptr);
-
-	void ReleaseVolumeDependentResources();
-	HRESULT CreateVolumeDependentResources();
 
 	void ReleaseLineBuffers();
 	void ReleaseBallBuffers();
@@ -197,15 +190,7 @@ public:
 	void CloseVolumeFile();
 	bool OpenVolumeFile(const std::string& filename);
 
-	HRESULT ResizeRenderBuffer();
-
-	HRESULT OnD3D11ResizedSwapChain(int width, int height);
-
-	void ShutdownCudaDevices();
-
-	void OnD3D11DestroyDevice();
-
-	bool InitCudaDevices();
+	bool ResizeViewport(int width, int height);
 
 	void BuildFlowGraph(const std::string& filenameTxt = "");
 	bool SaveFlowGraph();
@@ -214,6 +199,15 @@ public:
 
 	void SetBoundingBoxToDomainSize();
 	
+private:
+	void ReleaseVolumeDependentResources();
+	bool CreateVolumeDependentResources();
+
+	bool InitCudaDevices();
+	void ShutdownCudaDevices();
+
+	bool ResizeRenderBuffer();
+
 private:
 	// disable copy and assignment
 	FlowVisTool(const FlowVisTool&);

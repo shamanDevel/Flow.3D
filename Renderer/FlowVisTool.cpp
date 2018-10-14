@@ -5,19 +5,83 @@
 #include <winerror.h>
 
 #include <ctime>
-
-
-std::string toString(float val)
-{
-	std::ostringstream str;
-	str << val;
-	return str.str();
-}
-
+#include <string>
 
 
 FlowVisTool::FlowVisTool()
 {
+}
+
+bool FlowVisTool::Initialize(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, const std::vector<MyCudaDevice>& cudaDevices)
+{
+	m_d3dDevice = d3dDevice;
+	m_d3dDeviceContex = d3dDeviceContex;
+	//m_mainRenderTargetView = mainRenderTargetView;
+	g_cudaDevices = cudaDevices;
+
+	if (!InitCudaDevices()) 
+	{
+		printf("InitCudaDevices returned false");
+		return false;
+	}
+
+	// don't page-lock brick data - CUDA doesn't seem to like when we page-lock lots of smallish mem areas..
+	//g_volume.SetPageLockBrickData(true);
+
+	HRESULT hr;
+
+	if (FAILED(hr = g_screenEffect.Create(m_d3dDevice)))
+		return false;
+
+	if (g_volume.IsOpen()) 
+	{
+		// this creates the cudaCompress instance etc
+		if (FAILED(hr = CreateVolumeDependentResources()))
+			return false;
+	}
+
+	//if(FAILED(hr = g_tfEdt.onCreateDevice( pd3dDevice ))) {
+	//	return hr;
+	//}
+	//g_particleRenderParams.m_pTransferFunction = g_tfEdt.getSRV(TF_LINE_MEASURES);
+	//g_heatMapParams.m_pTransferFunction = g_tfEdt.getSRV(TF_HEAT_MAP);
+	//cudaSafeCall(cudaGraphicsD3D11RegisterResource(&g_pTfEdtSRVCuda, g_tfEdt.getTexture(TF_RAYTRACE), cudaGraphicsRegisterFlagsNone));
+
+	return true;
+}
+
+void FlowVisTool::Release()
+{
+	CloseVolumeFile();
+
+	if (g_pTfEdtSRVCuda != nullptr)
+	{
+		cudaSafeCall(cudaGraphicsUnregisterResource(g_pTfEdtSRVCuda));
+		g_pTfEdtSRVCuda = nullptr;
+	}
+	//g_tfEdt.onDestroyDevice();
+
+	//TwTerminate();
+	//g_pTwBarImageSequence = nullptr;
+	//g_pTwBarMain = nullptr;
+
+
+	ReleaseVolumeDependentResources();
+
+	ShutdownCudaDevices();
+
+	g_screenEffect.SafeRelease();
+
+
+	cudaSafeCall(cudaDeviceSynchronize());
+	g_volume.SetPageLockBrickData(false);
+	g_renderingManager.m_ftleTexture.UnregisterCudaResources();
+	cudaSafeCallNoSync(cudaDeviceReset());
+
+	//release slice texture
+	SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
+	SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
+	g_renderingManager.m_ftleTexture.ReleaseResources();
 }
 
 void FlowVisTool::SetBoundingBoxToDomainSize()
@@ -115,7 +179,7 @@ void FlowVisTool::ReleaseVolumeDependentResources()
 	g_compressShared.destroy();
 }
 
-HRESULT FlowVisTool::CreateVolumeDependentResources()
+bool FlowVisTool::CreateVolumeDependentResources()
 {
 	std::cout << "Creating volume dependent reources..." << std::endl;
 
@@ -134,19 +198,19 @@ HRESULT FlowVisTool::CreateVolumeDependentResources()
 	HRESULT hr;
 
 	if (FAILED(hr = g_filteringManager.Create(&g_compressShared, &g_compressVolume))) {
-		return hr;
+		return false;
 	}
 
 	if (FAILED(hr = g_tracingManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))) {
-		return hr;
+		return false;
 	}
 
 	if (FAILED(hr = g_renderingManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))) {
-		return hr;
+		return false;
 	}
 
 	if (FAILED(hr = g_heatMapManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))) {
-		return hr;
+		return false;
 	}
 
 
@@ -165,7 +229,7 @@ HRESULT FlowVisTool::CreateVolumeDependentResources()
 
 	std::cout << "Volume dependent reources created." << std::endl;
 
-	return S_OK;
+	return true;
 }
 
 
@@ -218,7 +282,7 @@ bool FlowVisTool::OpenVolumeFile(const std::string& filename)
 	return true;
 }
 
-HRESULT FlowVisTool::ResizeRenderBuffer()
+bool FlowVisTool::ResizeRenderBuffer()
 {
 	g_projParams.m_imageWidth = uint(g_windowSize.x() * g_renderBufferSizeFactor);
 	g_projParams.m_imageHeight = uint(g_windowSize.y() * g_renderBufferSizeFactor);
@@ -248,7 +312,7 @@ HRESULT FlowVisTool::ResizeRenderBuffer()
 		desc.Width = g_projParams.m_imageWidth;
 		desc.Height = g_projParams.m_imageHeight;
 		hr = m_d3dDevice->CreateTexture2D(&desc, nullptr, &g_pRenderBufferStagingTex);
-		if (FAILED(hr)) return hr;
+		if (FAILED(hr)) return false;
 
 		// create texture to blend together opaque objects with raycasted stuff
 		// (also used to upload results from other GPUs)
@@ -264,16 +328,15 @@ HRESULT FlowVisTool::ResizeRenderBuffer()
 		desc.Width = g_projParams.m_imageWidth;
 		desc.Height = g_projParams.m_imageHeight;
 		hr = m_d3dDevice->CreateTexture2D(&desc, nullptr, &g_pRenderBufferTempTex);
-		if (FAILED(hr)) return hr;
+		if (FAILED(hr)) return false;
 		hr = m_d3dDevice->CreateShaderResourceView(g_pRenderBufferTempTex, nullptr, &g_pRenderBufferTempSRV);
-		if (FAILED(hr)) return hr;
+		if (FAILED(hr)) return false;
 		hr = m_d3dDevice->CreateRenderTargetView(g_pRenderBufferTempTex, nullptr, &g_pRenderBufferTempRTV);
-		if (FAILED(hr)) return hr;
+		if (FAILED(hr)) return false;
 	}
 
-	return S_OK;
+	return true;
 }
-
 
 void FlowVisTool::OnFrame(float deltatime)
 {
@@ -286,12 +349,13 @@ void FlowVisTool::OnFrame(float deltatime)
 
 	clock_t curTime = clock();
 
-	float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	//float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
 	//ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
-	m_d3dDeviceContex->ClearRenderTargetView(m_mainRenderTargetView, clearColor);
-	m_d3dDeviceContex->ClearDepthStencilView(m_mainDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+	//m_d3dDeviceContex->ClearRenderTargetView(g_pRenderBufferTempRTV, (float*)&g_backgroundColor);
+	//m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
+	//m_d3dDeviceContex->ClearDepthStencilView(m_mainDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 	static std::string volumeFilePrev = "";
 	bool volumeChanged = (g_volume.GetFilename() != volumeFilePrev);
@@ -765,6 +829,7 @@ void FlowVisTool::OnFrame(float deltatime)
 
 		if (!g_useAllGPUs || (g_cudaDevices.size() == 1))
 		{
+			//m_d3dDeviceContex->ClearRenderTargetView(g_pRenderBufferTempRTV, (float*)&g_backgroundColor);
 			// single-GPU case - blend together rendering manager's "opaque" and "raycast" textures
 			m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRenderBufferTempRTV, nullptr);
 
@@ -869,56 +934,30 @@ void FlowVisTool::OnFrame(float deltatime)
 NoVolumeLoaded:
 
 	// copy last finished image into back buffer
-	ID3D11Resource* pSwapChainTex;
-	m_mainRenderTargetView->GetResource(&pSwapChainTex);
-	m_d3dDeviceContex->CopyResource(pSwapChainTex, g_pRaycastFinishedTex);
-	SAFE_RELEASE(pSwapChainTex);
-
-
-	// draw background
-	m_d3dDeviceContex->IASetInputLayout(NULL);
-	m_d3dDeviceContex->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-	g_screenEffect.m_pvColorVariable->SetFloatVector(g_backgroundColor);
-	tum3D::Vec2f screenMin(-1.0f, -1.0f);
-	tum3D::Vec2f screenMax(1.0f, 1.0f);
-	g_screenEffect.m_pvScreenMinVariable->SetFloatVector(screenMin);
-	g_screenEffect.m_pvScreenMaxVariable->SetFloatVector(screenMax);
-	tum3D::Vec2f texCoordMin(0.0f, 0.0f);
-	tum3D::Vec2f texCoordMax(1.0f, 1.0f);
-	g_screenEffect.m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
-	g_screenEffect.m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
-	g_screenEffect.m_pTechnique->GetPassByIndex(0)->Apply(0, m_d3dDeviceContex);
-	m_d3dDeviceContex->Draw(4, 0);
-
-
-	// Draw Transfer function
-	//if (g_bRenderUI && !g_saveScreenshot)
+	//ID3D11Resource* pSwapChainTex;
+	//m_mainRenderTargetView->GetResource(&pSwapChainTex);
+	//m_d3dDeviceContex->CopyResource(pSwapChainTex, g_pRaycastFinishedTex);
+	//SAFE_RELEASE(pSwapChainTex);
+	//if (g_renderTexture.IsInitialized())
 	//{
-	//	g_tfEdt.setVisible(
-	//		(g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode))
-	//		|| (g_particleRenderParams.m_lineColorMode == eLineColorMode::MEASURE)
-	//		|| (g_heatMapParams.m_enableRendering));
-	//	//Draw Transfer function editor
-	//	g_tfEdt.onFrameRender((float)fTime, fElapsedTime);
+	//	g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
+	//	g_renderTexture.CopyFromTexture(m_d3dDeviceContex, g_pRaycastFinishedTex);
 	//}
 
-	// save screenshot before drawing progress bar and gui
-	//if (g_saveScreenshot) {
-	//	std::wstring filenameW = tum3d::FindNextSequenceNameEX(L"screenshot", L"png", CSysTools::GetExePath());
-	//	std::string filename(filenameW.begin(), filenameW.end());
-	//	//SaveScreenshot(m_d3dDeviceContex, filename);
-
-	//	g_saveScreenshot = false;
-	//}
-
-	//if (g_saveRenderBufferScreenshot) {
-	//	std::wstring filenameW = tum3d::FindNextSequenceNameEX(L"screenshot", L"png", CSysTools::GetExePath());
-	//	std::string filename(filenameW.begin(), filenameW.end());
-	//	SaveRenderBufferScreenshot(m_d3dDeviceContex, filename);
-
-	//	g_saveRenderBufferScreenshot = false;
-	//}
-
+	//// draw background
+	//m_d3dDeviceContex->IASetInputLayout(NULL);
+	//m_d3dDeviceContex->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	//g_screenEffect.m_pvColorVariable->SetFloatVector(g_backgroundColor);
+	//tum3D::Vec2f screenMin(-1.0f, -1.0f);
+	//tum3D::Vec2f screenMax(1.0f, 1.0f);
+	//g_screenEffect.m_pvScreenMinVariable->SetFloatVector(screenMin);
+	//g_screenEffect.m_pvScreenMaxVariable->SetFloatVector(screenMax);
+	//tum3D::Vec2f texCoordMin(0.0f, 0.0f);
+	//tum3D::Vec2f texCoordMax(1.0f, 1.0f);
+	//g_screenEffect.m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
+	//g_screenEffect.m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
+	//g_screenEffect.m_pTechnique->GetPassByIndex(0)->Apply(0, m_d3dDeviceContex);
+	//m_d3dDeviceContex->Draw(4, 0);
 
 	if (g_imageSequence.Running) {
 		if (!m_redraw && !s_isFiltering && !s_isRendering) {
@@ -997,8 +1036,8 @@ NoVolumeLoaded:
 
 			std::vector<std::string> extraColumns;
 			extraColumns.push_back(strOutFileBase);
-			extraColumns.push_back(toString(g_particleTraceParams.m_heuristicBonusFactor));
-			extraColumns.push_back(toString(g_particleTraceParams.m_heuristicPenaltyFactor));
+			extraColumns.push_back(std::to_string(g_particleTraceParams.m_heuristicBonusFactor));
+			extraColumns.push_back(std::to_string(g_particleTraceParams.m_heuristicPenaltyFactor));
 			g_tracingManager.GetStats().WriteToCSVFile(g_batchTrace.FileStats, extraColumns);
 			g_tracingManager.GetTimings().WriteToCSVFile(g_batchTrace.FileTimings, extraColumns);
 
@@ -1073,15 +1112,7 @@ NoVolumeLoaded:
 	}
 }
 
-void FlowVisTool::SetDXStuff(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, ID3D11RenderTargetView* mainRenderTargetView, ID3D11DepthStencilView* mainDepthStencilView)
-{
-	m_d3dDevice = d3dDevice;
-	m_d3dDeviceContex = d3dDeviceContex;
-	m_mainRenderTargetView = mainRenderTargetView;
-	m_mainDepthStencilView = mainDepthStencilView;
-}
-
-HRESULT FlowVisTool::OnD3D11ResizedSwapChain(int width, int height)
+bool FlowVisTool::ResizeViewport(int width, int height)
 {
 	std::cout << "Scene window resize: " << width << ", " << height << std::endl;
 
@@ -1114,9 +1145,9 @@ HRESULT FlowVisTool::OnD3D11ResizedSwapChain(int width, int height)
 	desc.Height = g_windowSize.y();
 	// create texture for the last finished image from the raycaster
 	hr = m_d3dDevice->CreateTexture2D(&desc, nullptr, &g_pRaycastFinishedTex);
-	if (FAILED(hr)) return hr;
+	if (FAILED(hr)) return false;
 	hr = m_d3dDevice->CreateRenderTargetView(g_pRaycastFinishedTex, nullptr, &g_pRaycastFinishedRTV);
-	if (FAILED(hr)) return hr;
+	if (FAILED(hr)) return false;
 
 
 	// create staging texture for taking screenshots
@@ -1132,7 +1163,7 @@ HRESULT FlowVisTool::OnD3D11ResizedSwapChain(int width, int height)
 	desc.Width = g_windowSize.x();
 	desc.Height = g_windowSize.y();
 	hr = m_d3dDevice->CreateTexture2D(&desc, nullptr, &g_pStagingTex);
-	if (FAILED(hr)) return hr;
+	if (FAILED(hr)) return false;
 
 
 	// GUI
@@ -1166,7 +1197,7 @@ HRESULT FlowVisTool::OnD3D11ResizedSwapChain(int width, int height)
 	//g_tfEdt.onResizeSwapChain( pBackBufferSurfaceDesc->Width, pBackBufferSurfaceDesc->Height );
 
 
-	return S_OK;
+	return true;
 }
 
 void FlowVisTool::ShutdownCudaDevices()
@@ -1186,38 +1217,6 @@ void FlowVisTool::ShutdownCudaDevices()
 	}
 
 	g_primaryCudaDeviceIndex = -1;
-}
-
-void FlowVisTool::OnD3D11DestroyDevice()
-{
-	if (g_pTfEdtSRVCuda != nullptr)
-	{
-		cudaSafeCall(cudaGraphicsUnregisterResource(g_pTfEdtSRVCuda));
-		g_pTfEdtSRVCuda = nullptr;
-	}
-	//g_tfEdt.onDestroyDevice();
-
-	//TwTerminate();
-	//g_pTwBarImageSequence = nullptr;
-	//g_pTwBarMain = nullptr;
-
-
-	ReleaseVolumeDependentResources();
-
-	ShutdownCudaDevices();
-
-	g_screenEffect.SafeRelease();
-
-
-	cudaSafeCall(cudaDeviceSynchronize());
-	g_volume.SetPageLockBrickData(false);
-	g_renderingManager.m_ftleTexture.UnregisterCudaResources();
-	cudaSafeCallNoSync(cudaDeviceReset());
-
-	//release slice texture
-	SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
-	SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
-	g_renderingManager.m_ftleTexture.ReleaseResources();
 }
 
 bool FlowVisTool::InitCudaDevices()
@@ -1282,3 +1281,93 @@ bool FlowVisTool::InitCudaDevices()
 
 	return true;
 }
+
+// save a screenshot from the framebuffer
+//void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
+//{
+//	ID3D11Resource* pSwapChainTex;
+//	g_mainRenderTargetView->GetResource(&pSwapChainTex);
+//	pd3dImmediateContext->CopyResource(g_pStagingTex, pSwapChainTex);
+//	SAFE_RELEASE(pSwapChainTex);
+//
+//	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
+//	pd3dImmediateContext->Map(g_pStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
+//
+//	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
+//
+//	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
+//
+//	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
+//}
+//
+//// save a screenshot from the (possibly higher-resolution) render buffer
+//void SaveRenderBufferScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
+//{
+//	if(!g_renderingManager.IsCreated()) return;
+//
+//	bool singleGPU = (!g_useAllGPUs || (g_cudaDevices.size() == 1));
+//	//ID3D11Texture2D* pSrcTex = (singleGPU ? g_renderingManager.GetRaycastTex() : g_pRenderBufferTempTex);
+//	//HACK: for now, save just the opaque tex - actually need to blend here...
+//	ID3D11Texture2D* pSrcTex = (singleGPU ? g_renderingManager.GetOpaqueTex() : g_pRenderBufferTempTex);
+//	pd3dImmediateContext->CopyResource(g_pRenderBufferStagingTex, pSrcTex);
+//
+//	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
+//	pd3dImmediateContext->Map(g_pRenderBufferStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
+//
+//	stbi_write_png(filename.c_str(), g_projParams.m_imageWidth, g_projParams.m_imageHeight, 4, mapped.pData, mapped.RowPitch);
+//
+//	//stbi_write_bmp(filename.c_str(), g_projParams.m_imageWidth, g_projParams.m_imageHeight, 4, mapped.pData);
+//
+//	pd3dImmediateContext->Unmap(g_pRenderBufferStagingTex, 0);
+//}
+// Picks the seed from the seed texture and places is into 'seed' if there is a intersection.
+// The function returns true iff there was an intersection
+// 'intersection' will contain the 3D-coordinate of intersection
+//bool PickSeed(unsigned int* pSeed, Vec3f* pIntersection) {
+//	std::cout << "Pick seed, mouse position = (" << g_mouseScreenPosition.x() << ", " << g_mouseScreenPosition.y() << ")" << std::endl;
+//	//create ray through the mouse
+//	Mat4f viewProjMat = g_projParams.BuildProjectionMatrix(EYE_CYCLOP, 0.0f, g_cudaDevices[g_primaryCudaDeviceIndex].range)
+//		* g_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+//	Mat4f invViewProjMat;
+//	tum3D::invert4x4(viewProjMat, invViewProjMat);
+//	Vec4f start4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.01f, 1.0f);
+//	Vec3f start = start4.xyz() / start4.w();
+//	Vec4f end4 = invViewProjMat * Vec4f(g_mouseScreenPosition.x(), g_mouseScreenPosition.y(), 0.99f, 1.0f);
+//	Vec3f end = end4.xyz() / end4.w();
+//	std::cout << "Ray, start=" << start << ", end=" << end << std::endl;
+//	//cut ray with the xy-plane
+//	Vec3f dir = end - start;
+//	normalize(dir);
+//	Vec3f n = Vec3f(0, 0, 1); //normal of the plane
+//	float d = (-start).dot(n) / (dir.dot(n));
+//	if (d < 0) return false; //we are behind the plane
+//	Vec3f intersection = start + d * dir;
+//	std::cout << "Intersection: " << intersection << std::endl;
+//	if (pIntersection) *pIntersection = intersection;
+//	//Test if seed texture is loaded
+//	if (g_particleTraceParams.m_seedTexture.m_colors == NULL) {
+//		//no texture
+//		*pSeed = 0;
+//		return true;
+//	}
+//	else {
+//		//a seed texture was found
+//		//check if intersection is in the volume
+//		if (intersection > -g_volume.GetVolumeHalfSizeWorld()
+//			&& intersection < g_volume.GetVolumeHalfSizeWorld()) {
+//			//inside, convert to texture coordinates
+//			Vec3f localIntersection = (intersection + g_volume.GetVolumeHalfSizeWorld()) / (2 * g_volume.GetVolumeHalfSizeWorld());
+//			int texX = (int)(localIntersection.x() * g_particleTraceParams.m_seedTexture.m_width);
+//			int texY = (int)(localIntersection.y() * g_particleTraceParams.m_seedTexture.m_height);
+//			texY = g_particleTraceParams.m_seedTexture.m_height - texY - 1;
+//			unsigned int color = g_particleTraceParams.m_seedTexture.m_colors[texX + texY * g_particleTraceParams.m_seedTexture.m_height];
+//			printf("Pick color at position (%d, %d): 0x%08x\n", texX, texY, color);
+//			*pSeed = color;
+//			return true;
+//		}
+//		else {
+//			std::cout << "Outside the bounds" << std::endl;
+//			return false;
+//		}
+//	}
+//}
