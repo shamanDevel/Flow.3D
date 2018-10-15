@@ -1178,7 +1178,6 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 			ImGui::SliderFloat("Orbit Sens", &orbitSens, 0.0f, 1000.0f, "%.2f");
 			ImGui::SliderFloat("Pan Sens", &panSens, 0.0f, 100.0f, "%.2f");
 			ImGui::SliderFloat("Zoom Sens", &zoomSens, 0.0f, 100.0f, "%.2f");
-			ImGui::DragFloat("View distance", &g_flowVisTool.g_viewParams.m_viewDistance);
 		}
 		ImGui::End();
 
@@ -1193,7 +1192,7 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 		{
 			// Zoom
 			g_flowVisTool.g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * g_flowVisTool.g_viewParams.m_viewDistance;
-			g_flowVisTool.g_viewParams.m_viewDistance = std::max(0.0f, g_flowVisTool.g_viewParams.m_viewDistance);
+			g_flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, g_flowVisTool.g_viewParams.m_viewDistance);
 
 			// Orbit
 			if (ImGui::IsMouseDragging(0))
@@ -1365,7 +1364,11 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 				ImGui::SameLine();
 				if (ImGui::Button("Bottom3", bsize))
 					dir = tum3D::Vec3f(-0.5f, 0.5f, -0.5f);
-
+				ImGui::SameLine();
+				ImGui::PushID(0);
+				if (ImGui::Button("Reset", bsize))
+					tum3D::convertRotMatToQuaternion(makeRotationFromDir(tum3D::normalize(tum3D::Vec3f(0.5f, 0.5f, 0.5f))), g_flowVisTool.g_viewParams.m_rotationQuat);
+				ImGui::PopID();
 
 				ImGui::Separator();
 
@@ -1373,8 +1376,20 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 				ImGui::DragFloat3("Pivot", (float*)&g_flowVisTool.g_viewParams.m_lookAt, 0.01f, 0.0f, 0.0f, "%.2f");
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
+				ImGui::PushID(1);
 				if (ImGui::Button("Reset", ImVec2(-1, 0)))
 					g_flowVisTool.g_viewParams.m_lookAt = tum3D::Vec3f(0.0f, 0.0f, 0.0f);
+				ImGui::PopID();
+
+				ImGui::Separator();
+				ImGui::PushItemWidth(100);
+				ImGui::DragFloat("Dist  ", &g_flowVisTool.g_viewParams.m_viewDistance, 0.1f);
+				ImGui::PopItemWidth();
+				ImGui::SameLine();
+				ImGui::PushID(2);
+				if (ImGui::Button("Reset", ImVec2(-1, 0)))
+					g_flowVisTool.g_viewParams.m_viewDistance = 5.0f;
+				ImGui::PopID();
 			}
 			ImGui::PopStyleColor(3);
 

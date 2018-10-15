@@ -934,11 +934,11 @@ void FlowVisTool::OnFrame(float deltatime)
 		//g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
 
 		m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
-		m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
+		//m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
 
 		//TODO if g_renderBufferSizeFactor > 2, generate mipmaps first?
 		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
-		g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
+		g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::Blit)->Apply(0, m_d3dDeviceContex);
 		m_d3dDeviceContex->Draw(4, 0);
 
 		ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
