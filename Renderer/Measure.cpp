@@ -103,7 +103,7 @@ eMeasureSource GetMeasureSource(eMeasure mode)
 
 
 
-static const std::string g_measureComputeModeNames[MEASURE_COMPUTE_COUNT + 1] =
+static const char* g_measureComputeModeNames[MEASURE_COMPUTE_COUNT + 1] =
 {
 	"On-the-fly",
 	"Precomp (Discard after Rendering)",
@@ -112,7 +112,7 @@ static const std::string g_measureComputeModeNames[MEASURE_COMPUTE_COUNT + 1] =
 	"Unknown"
 };
 
-std::string GetMeasureComputeModeName(eMeasureComputeMode mode)
+const char* GetMeasureComputeModeName(eMeasureComputeMode mode)
 {
 	return g_measureComputeModeNames[min(mode, MEASURE_COMPUTE_COUNT)];
 }

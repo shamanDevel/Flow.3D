@@ -11,6 +11,7 @@
 bool FlowVisToolGUI::g_showRenderingOptionsWindow = true;
 bool FlowVisToolGUI::g_showTracingOptionsWindow = true;
 bool FlowVisToolGUI::g_showFTLEWindow = false;
+bool FlowVisToolGUI::g_showRaycastingWindow = true;
 bool FlowVisToolGUI::g_showHeatmapWindow = false;
 bool FlowVisToolGUI::g_showExtraWindow = false;
 bool FlowVisToolGUI::g_showDatasetWindow = true;
@@ -239,6 +240,7 @@ void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame
 	FTLEWindow(g_flowVisTool);
 	HeatmapWindow(g_flowVisTool);
 	RenderingWindow(g_flowVisTool);
+	RaycastingWindow(g_flowVisTool);
 	SceneWindow(g_flowVisTool, resizeNextFrame, sceneWindowSize);
 	ProfilerWindow(g_flowVisTool);
 	StatusWindow(g_flowVisTool);
@@ -256,7 +258,7 @@ void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame
 void FlowVisToolGUI::DockSpace()
 {
 	static bool opt_fullscreen_persistant = true;
-	static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;
+	static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruInEmptyNodes | ImGuiDockNodeFlags_RenderWindowBg;
 	bool opt_fullscreen = opt_fullscreen_persistant;
 
 	// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
@@ -297,7 +299,8 @@ void FlowVisToolGUI::DockSpace()
 	//	ShowDockingDisabledMessage();
 	//}
 	//
-	//if (ImGui::BeginMenuBar())
+
+	//if (ImGui::BeginMainMenuBar())
 	//{
 	//	if (ImGui::BeginMenu("Docking"))
 	//	{
@@ -313,8 +316,8 @@ void FlowVisToolGUI::DockSpace()
 	//		ImGui::Separator();
 	//		ImGui::EndMenu();
 	//	}
-	//	ImGui::EndMenuBar();
 	//}
+	//ImGui::EndMainMenuBar();
 
 	ImGui::End();
 }
@@ -346,6 +349,8 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
 				g_showTracingOptionsWindow = !g_showTracingOptionsWindow;
 			if (ImGui::MenuItem("Dataset", nullptr, g_showDatasetWindow))
 				g_showDatasetWindow = !g_showDatasetWindow;
+			if (ImGui::MenuItem("Raycasting", nullptr, g_showRaycastingWindow))
+				g_showRaycastingWindow = !g_showRaycastingWindow;
 			if (ImGui::MenuItem("FTLE", nullptr, g_showFTLEWindow))
 				g_showFTLEWindow = !g_showFTLEWindow;
 			if (ImGui::MenuItem("Extra", nullptr, g_showExtraWindow))
@@ -847,7 +852,7 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 
 				ImGui::Checkbox("Rendering Preview", &g_flowVisTool.g_showPreview);
 
-				if (ImGui::ColorEdit3("Background color", (float*)&g_flowVisTool.g_backgroundColor))
+				if (ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_backgroundColor))
 					g_flowVisTool.m_redraw = true;
 
 				ImGui::Checkbox("Show Seed Box", &g_flowVisTool.g_bRenderSeedBox);
@@ -980,6 +985,144 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 
 				if (ImGui::DragFloat("Slice Transparency", &g_flowVisTool.g_particleRenderParams.m_sliceAlpha, 0.001f, 0.0f, 1.0f, "%.3f"))
 					g_flowVisTool.g_particleRenderParams.m_sliceAlpha = std::min(1.0f, std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_sliceAlpha));
+			}
+			ImGui::PopItemWidth();
+		}
+		ImGui::End();
+	}
+}
+
+void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
+{
+	if (g_showRaycastingWindow)
+	{
+		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+		if (ImGui::Begin("Raycasting", &g_showRaycastingWindow))
+		{
+			ImGui::PushItemWidth(-150);
+			{
+				ImGui::Checkbox("Enabled", &g_flowVisTool.g_raycastParams.m_raycastingEnabled);
+
+				static auto getterMeasureComputeMode = [](void* data, int idx, const char** out_str)
+				{
+					if (idx >= MEASURE_COMPUTE_COUNT) return false;
+					*out_str = GetMeasureComputeModeName(eMeasureComputeMode(idx));
+					return true;
+				};
+				ImGui::Combo("Measure Computation", (int*)&g_flowVisTool.g_raycastParams.m_measureComputeMode, getterMeasureComputeMode, nullptr, MEASURE_COMPUTE_COUNT);
+
+				static auto getterFilterModeRayCaster = [](void* data, int idx, const char** out_str)
+				{
+					//Raycaster only supports the first two modes, linear and cubic
+					if (idx >= 2) return false;
+					*out_str = GetTextureFilterModeName(eTextureFilterMode(idx));
+					return true;
+				};
+				ImGui::Combo("Interpolation", (int*)&g_flowVisTool.g_raycastParams.m_textureFilterMode, getterFilterModeRayCaster, nullptr, 2);
+
+				static auto getterRaycastMode = [](void* data, int idx, const char** out_str)
+				{
+					if (idx >= RAYCAST_MODE_COUNT) return false;
+					*out_str = GetRaycastModeName(eRaycastMode(idx));
+					return true;
+				};
+				ImGui::Combo("Raycast Mode", (int*)&g_flowVisTool.g_raycastParams.m_raycastMode, getterRaycastMode, nullptr, RAYCAST_MODE_COUNT);
+
+				static auto getterMeasureMode = [](void* data, int idx, const char** out_str)
+				{
+					if (idx >= MEASURE_COUNT) return false;
+					*out_str = GetMeasureName(eMeasure(idx));
+					return true;
+				};
+
+				if (ImGui::DragFloat("Sample Rate", &g_flowVisTool.g_raycastParams.m_sampleRate, 0.01f, 0.01f, 20.0f, "%.2f"))
+					g_flowVisTool.g_raycastParams.m_sampleRate = std::min(20.0f, std::max(0.01f, g_flowVisTool.g_raycastParams.m_sampleRate));
+
+				if (ImGui::DragFloat("Density", &g_flowVisTool.g_raycastParams.m_density, 0.1f, 0.01f, 1000.0f, "%.1f"))
+					g_flowVisTool.g_raycastParams.m_density = std::min(1000.0f, std::max(0.1f, g_flowVisTool.g_raycastParams.m_density));
+
+				
+				ImGui::Spacing();
+				ImGui::Separator();
+
+
+				ImGui::PushItemWidth(45);
+				ImGui::PushID(1);
+				ImGui::DragFloat("", &g_flowVisTool.g_raycastParams.m_measureScale1, 0.001f, 0.0f, 0.0f, "%.3f");
+				ImGui::PopID();
+				ImGui::PopItemWidth();
+
+				ImGui::SameLine();
+				if (ImGui::Combo("Measure 1", (int*)&g_flowVisTool.g_raycastParams.m_measure1, getterMeasureMode, nullptr, MEASURE_COUNT))
+					g_flowVisTool.g_raycastParams.m_measureScale1 = GetDefaultMeasureScale(g_flowVisTool.g_raycastParams.m_measure1);
+				
+	
+				ImGui::PushItemWidth(45);
+				ImGui::PushID(3);
+				ImGui::DragFloat("", &g_flowVisTool.g_raycastParams.m_measureScale2, 0.001f, 0.0f, 0.0f, "%.3f");
+				ImGui::PopID();
+				ImGui::PopItemWidth();
+
+				ImGui::SameLine();
+				if (ImGui::Combo("Measure 2", (int*)&g_flowVisTool.g_raycastParams.m_measure2, getterMeasureMode, nullptr, MEASURE_COUNT))
+					g_flowVisTool.g_raycastParams.m_measureScale2 = GetDefaultMeasureScale(g_flowVisTool.g_raycastParams.m_measure2);
+				
+
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Iso Settings");
+
+				ImGui::ColorEdit4("Color1", (float*)&g_flowVisTool.g_raycastParams.m_isoColor1, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+				ImGui::SameLine();
+				ImGui::DragFloat("IsoValue 1", &g_flowVisTool.g_raycastParams.m_isoValue1, 0.001f, 0.0f, 0.0f, "%.4f");
+				
+				ImGui::ColorEdit4("Color2", (float*)&g_flowVisTool.g_raycastParams.m_isoColor2, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+				ImGui::SameLine();
+				ImGui::DragFloat("IsoValue 2", &g_flowVisTool.g_raycastParams.m_isoValue2, 0.001f, 0.0f, 0.0f, "%.4f");
+				
+				ImGui::ColorEdit4("Color3", (float*)&g_flowVisTool.g_raycastParams.m_isoColor3, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+				ImGui::SameLine();
+				ImGui::DragFloat("IsoValue 3", &g_flowVisTool.g_raycastParams.m_isoValue3, 0.001f, 0.0f, 0.0f, "%.4f");
+				
+				ImGui::Spacing();
+
+				static auto getterColorMode = [](void* data, int idx, const char** out_str)
+				{
+					if (idx >= COLOR_MODE_COUNT) return false;
+					*out_str = GetColorModeName(eColorMode(idx));
+					return true;
+				};
+				ImGui::Combo("Color Mode", (int*)&g_flowVisTool.g_raycastParams.m_colorMode, getterColorMode, nullptr, COLOR_MODE_COUNT);
+
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Text("Filter");
+
+				int v = g_flowVisTool.g_filterParams.m_radius[0];
+				if (ImGui::SliderInt("Radius 1", &v, 0, 247))
+					g_flowVisTool.g_filterParams.m_radius[0] = (unsigned int)v;
+
+				v = g_flowVisTool.g_filterParams.m_radius[1];
+				if (ImGui::SliderInt("Radius 2", &v, 0, 247))
+					g_flowVisTool.g_filterParams.m_radius[1] = (unsigned int)v;
+
+				v = g_flowVisTool.g_filterParams.m_radius[2];
+				if (ImGui::SliderInt("Radius 3", &v, 0, 247))
+					g_flowVisTool.g_filterParams.m_radius[2] = (unsigned int)v;
+
+				ImGui::Spacing();
+
+				v = g_flowVisTool.g_raycastParams.m_filterOffset;
+				if (ImGui::SliderInt("Offset (Scale)", &v, 0, 2))
+					g_flowVisTool.g_raycastParams.m_filterOffset = (unsigned int)v;
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ImGui::Checkbox("Show Clip Box (Red)", &g_flowVisTool.g_bRenderClipBox);
+
+				ImGui::DragFloat3("ClipBoxMin", (float*)&g_flowVisTool.g_raycastParams.m_clipBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
+				ImGui::DragFloat3("ClipBoxMax", (float*)&g_flowVisTool.g_raycastParams.m_clipBoxMax, 0.005f, 0.0f, 0.0f, "%.3f");
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1325,21 +1468,33 @@ void FlowVisToolGUI::StatusWindow(FlowVisTool& g_flowVisTool)
 	{
 		if (ImGui::Begin("Status"))
 		{
-			ImGui::ProgressBar(g_flowVisTool.g_filteringManager.GetFilteringProgress(), ImVec2(0.0f, 0.0f));
-			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-			ImGui::Text("Filtering");
+			if (g_flowVisTool.g_filteringManager.IsFiltering())
+			{
+				ImGui::ProgressBar(g_flowVisTool.g_filteringManager.GetFilteringProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+				ImGui::Text("Filtering");
+			}
 
-			ImGui::ProgressBar(g_flowVisTool.g_tracingManager.GetTracingProgress(), ImVec2(0.0f, 0.0f));
-			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-			ImGui::Text("Tracing");
+			if (g_flowVisTool.g_tracingManager.IsTracing())
+			{
+				ImGui::ProgressBar(g_flowVisTool.g_tracingManager.GetTracingProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+				ImGui::Text("Tracing");
+			}
 
-			ImGui::ProgressBar(g_flowVisTool.g_renderingManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
-			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-			ImGui::Text("Rendering");
+			if (g_flowVisTool.g_renderingManager.IsRendering())
+			{
+				ImGui::ProgressBar(g_flowVisTool.g_renderingManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+				ImGui::Text("Rendering");
+			}
 
-			ImGui::ProgressBar(g_flowVisTool.g_volume.GetLoadingProgress(), ImVec2(0.0f, 0.0f));
-			ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-			ImGui::Text("Loading");
+			if (g_flowVisTool.g_volume.GetLoadingProgress() > 0.0f && g_flowVisTool.g_volume.GetLoadingProgress() < 1.0f)
+			{
+				ImGui::ProgressBar(g_flowVisTool.g_volume.GetLoadingProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+				ImGui::Text("Loading");
+			}
 
 			//if (g_useAllGPUs)
 			//{

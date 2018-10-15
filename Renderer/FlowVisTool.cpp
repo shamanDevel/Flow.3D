@@ -7,6 +7,7 @@
 #include <ctime>
 #include <string>
 
+#include <imgui\imgui.h>
 
 FlowVisTool::FlowVisTool()
 {
@@ -347,6 +348,18 @@ void FlowVisTool::OnFrame(float deltatime)
 	static bool s_isTracing = false;
 	static bool s_isRendering = false;
 
+	if (ImGui::Begin("Debug"))
+	{
+		bool b;
+		b = s_isFiltering; ImGui::Checkbox("IsFiltering", &b);
+		b = s_isTracing; ImGui::Checkbox("IsTracing", &b);
+		b = s_isRendering; ImGui::Checkbox("IsRendering", &b);
+		b = m_redraw; ImGui::Checkbox("Redraw", &b);
+		b = m_retrace; ImGui::Checkbox("Retrace", &b);
+		b = g_showPreview; ImGui::Checkbox("ShowPreview", &b);
+	}
+	ImGui::End();
+
 	clock_t curTime = clock();
 
 	//float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -571,6 +584,7 @@ void FlowVisTool::OnFrame(float deltatime)
 
 	if (!g_volume.IsOpen()) goto NoVolumeLoaded;
 
+#pragma region Filtering
 	//-----------------------------------------------------------
 	// FILTERING
 	//-----------------------------------------------------------
@@ -596,7 +610,10 @@ void FlowVisTool::OnFrame(float deltatime)
 
 		s_isFiltering = g_filteringManager.StartFiltering(g_volume, g_filterParams);
 	}
+#pragma endregion
 
+
+#pragma region Tracing
 	//-----------------------------------------------------------
 	// TRACING
 	//-----------------------------------------------------------
@@ -680,11 +697,15 @@ void FlowVisTool::OnFrame(float deltatime)
 			m_redraw = true;
 		}
 	}
+#pragma endregion
 
 
+#pragma region Rendering
 	//-----------------------------------------------------------
 	// RENDERING
 	//-----------------------------------------------------------
+
+	std::cout << "redraw: " << m_redraw << std::endl;
 
 	bool renderingUpdated = false;
 	if (m_redraw)
@@ -850,12 +871,12 @@ void FlowVisTool::OnFrame(float deltatime)
 
 			// blit opaque stuff
 			g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetOpaqueSRV());
-			g_screenEffect.m_pTechnique->GetPassByIndex(1)->Apply(0, m_d3dDeviceContex);
+			g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::Blit)->Apply(0, m_d3dDeviceContex);
 			m_d3dDeviceContex->Draw(4, 0);
 
 			// blend raycaster result over
 			g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetRaycastSRV());
-			g_screenEffect.m_pTechnique->GetPassByIndex(2)->Apply(0, m_d3dDeviceContex);
+			g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 			m_d3dDeviceContex->Draw(4, 0);
 
 			// restore viewport
@@ -909,13 +930,15 @@ void FlowVisTool::OnFrame(float deltatime)
 		}
 
 		// blit over into "raycast finished" tex
-		g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
+		//g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
+		//g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
 
-		//m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
+		m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
+		m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
 
 		//TODO if g_renderBufferSizeFactor > 2, generate mipmaps first?
 		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
-		g_screenEffect.m_pTechnique->GetPassByIndex(1)->Apply(0, m_d3dDeviceContex);
+		g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 		m_d3dDeviceContex->Draw(4, 0);
 
 		ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
@@ -925,7 +948,7 @@ void FlowVisTool::OnFrame(float deltatime)
 		//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
 		//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
 	}
-
+#pragma endregion
 
 	//-----------------------------------------------------------
 	// MISCELANOUS TASKS (Screenshots, ...)
@@ -938,13 +961,18 @@ NoVolumeLoaded:
 	//m_mainRenderTargetView->GetResource(&pSwapChainTex);
 	//m_d3dDeviceContex->CopyResource(pSwapChainTex, g_pRaycastFinishedTex);
 	//SAFE_RELEASE(pSwapChainTex);
-	//if (g_renderTexture.IsInitialized())
-	//{
-	//	g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
-	//	g_renderTexture.CopyFromTexture(m_d3dDeviceContex, g_pRaycastFinishedTex);
-	//}
+	if (g_renderTexture.IsInitialized())
+	{
+		g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
+		g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
 
-	//// draw background
+		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
+		g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
+		m_d3dDeviceContex->Draw(4, 0);
+		//g_renderTexture.CopyFromTexture(m_d3dDeviceContex, g_pRaycastFinishedTex);
+	}
+
+	// draw background
 	//m_d3dDeviceContex->IASetInputLayout(NULL);
 	//m_d3dDeviceContex->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	//g_screenEffect.m_pvColorVariable->SetFloatVector(g_backgroundColor);
@@ -956,9 +984,10 @@ NoVolumeLoaded:
 	//tum3D::Vec2f texCoordMax(1.0f, 1.0f);
 	//g_screenEffect.m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
 	//g_screenEffect.m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
-	//g_screenEffect.m_pTechnique->GetPassByIndex(0)->Apply(0, m_d3dDeviceContex);
+	//g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 	//m_d3dDeviceContex->Draw(4, 0);
 
+#if 0
 	if (g_imageSequence.Running) {
 		if (!m_redraw && !s_isFiltering && !s_isRendering) {
 			// current frame is finished, save (if specified) and advance
@@ -1110,6 +1139,7 @@ NoVolumeLoaded:
 			}
 		}
 	}
+#endif
 }
 
 bool FlowVisTool::ResizeViewport(int width, int height)

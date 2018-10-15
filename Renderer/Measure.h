@@ -57,7 +57,7 @@ enum eMeasureComputeMode
 	MEASURE_COMPUTE_COUNT,
 	MEASURE_COMPUTE_FORCE32 = 0xFFFFFFFF
 };
-std::string GetMeasureComputeModeName(eMeasureComputeMode mode);
+const char* GetMeasureComputeModeName(eMeasureComputeMode mode);
 eMeasureComputeMode GetMeasureComputeModeFromName(const std::string& name);
 
 

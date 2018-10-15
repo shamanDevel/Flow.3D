@@ -10,7 +10,8 @@ FilterParams::FilterParams()
 
 void FilterParams::Reset()
 {
-	m_radius.clear();
+	//m_radius.clear();
+	m_radius = std::vector<uint>(3, 0); // three elements with value 0
 }
 
 

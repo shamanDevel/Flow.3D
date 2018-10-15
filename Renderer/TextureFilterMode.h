@@ -11,6 +11,7 @@
 
 enum eTextureFilterMode
 {
+	//Raycaster only supports the first two modes, linear and cubic. Be carefull if changing the index of cubic and linear.
 	TEXTURE_FILTER_LINEAR = 0,
 	TEXTURE_FILTER_CUBIC,
 	TEXTURE_FILTER_CATROM,

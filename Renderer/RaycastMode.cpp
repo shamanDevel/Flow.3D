@@ -1,14 +1,14 @@
 #include "RaycastMode.h"
 
 
-static const std::string g_ColorModeNames[COLOR_MODE_COUNT + 1] =
+static const char* g_ColorModeNames[COLOR_MODE_COUNT + 1] =
 {
 	"UI Color",
 	"Vorticity Alignment",
 	"Unknown"
 };
 
-std::string GetColorModeName(eColorMode mode)
+const char* GetColorModeName(eColorMode mode)
 {
 	return g_ColorModeNames[min(mode, COLOR_MODE_COUNT)];
 }
@@ -27,7 +27,7 @@ eColorMode GetColorModeFromName(const std::string& name)
 
 
 
-static const std::string g_raycastModeNames[RAYCAST_MODE_COUNT + 1] =
+static const char* g_raycastModeNames[RAYCAST_MODE_COUNT + 1] =
 {
 	"DVR",
 	"DVR EE",
@@ -42,7 +42,7 @@ static const std::string g_raycastModeNames[RAYCAST_MODE_COUNT + 1] =
 	"Unknown"
 };
 
-std::string GetRaycastModeName(eRaycastMode mode)
+const char* GetRaycastModeName(eRaycastMode mode)
 {
 	return g_raycastModeNames[min(mode, RAYCAST_MODE_COUNT)];
 }

@@ -14,7 +14,7 @@ enum eColorMode
 	COLOR_MODE_COUNT,
 	COLOR_MODE_FORCE32 = 0xFFFFFFFF
 };
-std::string GetColorModeName(eColorMode mode);
+const char* GetColorModeName(eColorMode mode);
 eColorMode GetColorModeFromName(const std::string& name);
 
 
@@ -33,7 +33,7 @@ enum eRaycastMode
 	RAYCAST_MODE_COUNT,
 	RAYCAST_MODE_FORCE32 = 0xFFFFFFFF
 };
-std::string GetRaycastModeName(eRaycastMode mode);
+const char* GetRaycastModeName(eRaycastMode mode);
 eRaycastMode GetRaycastModeFromName(const std::string& name);
 bool RaycastModeNeedsTransferFunction(eRaycastMode mode);
 bool RaycastModeIsMultiScale(eRaycastMode mode);

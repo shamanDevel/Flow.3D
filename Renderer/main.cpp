@@ -67,7 +67,7 @@ void ImGuiCustomTheme()
 	colors[ImGuiCol_Header] = ImVec4(0.27f, 0.27f, 0.27f, 1.00f);
 	colors[ImGuiCol_HeaderHovered] = ImVec4(0.36f, 0.36f, 0.36f, 1.00f);
 	colors[ImGuiCol_HeaderActive] = ImVec4(0.21f, 0.21f, 0.21f, 1.00f);
-	colors[ImGuiCol_Separator] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+	colors[ImGuiCol_Separator] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
 	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
 	colors[ImGuiCol_SeparatorActive] = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
 	colors[ImGuiCol_ResizeGrip] = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
@@ -503,7 +503,8 @@ bool CreateApplicationWindow()
 	g_hwnd = CreateWindow(_T("FlowVisTool"), _T("FlowVisTool"), WS_OVERLAPPEDWINDOW, 100, 100, 1360, 768, NULL, NULL, g_wc.hInstance, NULL);
 
 	// Show the window
-	ShowWindow(g_hwnd, SW_SHOWDEFAULT);
+	//ShowWindow(g_hwnd, SW_SHOWDEFAULT);
+	ShowWindow(g_hwnd, SW_SHOWMAXIMIZED);
 	UpdateWindow(g_hwnd);
 
 	return true;
@@ -550,18 +551,18 @@ void MainLoop()
 			continue;
 		}
 
-		// Start the Dear ImGui frame
+		// Start the Dear ImGui frame.
 		ImGui_ImplDX11_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
+
+		FlowVisToolGUI::DockSpace();
 
 		if (resizeNextFrame)
 		{
 			resizeNextFrame = false;
 			g_flowVisTool.ResizeViewport(sceneWindowSize.x, sceneWindowSize.y);
 		}
-
-		FlowVisToolGUI::DockSpace();
 
 		{
 			//g_flowVisTool.g_renderTexture.SetRenderTarget(g_pd3dDeviceContext, g_mainDepthStencilView);
@@ -589,20 +590,34 @@ void MainLoop()
 
 		FlowVisToolGUI::RenderGUI(g_flowVisTool, resizeNextFrame, sceneWindowSize);
 
-		// Rendering
-		ImGui::Render();
-
-		g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
-
-		//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
-		//g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
-		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-		// Update and Render additional Platform Windows
-		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		// Set and clear main render target.
 		{
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
+			g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
+
+			//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, NULL);
+			//g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clear_color);
+
+			static float clearColor[4] = { 154.0f / 255.0f, 72.0f / 255.0f, 162.0f / 255.0f, 1.0f };
+
+			ImGui::Begin("Debug");
+			ImGui::ColorEdit4("Clear color", clearColor);
+			ImGui::End();
+
+			g_pd3dDeviceContext->ClearRenderTargetView(g_mainRenderTargetView, (float*)&clearColor);
+			g_pd3dDeviceContext->ClearDepthStencilView(g_mainDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+		}
+
+		// Render GUI.
+		{
+			ImGui::Render();
+			ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+
+			// Update and Render additional Platform Windows
+			if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+			{
+				ImGui::UpdatePlatformWindows();
+				ImGui::RenderPlatformWindowsDefault();
+			}
 		}
 
 		g_pSwapChain->Present(1, 0); // Present with vsync

@@ -12,6 +12,14 @@ class ScreenEffect : public Effect
 public:
 	ScreenEffect() : Effect(L"Screen.fxo") { }
 
+	enum Pass
+	{
+		SolidBlendBehind = 0,
+		Blit = 1,
+		BlitBlendOver = 2,
+		BlitBlendOverSubWhite = 3
+	};
+
 	// *** Variables ***
 
 	ID3DX11EffectVectorVariable*			m_pvScreenMinVariable;
