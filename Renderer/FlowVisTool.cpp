@@ -196,8 +196,6 @@ bool FlowVisTool::CreateVolumeDependentResources()
 		g_compressVolume.create(g_compressShared.getConfig());
 	}
 
-	HRESULT hr;
-
 	if (!g_filteringManager.Create(&g_compressShared, &g_compressVolume))
 		return false;
 
@@ -265,8 +263,9 @@ bool FlowVisTool::OpenVolumeFile(const std::string& filename)
 	g_raycastParams.m_clipBoxMin = -g_volume.GetVolumeHalfSizeWorld();
 	g_raycastParams.m_clipBoxMax = g_volume.GetVolumeHalfSizeWorld();
 
-
+#if defined(BATCH_IMAGE_SEQUENCE)
 	g_imageSequence.FrameCount = g_volume.GetTimestepCount();
+#endif
 
 	LoadFlowGraph();
 
@@ -387,7 +386,7 @@ void FlowVisTool::OnFrame(float deltatime)
 	//g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 	//m_d3dDeviceContex->Draw(4, 0);
 
-#if 0
+#if defined(BATCH_IMAGE_SEQUENCE)
 	if (g_imageSequence.Running) {
 		if (!m_redraw && !s_isFiltering && !s_isRendering) {
 			// current frame is finished, save (if specified) and advance
@@ -817,9 +816,8 @@ void FlowVisTool::Tracing()
 	}
 
 
-	const std::vector<const TimeVolumeIO::Brick*>& bricksToLoad =
-		s_isFiltering ? g_filteringManager.GetBricksToLoad() :
-		(s_isTracing ? g_tracingManager.GetBricksToLoad() : g_renderingManager.GetBricksToLoad());
+	const std::vector<const TimeVolumeIO::Brick*>& bricksToLoad =	s_isFiltering ? g_filteringManager.GetBricksToLoad() :
+																	(s_isTracing ? g_tracingManager.GetBricksToLoad() : g_renderingManager.GetBricksToLoad());
 	//TODO when nothing's going on, load bricks in any order? (while memory is available etc..)
 	g_volume.UpdateLoadingQueue(bricksToLoad);
 	g_volume.UnloadLRUBricks();

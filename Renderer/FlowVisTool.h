@@ -46,7 +46,7 @@ struct MyCudaDevice
 	WorkerThread* pThread;
 };
 
-
+#if defined(BATCH_IMAGE_SEQUENCE)
 struct BatchTrace
 {
 	BatchTrace()
@@ -68,7 +68,6 @@ struct BatchTrace
 
 	bool ExitAfterFinishing;
 };
-
 
 struct ImageSequence
 {
@@ -95,6 +94,7 @@ struct ImageSequence
 	bool  Running;
 	int32 FrameCur;
 };
+#endif
 #pragma endregion
 
 
@@ -126,7 +126,7 @@ public:
 
 	cudaGraphicsResource*		g_pTfEdtSRVCuda = nullptr;
 
-	tum3D::Vec2i g_windowSize;
+	
 
 	bool g_showPreview = true;
 	bool m_redraw = false;
@@ -141,36 +141,43 @@ public:
 	bool s_isTracing = false;
 	bool s_isRendering = false;
 
-	float g_renderBufferSizeFactor = 2.0f;
 	
-	//std::vector<TimeVolume>	g_volume;
-	TimeVolume	g_volume;
+	ProjectionParams		g_projParams;
+	StereoParams			g_stereoParams;
+	ViewParams				g_viewParams;
 
+
+
+#pragma region VolumeDependent
 	FilterParams			g_filterParams;
 	RaycastParams			g_raycastParams;
 	ParticleTraceParams		g_particleTraceParams;
 	ParticleRenderParams	g_particleRenderParams;
 	HeatMapParams			g_heatMapParams;
-	ProjectionParams		g_projParams;
-	StereoParams			g_stereoParams;
-	ViewParams				g_viewParams;
-	BatchTraceParams		g_batchTraceParams;
-
+	
+	TimeVolume				g_volume;
 	GPUResources            g_compressShared;
 	CompressVolumeResources g_compressVolume;
 	FlowGraph				g_flowGraph;
-	BatchTrace				g_batchTrace;
-	ImageSequence			g_imageSequence;
-
-	std::vector<LineBuffers*> g_lineBuffers;
-	std::vector<BallBuffers*> g_ballBuffers;
-	float                     g_ballRadius = 0.011718750051f;
 
 	// resources on primary GPU
 	FilteringManager g_filteringManager;
 	TracingManager   g_tracingManager;
 	RenderingManager g_renderingManager;
 	HeatMapManager   g_heatMapManager;
+#pragma endregion
+
+
+
+#if defined(BATCH_IMAGE_SEQUENCE)
+	BatchTraceParams		g_batchTraceParams;
+	BatchTrace				g_batchTrace;
+	ImageSequence			g_imageSequence;
+#endif
+
+	std::vector<LineBuffers*> g_lineBuffers;
+	std::vector<BallBuffers*> g_ballBuffers;
+	float                     g_ballRadius = 0.011718750051f;
 
 	clock_t	g_lastRenderParamsUpdate = 0;
 	clock_t	g_lastTraceParamsUpdate = 0;
@@ -179,9 +186,11 @@ public:
 	TimerCPU	g_timerTracing;
 	TimerCPU	g_timerRendering;
 
-	ScreenEffect		g_screenEffect;
+	ScreenEffect	g_screenEffect;
 
-	tum3D::Vec4f		g_backgroundColor = tum3D::Vec4f(0.1f, 0.1f, 0.1f, 1.0f);
+	tum3D::Vec4f	g_backgroundColor = tum3D::Vec4f(0.1f, 0.1f, 0.1f, 1.0f);
+	float			g_renderBufferSizeFactor = 2.0f;
+	tum3D::Vec2i	g_windowSize;
 
 public:
 	FlowVisTool();
