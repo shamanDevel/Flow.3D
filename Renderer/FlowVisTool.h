@@ -141,8 +141,10 @@ public:
 	bool s_isTracing = false;
 	bool s_isRendering = false;
 
-
 	float g_renderBufferSizeFactor = 2.0f;
+	
+	//std::vector<TimeVolume>	g_volume;
+	TimeVolume	g_volume;
 
 	FilterParams			g_filterParams;
 	RaycastParams			g_raycastParams;
@@ -156,7 +158,6 @@ public:
 
 	GPUResources            g_compressShared;
 	CompressVolumeResources g_compressVolume;
-	TimeVolume				g_volume;
 	FlowGraph				g_flowGraph;
 	BatchTrace				g_batchTrace;
 	ImageSequence			g_imageSequence;
@@ -212,6 +213,11 @@ private:
 	void ShutdownCudaDevices();
 
 	bool ResizeRenderBuffer();
+
+	void CheckForChanges();
+	void Filtering();
+	void Tracing();
+	void Rendering();
 
 private:
 	// disable copy and assignment

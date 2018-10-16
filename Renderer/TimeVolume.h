@@ -36,6 +36,9 @@ public:
 
 private:
 	float m_currentTime;
-
 	float m_loadingProgress;
+
+	// disable copy and assignment
+	TimeVolume(const TimeVolume&);
+	TimeVolume& operator=(const TimeVolume&);
 };

@@ -568,7 +568,24 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 						*out_str = GetLineModeName(eLineMode(idx));
 						return true;
 					};
-					ImGui::Combo("Line mode", (int*)&g_flowVisTool.g_particleTraceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT);
+					if (ImGui::Combo("Line mode", (int*)&g_flowVisTool.g_particleTraceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT))
+					{
+						switch (g_flowVisTool.g_particleTraceParams.m_lineMode)
+						{
+						case eLineMode::LINE_PARTICLE_STREAM:
+						case eLineMode::LINE_PARTICLES:
+						{
+							g_flowVisTool.g_particleRenderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
+							break;
+						}
+						case eLineMode::LINE_PATH:
+						case eLineMode::LINE_STREAM:
+						{
+							g_flowVisTool.g_particleRenderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_TUBE;
+							break;
+						}
+						}
+					}
 
 					if (ImGui::DragInt("Line count", &g_flowVisTool.g_particleTraceParams.m_lineCount, 1.0f, 1.0f, INT_MAX))
 						g_flowVisTool.g_particleTraceParams.m_lineCount = std::max(1, g_flowVisTool.g_particleTraceParams.m_lineCount);
