@@ -118,7 +118,8 @@ public:
 	ID3D11Texture2D*        g_pStagingTex = nullptr;
 	ID3D11Texture2D*		g_pRenderBufferStagingTex = nullptr;
 
-	RenderTexture g_renderTexture;
+	RenderTexture				g_renderTexture;
+
 	std::vector<MyCudaDevice>	g_cudaDevices;
 	int							g_primaryCudaDeviceIndex = -1;
 	bool						g_useAllGPUs = false;
@@ -135,11 +136,13 @@ public:
 	bool g_bRenderBrickBoxes = false;
 	bool g_bRenderClipBox = true;
 	bool g_bRenderSeedBox = true;
+	//FIXME have to reset these on destroy/create device...
+	bool s_isFiltering = false;
+	bool s_isTracing = false;
+	bool s_isRendering = false;
+
 
 	float g_renderBufferSizeFactor = 2.0f;
-
-	BatchTrace				g_batchTrace;
-	ImageSequence			g_imageSequence;
 
 	FilterParams			g_filterParams;
 	RaycastParams			g_raycastParams;
@@ -155,6 +158,8 @@ public:
 	CompressVolumeResources g_compressVolume;
 	TimeVolume				g_volume;
 	FlowGraph				g_flowGraph;
+	BatchTrace				g_batchTrace;
+	ImageSequence			g_imageSequence;
 
 	std::vector<LineBuffers*> g_lineBuffers;
 	std::vector<BallBuffers*> g_ballBuffers;

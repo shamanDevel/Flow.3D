@@ -1440,7 +1440,8 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 
 				ImGui::Separator();
 				ImGui::PushItemWidth(100);
-				ImGui::DragFloat("Dist  ", &g_flowVisTool.g_viewParams.m_viewDistance, 0.1f);
+				if (ImGui::DragFloat("Dist  ", &g_flowVisTool.g_viewParams.m_viewDistance, 0.1f))
+					g_flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, g_flowVisTool.g_viewParams.m_viewDistance);
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushID(2);

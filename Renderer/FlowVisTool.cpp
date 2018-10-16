@@ -341,13 +341,6 @@ bool FlowVisTool::ResizeRenderBuffer()
 
 void FlowVisTool::OnFrame(float deltatime)
 {
-	//fflush(stdout);
-
-	//FIXME have to reset these on destroy/create device...
-	static bool s_isFiltering = false;
-	static bool s_isTracing = false;
-	static bool s_isRendering = false;
-
 	if (ImGui::Begin("Debug"))
 	{
 		bool b;
@@ -362,596 +355,592 @@ void FlowVisTool::OnFrame(float deltatime)
 
 	clock_t curTime = clock();
 
-	//float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-	//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-	//ID3D11DepthStencilView* pDSV = DXUTGetD3D11DepthStencilView();
-	//m_d3dDeviceContex->ClearRenderTargetView(g_pRenderBufferTempRTV, (float*)&g_backgroundColor);
-	//m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
-	//m_d3dDeviceContex->ClearDepthStencilView(m_mainDepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-	static std::string volumeFilePrev = "";
-	bool volumeChanged = (g_volume.GetFilename() != volumeFilePrev);
-	volumeFilePrev = g_volume.GetFilename();
-	m_redraw = m_redraw || volumeChanged;
-	m_retrace = m_retrace || volumeChanged;
-
-
-	static int timestepPrev = -1;
-	bool timestepChanged = (g_volume.GetCurNearestTimestepIndex() != timestepPrev);
-	timestepPrev = g_volume.GetCurNearestTimestepIndex();
-	m_redraw = m_redraw || timestepChanged;
-	m_retrace = m_retrace || timestepChanged;
-
-
-	static float renderBufferSizeFactorPrev = 0.0f;
-	bool renderBufferSizeChanged = (g_renderBufferSizeFactor != renderBufferSizeFactorPrev);
-	renderBufferSizeFactorPrev = g_renderBufferSizeFactor;
-	if (renderBufferSizeChanged)
+#pragma region CheckingForChanges
 	{
-		ResizeRenderBuffer();
-		g_lastRenderParamsUpdate = curTime;
-	}
+		static std::string volumeFilePrev = "";
+		bool volumeChanged = (g_volume.GetFilename() != volumeFilePrev);
+		volumeFilePrev = g_volume.GetFilename();
+		m_redraw = m_redraw || volumeChanged;
+		m_retrace = m_retrace || volumeChanged;
 
 
-	static bool renderDomainBoxPrev = g_bRenderDomainBox;
-	static bool renderBrickBoxesPrev = g_bRenderBrickBoxes;
-	static bool renderClipBoxPrev = g_bRenderClipBox;
-	static bool renderSeedBoxPrev = g_bRenderSeedBox;
-	if (renderDomainBoxPrev != g_bRenderDomainBox || renderBrickBoxesPrev != g_bRenderBrickBoxes || renderClipBoxPrev != g_bRenderClipBox || renderSeedBoxPrev != g_bRenderSeedBox)
-	{
-		renderDomainBoxPrev = g_bRenderDomainBox;
-		renderBrickBoxesPrev = g_bRenderBrickBoxes;
-		renderClipBoxPrev = g_bRenderClipBox;
-		renderSeedBoxPrev = g_bRenderSeedBox;
-		m_redraw = true;
-	}
+		static int timestepPrev = -1;
+		bool timestepChanged = (g_volume.GetCurNearestTimestepIndex() != timestepPrev);
+		timestepPrev = g_volume.GetCurNearestTimestepIndex();
+		m_redraw = m_redraw || timestepChanged;
+		m_retrace = m_retrace || timestepChanged;
 
 
-	static ProjectionParams projParamsPrev;
-	bool projParamsChanged = (g_projParams != projParamsPrev);
-	projParamsPrev = g_projParams;
-	m_redraw = m_redraw || projParamsChanged;
-
-	static Range1D rangePrev;
-	bool rangeChanged = (g_cudaDevices[g_primaryCudaDeviceIndex].range != rangePrev);
-	rangePrev = g_cudaDevices[g_primaryCudaDeviceIndex].range;
-	m_redraw = m_redraw || rangeChanged;
-
-	if (projParamsChanged || rangeChanged)
-	{
-		// cancel rendering
-		g_renderingManager.CancelRendering();
-		if (g_useAllGPUs)
+		static float renderBufferSizeFactorPrev = 0.0f;
+		bool renderBufferSizeChanged = (g_renderBufferSizeFactor != renderBufferSizeFactorPrev);
+		renderBufferSizeFactorPrev = g_renderBufferSizeFactor;
+		if (renderBufferSizeChanged)
 		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
-			{
-				if (g_cudaDevices[i].pThread == nullptr) continue;
-				g_cudaDevices[i].pThread->CancelRendering();
-			}
+			ResizeRenderBuffer();
+			g_lastRenderParamsUpdate = curTime;
 		}
 
-		// forward the new params
-		g_renderingManager.SetProjectionParams(g_projParams, g_cudaDevices[g_primaryCudaDeviceIndex].range);
-		if (g_useAllGPUs)
+
+		static bool renderDomainBoxPrev = g_bRenderDomainBox;
+		static bool renderBrickBoxesPrev = g_bRenderBrickBoxes;
+		static bool renderClipBoxPrev = g_bRenderClipBox;
+		static bool renderSeedBoxPrev = g_bRenderSeedBox;
+		if (renderDomainBoxPrev != g_bRenderDomainBox || renderBrickBoxesPrev != g_bRenderBrickBoxes || renderClipBoxPrev != g_bRenderClipBox || renderSeedBoxPrev != g_bRenderSeedBox)
 		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
-			{
-				if (g_cudaDevices[i].pThread == nullptr) continue;
-				g_cudaDevices[i].pThread->SetProjectionParams(g_projParams, g_cudaDevices[i].range);
-			}
+			renderDomainBoxPrev = g_bRenderDomainBox;
+			renderBrickBoxesPrev = g_bRenderBrickBoxes;
+			renderClipBoxPrev = g_bRenderClipBox;
+			renderSeedBoxPrev = g_bRenderSeedBox;
+			m_redraw = true;
 		}
-		g_lastRenderParamsUpdate = curTime;
-	}
 
 
-	static StereoParams stereoParamsPrev;
-	bool stereoParamsChanged = (g_stereoParams != stereoParamsPrev);
-	stereoParamsPrev = g_stereoParams;
-	m_redraw = m_redraw || stereoParamsChanged;
+		static ProjectionParams projParamsPrev;
+		bool projParamsChanged = (g_projParams != projParamsPrev);
+		projParamsPrev = g_projParams;
+		m_redraw = m_redraw || projParamsChanged;
 
-	if (stereoParamsChanged)
-	{
-		g_lastRenderParamsUpdate = curTime;
-	}
+		static Range1D rangePrev;
+		bool rangeChanged = (g_cudaDevices[g_primaryCudaDeviceIndex].range != rangePrev);
+		rangePrev = g_cudaDevices[g_primaryCudaDeviceIndex].range;
+		m_redraw = m_redraw || rangeChanged;
 
-	static ViewParams viewParamsPrev;
-	bool viewParamsChanged = (g_viewParams != viewParamsPrev);
-	viewParamsPrev = g_viewParams;
-	m_redraw = m_redraw || viewParamsChanged;
+		if (projParamsChanged || rangeChanged)
+		{
+			// cancel rendering
+			g_renderingManager.CancelRendering();
+			if (g_useAllGPUs)
+			{
+				for (size_t i = 0; i < g_cudaDevices.size(); i++)
+				{
+					if (g_cudaDevices[i].pThread == nullptr) continue;
+					g_cudaDevices[i].pThread->CancelRendering();
+				}
+			}
 
-	if (viewParamsChanged)
-	{
-		g_lastRenderParamsUpdate = curTime;
-	}
+			// forward the new params
+			g_renderingManager.SetProjectionParams(g_projParams, g_cudaDevices[g_primaryCudaDeviceIndex].range);
+			if (g_useAllGPUs)
+			{
+				for (size_t i = 0; i < g_cudaDevices.size(); i++)
+				{
+					if (g_cudaDevices[i].pThread == nullptr) continue;
+					g_cudaDevices[i].pThread->SetProjectionParams(g_projParams, g_cudaDevices[i].range);
+				}
+			}
+			g_lastRenderParamsUpdate = curTime;
+		}
 
 
-	//if(g_tfEdt.getTimestamp() != g_tfTimestamp) 
-	//{
-	//	m_redraw = true;
-	//	g_lastRenderParamsUpdate = curTime;
-	//	g_tfTimestamp = g_tfEdt.getTimestamp();
-	//}
+		static StereoParams stereoParamsPrev;
+		bool stereoParamsChanged = (g_stereoParams != stereoParamsPrev);
+		stereoParamsPrev = g_stereoParams;
+		m_redraw = m_redraw || stereoParamsChanged;
+
+		if (stereoParamsChanged)
+			g_lastRenderParamsUpdate = curTime;
+
+		static ViewParams viewParamsPrev;
+		bool viewParamsChanged = (g_viewParams != viewParamsPrev);
+		viewParamsPrev = g_viewParams;
+		m_redraw = m_redraw || viewParamsChanged;
+
+		if (viewParamsChanged)
+			g_lastRenderParamsUpdate = curTime;
+
+		//if(g_tfEdt.getTimestamp() != g_tfTimestamp) 
+		//{
+		//	m_redraw = true;
+		//	g_lastRenderParamsUpdate = curTime;
+		//	g_tfTimestamp = g_tfEdt.getTimestamp();
+		//}
 
 
-	// Get raycast params from the TF Editor's UI
-	//g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale(TF_RAYTRACE);
-	//g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin(TF_RAYTRACE);
-	//g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax(TF_RAYTRACE);
-	//g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin(TF_LINE_MEASURES);
-	//g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax(TF_LINE_MEASURES);
-	//g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale(TF_HEAT_MAP);
-	//g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin(TF_HEAT_MAP);
-	//g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax(TF_HEAT_MAP);
+		// Get raycast params from the TF Editor's UI
+		//g_raycastParams.m_alphaScale				= g_tfEdt.getAlphaScale(TF_RAYTRACE);
+		//g_raycastParams.m_transferFunctionRangeMin	= g_tfEdt.getTfRangeMin(TF_RAYTRACE);
+		//g_raycastParams.m_transferFunctionRangeMax	= g_tfEdt.getTfRangeMax(TF_RAYTRACE);
+		//g_particleRenderParams.m_transferFunctionRangeMin = g_tfEdt.getTfRangeMin(TF_LINE_MEASURES);
+		//g_particleRenderParams.m_transferFunctionRangeMax = g_tfEdt.getTfRangeMax(TF_LINE_MEASURES);
+		//g_heatMapParams.m_tfAlphaScale = g_tfEdt.getAlphaScale(TF_HEAT_MAP);
+		//g_heatMapParams.m_tfRangeMin = g_tfEdt.getTfRangeMin(TF_HEAT_MAP);
+		//g_heatMapParams.m_tfRangeMax = g_tfEdt.getTfRangeMax(TF_HEAT_MAP);
 
-	static FilterParams filterParamsPrev;
-	bool filterParamsChanged = (g_filterParams != filterParamsPrev);
-	filterParamsPrev = g_filterParams;
+		static FilterParams filterParamsPrev;
+		bool filterParamsChanged = (g_filterParams != filterParamsPrev);
+		filterParamsPrev = g_filterParams;
 
-	// clear filtered bricks if something relevant changed
-	if (volumeChanged || timestepChanged || filterParamsChanged)
-	{
-		g_filteringManager.ClearResult();
-		s_isFiltering = false;
-		m_redraw = true;
-	}
+		// clear filtered bricks if something relevant changed
+		if (volumeChanged || timestepChanged || filterParamsChanged)
+		{
+			g_filteringManager.ClearResult();
+			s_isFiltering = false;
+			m_redraw = true;
+		}
 
-	static ParticleTraceParams particleTraceParamsPrev;
-	bool particleTraceParamsChanged = g_particleTraceParams.hasChangesForRetracing(particleTraceParamsPrev);
-	//bool particleTraceParamsChanged = (g_particleTraceParams != particleTraceParamsPrev);
-	bool seedBoxChanged = (g_particleTraceParams.m_seedBoxMin != particleTraceParamsPrev.m_seedBoxMin || g_particleTraceParams.m_seedBoxSize != particleTraceParamsPrev.m_seedBoxSize);
-	particleTraceParamsPrev = g_particleTraceParams;
-	m_retrace = m_retrace || particleTraceParamsChanged;
-	m_redraw = m_redraw || seedBoxChanged;
+		static ParticleTraceParams particleTraceParamsPrev;
+		bool particleTraceParamsChanged = g_particleTraceParams.hasChangesForRetracing(particleTraceParamsPrev);
+		//bool particleTraceParamsChanged = (g_particleTraceParams != particleTraceParamsPrev);
+		bool seedBoxChanged = (g_particleTraceParams.m_seedBoxMin != particleTraceParamsPrev.m_seedBoxMin || g_particleTraceParams.m_seedBoxSize != particleTraceParamsPrev.m_seedBoxSize);
+		particleTraceParamsPrev = g_particleTraceParams;
+		m_retrace = m_retrace || particleTraceParamsChanged;
+		m_redraw = m_redraw || seedBoxChanged;
 
-	// heat map parameters
-	static HeatMapParams heatMapParamsPrev;
-	static bool heatMapDoubleRedraw = false;
-	bool debugHeatMapPrint = false;
-	//m_retrace = m_retrace || g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams);
-	//m_redraw = m_redraw || g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev);
-	if (g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams)) {
-		m_retrace = true;
-		std::cout << "heat map has changes for retracing" << std::endl;
-		debugHeatMapPrint = true;
-		heatMapDoubleRedraw = true;
-	}
-	if (g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev)) {
-		m_redraw = true;
-		std::cout << "heat map has changes for redrawing" << std::endl;
-		debugHeatMapPrint = true;
-		heatMapDoubleRedraw = true;
-	}
-	heatMapParamsPrev = g_heatMapParams;
-	g_heatMapManager.SetParams(g_heatMapParams);
-	if (debugHeatMapPrint) {
+		// heat map parameters
+		static HeatMapParams heatMapParamsPrev;
+		static bool heatMapDoubleRedraw = false;
+		bool debugHeatMapPrint = false;
+		//m_retrace = m_retrace || g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams);
+		//m_redraw = m_redraw || g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev);
+		if (g_heatMapParams.HasChangesForRetracing(heatMapParamsPrev, g_particleTraceParams))
+		{
+			m_retrace = true;
+			std::cout << "heat map has changes for retracing" << std::endl;
+			debugHeatMapPrint = true;
+			heatMapDoubleRedraw = true;
+		}
+		if (g_heatMapParams.HasChangesForRedrawing(heatMapParamsPrev))
+		{
+			m_redraw = true;
+			std::cout << "heat map has changes for redrawing" << std::endl;
+			debugHeatMapPrint = true;
+			heatMapDoubleRedraw = true;
+		}
+		heatMapParamsPrev = g_heatMapParams;
+		g_heatMapManager.SetParams(g_heatMapParams);
+
 #if 0
-		g_heatMapManager.DebugPrintParams();
+		if (debugHeatMapPrint) 
+			g_heatMapManager.DebugPrintParams();
 #endif
+
+		if (heatMapDoubleRedraw && !m_redraw)
+		{
+			//Hack: For some reasons, the heat map manager only applies changes after the second rendering
+			//Or does the RenderManager not update the render targets?
+			m_redraw = true;
+			heatMapDoubleRedraw = false;
+		}
+
+		if (particleTraceParamsChanged)
+		{
+			g_lastTraceParamsUpdate = curTime;
+			g_lastRenderParamsUpdate = curTime;
+		}
+
+
+		// clear particle tracer if something relevant changed
+		if (m_retrace && s_isTracing)
+		{
+			g_tracingManager.CancelTracing();
+			s_isTracing = false;
+			g_tracingManager.ClearResult();
+			m_redraw = true;
+			g_lastRenderParamsUpdate = curTime;
+		}
+
+
+
+		static RaycastParams raycastParamsPrev = g_raycastParams;
+		bool raycastParamsChanged = (g_raycastParams != raycastParamsPrev);
+		raycastParamsPrev = g_raycastParams;
+		m_redraw = m_redraw || raycastParamsChanged;
+
+		if (raycastParamsChanged)
+			g_lastTraceParamsUpdate = curTime;
+
+		static ParticleRenderParams particleRenderParamsPrev = g_particleRenderParams;
+		bool particleRenderParamsChanged = (g_particleRenderParams != particleRenderParamsPrev);
+		particleRenderParamsPrev = g_particleRenderParams;
+		m_redraw = m_redraw || particleRenderParamsChanged;
+
+		//if(particleRenderParamsChanged)
+		//{
+		//	g_lastTraceParamsUpdate = curTime;
+		//}
 	}
-	if (heatMapDoubleRedraw && !m_redraw) {
-		//Hack: For some reasons, the heat map manager only applies changes after the second rendering
-		//Or does the RenderManager not update the render targets?
-		m_redraw = true;
-		heatMapDoubleRedraw = false;
-	}
+#pragma endregion
 
-	if (particleTraceParamsChanged)
-	{
-		g_lastTraceParamsUpdate = curTime;
-		g_lastRenderParamsUpdate = curTime;
-	}
-
-
-	// clear particle tracer if something relevant changed
-	if (m_retrace && s_isTracing)
-	{
-		g_tracingManager.CancelTracing();
-		s_isTracing = false;
-		g_tracingManager.ClearResult();
-		m_redraw = true;
-		g_lastRenderParamsUpdate = curTime;
-	}
-
-
-
-	static RaycastParams raycastParamsPrev = g_raycastParams;
-	bool raycastParamsChanged = (g_raycastParams != raycastParamsPrev);
-	raycastParamsPrev = g_raycastParams;
-	m_redraw = m_redraw || raycastParamsChanged;
-
-	if (raycastParamsChanged)
-	{
-		g_lastTraceParamsUpdate = curTime;
-	}
-
-	static ParticleRenderParams particleRenderParamsPrev = g_particleRenderParams;
-	bool particleRenderParamsChanged = (g_particleRenderParams != particleRenderParamsPrev);
-	particleRenderParamsPrev = g_particleRenderParams;
-	m_redraw = m_redraw || particleRenderParamsChanged;
-
-	//if(particleRenderParamsChanged)
-	//{
-	//	g_lastTraceParamsUpdate = curTime;
-	//}
-
-
-	tum3D::Vec3f camPos = g_viewParams.GetCameraPosition();
-
-
-	static std::vector<uint> s_timestampLastUpdate; // last time the result image from each GPU was taken
-
-
-	if (!g_volume.IsOpen()) goto NoVolumeLoaded;
+	if (!g_volume.IsOpen()) 
+		goto NoVolumeLoaded;
 
 #pragma region Filtering
-	//-----------------------------------------------------------
-	// FILTERING
-	//-----------------------------------------------------------
-
-	// start filtering if required
-	bool needFilteredBricks = g_filterParams.HasNonZeroRadius();
-	if (needFilteredBricks && !s_isFiltering && g_filteringManager.GetResultCount() == 0)
 	{
-		g_renderingManager.CancelRendering();
-		if (g_useAllGPUs)
+		//-----------------------------------------------------------
+		// FILTERING
+		//-----------------------------------------------------------
+
+		// start filtering if required
+		bool needFilteredBricks = g_filterParams.HasNonZeroRadius();
+		if (needFilteredBricks && !s_isFiltering && g_filteringManager.GetResultCount() == 0)
 		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
+			g_renderingManager.CancelRendering();
+			if (g_useAllGPUs)
 			{
-				if (g_cudaDevices[i].pThread == nullptr) continue;
-				g_cudaDevices[i].pThread->CancelRendering();
+				for (size_t i = 0; i < g_cudaDevices.size(); i++)
+				{
+					if (g_cudaDevices[i].pThread == nullptr) continue;
+					g_cudaDevices[i].pThread->CancelRendering();
+				}
 			}
+			// release other resources - we'll need a lot of memory for filtering
+			g_tracingManager.ReleaseResources();
+			g_renderingManager.ReleaseResources();
+
+			assert(g_filteringManager.IsCreated());
+
+			s_isFiltering = g_filteringManager.StartFiltering(g_volume, g_filterParams);
 		}
-		// release other resources - we'll need a lot of memory for filtering
-		g_tracingManager.ReleaseResources();
-		g_renderingManager.ReleaseResources();
-
-		assert(g_filteringManager.IsCreated());
-
-		s_isFiltering = g_filteringManager.StartFiltering(g_volume, g_filterParams);
 	}
 #pragma endregion
 
 
 #pragma region Tracing
-	//-----------------------------------------------------------
-	// TRACING
-	//-----------------------------------------------------------
-
-	// set parameters even if tracing is currently enabled.
-	// This allows changes to the parameters in the particle mode, even if they are currently running
-	if (!m_retrace && s_isTracing) {
-		g_tracingManager.SetParams(g_particleTraceParams);
-	}
-	// start particle tracing if required
-	float timeSinceTraceUpdate = float(curTime - g_lastTraceParamsUpdate) / float(CLOCKS_PER_SEC);
-	bool traceDelayPassed = (timeSinceTraceUpdate >= g_startWorkingDelay);
-	//bool traceStartNow = !s_isFiltering && g_particleRenderParams.m_linesEnabled && traceDelayPassed; //TODO: enable tracing also when rendering is disabled?
-	bool traceStartNow = !s_isFiltering && traceDelayPassed;
-	if (m_retrace && traceStartNow)
 	{
-		g_renderingManager.CancelRendering();
-		if (g_useAllGPUs)
+		//-----------------------------------------------------------
+		// TRACING
+		//-----------------------------------------------------------
+
+		// set parameters even if tracing is currently enabled.
+		// This allows changes to the parameters in the particle mode, even if they are currently running
+		if (!m_retrace && s_isTracing) {
+			g_tracingManager.SetParams(g_particleTraceParams);
+		}
+		// start particle tracing if required
+		float timeSinceTraceUpdate = float(curTime - g_lastTraceParamsUpdate) / float(CLOCKS_PER_SEC);
+		bool traceDelayPassed = (timeSinceTraceUpdate >= g_startWorkingDelay);
+		//bool traceStartNow = !s_isFiltering && g_particleRenderParams.m_linesEnabled && traceDelayPassed; //TODO: enable tracing also when rendering is disabled?
+		bool traceStartNow = !s_isFiltering && traceDelayPassed;
+		if (m_retrace && traceStartNow)
 		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
+			g_renderingManager.CancelRendering();
+			if (g_useAllGPUs)
 			{
-				if (g_cudaDevices[i].pThread == nullptr) continue;
-				g_cudaDevices[i].pThread->CancelRendering();
+				for (size_t i = 0; i < g_cudaDevices.size(); i++)
+				{
+					if (g_cudaDevices[i].pThread == nullptr) continue;
+					g_cudaDevices[i].pThread->CancelRendering();
+				}
+			}
+			// release other resources - we're gonna need a lot of memory
+			g_renderingManager.ReleaseResources();
+			g_filteringManager.ReleaseResources();
+
+			assert(g_tracingManager.IsCreated());
+
+			g_tracingManager.ClearResult();
+
+			g_tracingManager.ReleaseResources();
+
+			s_isTracing = g_tracingManager.StartTracing(g_volume, g_particleTraceParams, g_flowGraph);
+			g_timerTracing.Start();
+
+			//notify the heat map manager
+			g_heatMapManager.SetVolumeAndReset(g_volume);
+
+			m_retrace = false;
+		}
+
+
+		const std::vector<const TimeVolumeIO::Brick*>& bricksToLoad =
+			s_isFiltering ? g_filteringManager.GetBricksToLoad() :
+			(s_isTracing ? g_tracingManager.GetBricksToLoad() : g_renderingManager.GetBricksToLoad());
+		//TODO when nothing's going on, load bricks in any order? (while memory is available etc..)
+		g_volume.UpdateLoadingQueue(bricksToLoad);
+		g_volume.UnloadLRUBricks();
+
+		//Check if tracing is done and if so, start rendering
+		if (s_isTracing && !g_particleTracingPaused)
+		{
+			//std::cout << "Trace" << std::endl;
+			bool finished = g_tracingManager.Trace();
+			if (finished || LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
+				g_heatMapManager.ProcessLines(g_tracingManager.GetResult());
+			}
+
+			if (finished)
+			{
+				s_isTracing = false;
+				g_timerTracing.Stop();
+				m_redraw = true;
+			}
+			else if (g_showPreview)
+			{
+				g_tracingManager.BuildIndexBuffer();
+				m_redraw = true;
 			}
 		}
-		// release other resources - we're gonna need a lot of memory
-		g_renderingManager.ReleaseResources();
-		g_filteringManager.ReleaseResources();
-
-		assert(g_tracingManager.IsCreated());
-
-		g_tracingManager.ClearResult();
-
-		g_tracingManager.ReleaseResources();
-
-		s_isTracing = g_tracingManager.StartTracing(g_volume, g_particleTraceParams, g_flowGraph);
-		g_timerTracing.Start();
-
-		//notify the heat map manager
-		g_heatMapManager.SetVolumeAndReset(g_volume);
-
-		m_retrace = false;
-	}
-
-
-	const std::vector<const TimeVolumeIO::Brick*>& bricksToLoad =
-		s_isFiltering ? g_filteringManager.GetBricksToLoad() :
-		(s_isTracing ? g_tracingManager.GetBricksToLoad() : g_renderingManager.GetBricksToLoad());
-	//TODO when nothing's going on, load bricks in any order? (while memory is available etc..)
-	g_volume.UpdateLoadingQueue(bricksToLoad);
-	g_volume.UnloadLRUBricks();
-
-	//Check if tracing is done and if so, start rendering
-	if (s_isTracing && !g_particleTracingPaused)
-	{
-		//std::cout << "Trace" << std::endl;
-		bool finished = g_tracingManager.Trace();
-		if (finished || LineModeIsIterative(g_particleTraceParams.m_lineMode)) {
-			g_heatMapManager.ProcessLines(g_tracingManager.GetResult());
-		}
-
-		if (finished)
+		else if (s_isFiltering)
 		{
-			s_isTracing = false;
-			g_timerTracing.Stop();
-			m_redraw = true;
-		}
-		else if (g_showPreview)
-		{
-			g_tracingManager.BuildIndexBuffer();
-			m_redraw = true;
-		}
-	}
-	else if (s_isFiltering)
-	{
-		bool finished = g_filteringManager.Filter();
+			bool finished = g_filteringManager.Filter();
 
-		if (finished)
-		{
-			s_isFiltering = false;
-			m_redraw = true;
+			if (finished)
+			{
+				s_isFiltering = false;
+				m_redraw = true;
+			}
 		}
 	}
 #pragma endregion
 
 
 #pragma region Rendering
-	//-----------------------------------------------------------
-	// RENDERING
-	//-----------------------------------------------------------
-
-	std::cout << "redraw: " << m_redraw << std::endl;
-
-	bool renderingUpdated = false;
-	if (m_redraw)
 	{
-		// cancel rendering of current image
-		g_renderingManager.CancelRendering();
-		if (g_useAllGPUs)
-		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
-			{
-				if (g_cudaDevices[i].pThread == nullptr) continue;
-				g_cudaDevices[i].pThread->CancelRendering();
-			}
-		}
+		//-----------------------------------------------------------
+		// RENDERING
+		//-----------------------------------------------------------
 
-		// release other resources if possible
-		if (!s_isFiltering)
-		{
-			g_filteringManager.ReleaseResources();
-		}
-		if (!s_isTracing)
-		{
-			g_tracingManager.ReleaseResources();
-		}
+		static std::vector<uint> s_timestampLastUpdate; // last time the result image from each GPU was taken
 
-		// while tracing/filtering is in progress, don't start raycasting
-		bool linesOnly = s_isTracing || s_isFiltering || !g_raycastParams.m_raycastingEnabled;
-
-		cudaArray* pTfArray = nullptr;
-		bool needTF = (g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode));
-		if (needTF)
+		bool renderingUpdated = false;
+		if (m_redraw)
 		{
-			cudaSafeCall(cudaGraphicsMapResources(1, &g_pTfEdtSRVCuda));
-			cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&pTfArray, g_pTfEdtSRVCuda, 0, 0));
-		}
-		std::vector<LineBuffers*> lineBuffers = g_lineBuffers;
-		LineBuffers* pTracedLines = g_tracingManager.GetResult().get();
-		if (pTracedLines != nullptr)
-		{
-			lineBuffers.push_back(pTracedLines);
-		}
-		RenderingManager::eRenderState state = g_renderingManager.StartRendering(g_tracingManager.IsTracing(),
-			g_volume, g_filteringManager.GetResults(),
-			g_viewParams, g_stereoParams,
-			g_bRenderDomainBox, g_bRenderClipBox, g_bRenderSeedBox, g_bRenderBrickBoxes,
-			g_particleTraceParams, g_particleRenderParams,
-			lineBuffers, linesOnly,
-			g_ballBuffers, g_ballRadius,
-			&g_heatMapManager,
-			g_raycastParams, pTfArray, g_tracingManager.m_dpParticles);
-
-
-		if (state == RenderingManager::STATE_ERROR)
-		{
-			printf("RenderingManager::StartRendering returned STATE_ERROR.\n");
-			s_isRendering = false;
-		}
-		else
-		{
-			s_isRendering = true; // set to true even if STATE_DONE - other GPUs might have something to do
-			renderingUpdated = true;
-
+			// cancel rendering of current image
+			g_renderingManager.CancelRendering();
 			if (g_useAllGPUs)
 			{
 				for (size_t i = 0; i < g_cudaDevices.size(); i++)
 				{
-					if (g_cudaDevices[i].pThread != nullptr)
+					if (g_cudaDevices[i].pThread == nullptr) continue;
+					g_cudaDevices[i].pThread->CancelRendering();
+				}
+			}
+
+			// release other resources if possible
+			if (!s_isFiltering)
+			{
+				g_filteringManager.ReleaseResources();
+			}
+			if (!s_isTracing)
+			{
+				g_tracingManager.ReleaseResources();
+			}
+
+			// while tracing/filtering is in progress, don't start raycasting
+			bool linesOnly = s_isTracing || s_isFiltering || !g_raycastParams.m_raycastingEnabled;
+
+			cudaArray* pTfArray = nullptr;
+			bool needTF = (g_raycastParams.m_raycastingEnabled && RaycastModeNeedsTransferFunction(g_raycastParams.m_raycastMode));
+			if (needTF)
+			{
+				cudaSafeCall(cudaGraphicsMapResources(1, &g_pTfEdtSRVCuda));
+				cudaSafeCall(cudaGraphicsSubResourceGetMappedArray(&pTfArray, g_pTfEdtSRVCuda, 0, 0));
+			}
+			std::vector<LineBuffers*> lineBuffers = g_lineBuffers;
+			LineBuffers* pTracedLines = g_tracingManager.GetResult().get();
+			if (pTracedLines != nullptr)
+			{
+				lineBuffers.push_back(pTracedLines);
+			}
+			RenderingManager::eRenderState state = g_renderingManager.StartRendering(g_tracingManager.IsTracing(),
+				g_volume, g_filteringManager.GetResults(),
+				g_viewParams, g_stereoParams,
+				g_bRenderDomainBox, g_bRenderClipBox, g_bRenderSeedBox, g_bRenderBrickBoxes,
+				g_particleTraceParams, g_particleRenderParams,
+				lineBuffers, linesOnly,
+				g_ballBuffers, g_ballRadius,
+				&g_heatMapManager,
+				g_raycastParams, pTfArray, g_tracingManager.m_dpParticles);
+
+
+			if (state == RenderingManager::STATE_ERROR)
+			{
+				printf("RenderingManager::StartRendering returned STATE_ERROR.\n");
+				s_isRendering = false;
+			}
+			else
+			{
+				s_isRendering = true; // set to true even if STATE_DONE - other GPUs might have something to do
+				renderingUpdated = true;
+
+				if (g_useAllGPUs)
+				{
+					for (size_t i = 0; i < g_cudaDevices.size(); i++)
 					{
-						int primaryDevice = g_cudaDevices[g_primaryCudaDeviceIndex].device;
-						g_cudaDevices[i].pThread->StartRendering(g_filteringManager.GetResults(), g_viewParams, g_stereoParams, g_raycastParams, pTfArray, primaryDevice);
+						if (g_cudaDevices[i].pThread != nullptr)
+						{
+							int primaryDevice = g_cudaDevices[g_primaryCudaDeviceIndex].device;
+							g_cudaDevices[i].pThread->StartRendering(g_filteringManager.GetResults(), g_viewParams, g_stereoParams, g_raycastParams, pTfArray, primaryDevice);
+						}
 					}
 				}
+
+				s_timestampLastUpdate.clear();
+				s_timestampLastUpdate.resize(g_cudaDevices.size(), 0);
+
+				g_timerRendering.Start();
+			}
+			if (needTF)
+			{
+				cudaSafeCall(cudaGraphicsUnmapResources(1, &g_pTfEdtSRVCuda));
 			}
 
-			s_timestampLastUpdate.clear();
-			s_timestampLastUpdate.resize(g_cudaDevices.size(), 0);
-
-			g_timerRendering.Start();
-		}
-		if (needTF)
-		{
-			cudaSafeCall(cudaGraphicsUnmapResources(1, &g_pTfEdtSRVCuda));
+			m_redraw = false;
 		}
 
-		m_redraw = false;
-	}
-
-	bool renderingFinished = true; // default to "true", set to false if any GPU is not finished
-	//TODO only call g_renderingManager.Render() when renderDelayPassed?
-	//float timeSinceRenderUpdate = float(curTime - g_lastRenderParamsUpdate) / float(CLOCKS_PER_SEC);
-	//bool renderDelayPassed = (timeSinceRenderUpdate >= g_startWorkingDelay);
-	if (s_isRendering)
-	{
-		if (g_renderingManager.IsRendering())
+		bool renderingFinished = true; // default to "true", set to false if any GPU is not finished
+		//TODO only call g_renderingManager.Render() when renderDelayPassed?
+		//float timeSinceRenderUpdate = float(curTime - g_lastRenderParamsUpdate) / float(CLOCKS_PER_SEC);
+		//bool renderDelayPassed = (timeSinceRenderUpdate >= g_startWorkingDelay);
+		if (s_isRendering)
 		{
-			// render next brick on primary GPU
-			renderingFinished = (g_renderingManager.Render() == RenderingManager::STATE_DONE);
-			renderingUpdated = true;
-		}
-
-		// if primary GPU is done, check if other threads are finished as well
-		if (renderingFinished && g_useAllGPUs)
-		{
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
+			if (g_renderingManager.IsRendering())
 			{
-				if (g_cudaDevices[i].pThread == nullptr) continue;
-
-				renderingFinished = renderingFinished && !g_cudaDevices[i].pThread->IsWorking();
+				// render next brick on primary GPU
+				renderingFinished = (g_renderingManager.Render() == RenderingManager::STATE_DONE);
 				renderingUpdated = true;
 			}
-		}
 
-		if (renderingFinished)
-		{
-			s_isRendering = false;
-			g_timerRendering.Stop();
-		}
-	}
-
-	//-----------------------------------------------------------
-	// COMBINE RESULTS AND DRAW ON SCREEN
-	//-----------------------------------------------------------
-
-	// if this was the last brick, or we want to see unfinished images, copy from raycast target into finished image tex
-	if (renderingUpdated && (renderingFinished || g_showPreview))
-	{
-		//if (s_isTracing) std::cout << "Render while still tracing" << std::endl;
-
-		// common shader vars for fullscreen pass
-		tum3D::Vec2f screenMin(-1.0f, -1.0f);
-		tum3D::Vec2f screenMax(1.0f, 1.0f);
-		g_screenEffect.m_pvScreenMinVariable->SetFloatVector(screenMin);
-		g_screenEffect.m_pvScreenMaxVariable->SetFloatVector(screenMax);
-		tum3D::Vec2f texCoordMin(0.0f, 0.0f);
-		tum3D::Vec2f texCoordMax(1.0f, 1.0f);
-		g_screenEffect.m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
-		g_screenEffect.m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
-
-		m_d3dDeviceContex->IASetInputLayout(NULL);
-		m_d3dDeviceContex->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-
-
-		if (!g_useAllGPUs || (g_cudaDevices.size() == 1))
-		{
-			//m_d3dDeviceContex->ClearRenderTargetView(g_pRenderBufferTempRTV, (float*)&g_backgroundColor);
-			// single-GPU case - blend together rendering manager's "opaque" and "raycast" textures
-			m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRenderBufferTempRTV, nullptr);
-
-			// save old viewport
-			UINT viewportCount = 1;
-			D3D11_VIEWPORT viewportOld;
-			m_d3dDeviceContex->RSGetViewports(&viewportCount, &viewportOld);
-
-			// set viewport for offscreen render buffer
-			D3D11_VIEWPORT viewport;
-			viewport.TopLeftX = 0;
-			viewport.TopLeftY = 0;
-			viewport.Width = (FLOAT)g_projParams.m_imageWidth;
-			viewport.Height = (FLOAT)g_projParams.m_imageHeight;
-			viewport.MinDepth = 0.0f;
-			viewport.MaxDepth = 1.0f;
-			m_d3dDeviceContex->RSSetViewports(1, &viewport);
-
-			// blit opaque stuff
-			g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetOpaqueSRV());
-			g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::Blit)->Apply(0, m_d3dDeviceContex);
-			m_d3dDeviceContex->Draw(4, 0);
-
-			// blend raycaster result over
-			g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetRaycastSRV());
-			g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
-			m_d3dDeviceContex->Draw(4, 0);
-
-			// restore viewport
-			m_d3dDeviceContex->RSSetViewports(1, &viewportOld);
-		}
-		else
-		{
-			// multi-GPU case - copy all raycast textures together
-			//TODO what about opaque stuff..?
-			for (size_t i = 0; i < g_cudaDevices.size(); i++)
+			// if primary GPU is done, check if other threads are finished as well
+			if (renderingFinished && g_useAllGPUs)
 			{
-				int left = g_projParams.GetImageLeft(g_cudaDevices[i].range);
-				int width = g_projParams.GetImageWidth(g_cudaDevices[i].range);
-				int height = g_projParams.GetImageHeight(g_cudaDevices[i].range);
-
-				if (g_cudaDevices[i].pThread == nullptr)
+				for (size_t i = 0; i < g_cudaDevices.size(); i++)
 				{
-					// this is the main GPU, copy over directly
-					D3D11_BOX box;
-					box.left = 0;
-					box.right = width;
-					box.top = 0;
-					box.bottom = height;
-					box.front = 0;
-					box.back = 1;
+					if (g_cudaDevices[i].pThread == nullptr) continue;
 
-					m_d3dDeviceContex->CopySubresourceRegion(g_pRenderBufferTempTex, 0, left, 0, 0, g_renderingManager.GetRaycastTex(), 0, &box);
+					renderingFinished = renderingFinished && !g_cudaDevices[i].pThread->IsWorking();
+					renderingUpdated = true;
 				}
-				else
-				{
-					// get image from thread and upload to this GPU
-					byte* pData = nullptr;
-					uint timestamp = g_cudaDevices[i].pThread->LockResultImage(pData);
-					if (timestamp > s_timestampLastUpdate[i])
-					{
-						s_timestampLastUpdate[i] = timestamp;
+			}
 
+			if (renderingFinished)
+			{
+				s_isRendering = false;
+				g_timerRendering.Stop();
+			}
+		}
+
+		//-----------------------------------------------------------
+		// COMBINE RESULTS AND DRAW ON SCREEN
+		//-----------------------------------------------------------
+
+		// if this was the last brick, or we want to see unfinished images, copy from raycast target into finished image tex
+		if (renderingUpdated && (renderingFinished || g_showPreview))
+		{
+			//if (s_isTracing) std::cout << "Render while still tracing" << std::endl;
+
+			// common shader vars for fullscreen pass
+			tum3D::Vec2f screenMin(-1.0f, -1.0f);
+			tum3D::Vec2f screenMax(1.0f, 1.0f);
+			g_screenEffect.m_pvScreenMinVariable->SetFloatVector(screenMin);
+			g_screenEffect.m_pvScreenMaxVariable->SetFloatVector(screenMax);
+			tum3D::Vec2f texCoordMin(0.0f, 0.0f);
+			tum3D::Vec2f texCoordMax(1.0f, 1.0f);
+			g_screenEffect.m_pvTexCoordMinVariable->SetFloatVector(texCoordMin);
+			g_screenEffect.m_pvTexCoordMaxVariable->SetFloatVector(texCoordMax);
+
+			m_d3dDeviceContex->IASetInputLayout(NULL);
+			m_d3dDeviceContex->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+
+
+			if (!g_useAllGPUs || (g_cudaDevices.size() == 1))
+			{
+				//m_d3dDeviceContex->ClearRenderTargetView(g_pRenderBufferTempRTV, (float*)&g_backgroundColor);
+				// single-GPU case - blend together rendering manager's "opaque" and "raycast" textures
+				m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRenderBufferTempRTV, nullptr);
+
+				// save old viewport
+				UINT viewportCount = 1;
+				D3D11_VIEWPORT viewportOld;
+				m_d3dDeviceContex->RSGetViewports(&viewportCount, &viewportOld);
+
+				// set viewport for offscreen render buffer
+				D3D11_VIEWPORT viewport;
+				viewport.TopLeftX = 0;
+				viewport.TopLeftY = 0;
+				viewport.Width = (FLOAT)g_projParams.m_imageWidth;
+				viewport.Height = (FLOAT)g_projParams.m_imageHeight;
+				viewport.MinDepth = 0.0f;
+				viewport.MaxDepth = 1.0f;
+				m_d3dDeviceContex->RSSetViewports(1, &viewport);
+
+				// blit opaque stuff
+				g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetOpaqueSRV());
+				g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::Blit)->Apply(0, m_d3dDeviceContex);
+				m_d3dDeviceContex->Draw(4, 0);
+
+				// blend raycaster result over
+				g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetRaycastSRV());
+				g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
+				m_d3dDeviceContex->Draw(4, 0);
+
+				// restore viewport
+				m_d3dDeviceContex->RSSetViewports(1, &viewportOld);
+			}
+			else
+			{
+				// multi-GPU case - copy all raycast textures together
+				//TODO what about opaque stuff..?
+				for (size_t i = 0; i < g_cudaDevices.size(); i++)
+				{
+					int left = g_projParams.GetImageLeft(g_cudaDevices[i].range);
+					int width = g_projParams.GetImageWidth(g_cudaDevices[i].range);
+					int height = g_projParams.GetImageHeight(g_cudaDevices[i].range);
+
+					if (g_cudaDevices[i].pThread == nullptr)
+					{
+						// this is the main GPU, copy over directly
 						D3D11_BOX box;
-						box.left = left;
-						box.right = box.left + width;
+						box.left = 0;
+						box.right = width;
 						box.top = 0;
-						box.bottom = box.top + height;
+						box.bottom = height;
 						box.front = 0;
 						box.back = 1;
 
-						m_d3dDeviceContex->UpdateSubresource(g_pRenderBufferTempTex, 0, &box, pData, width * sizeof(uchar4), 0);
+						m_d3dDeviceContex->CopySubresourceRegion(g_pRenderBufferTempTex, 0, left, 0, 0, g_renderingManager.GetRaycastTex(), 0, &box);
 					}
-					g_cudaDevices[i].pThread->UnlockResultImage();
+					else
+					{
+						// get image from thread and upload to this GPU
+						byte* pData = nullptr;
+						uint timestamp = g_cudaDevices[i].pThread->LockResultImage(pData);
+						if (timestamp > s_timestampLastUpdate[i])
+						{
+							s_timestampLastUpdate[i] = timestamp;
+
+							D3D11_BOX box;
+							box.left = left;
+							box.right = box.left + width;
+							box.top = 0;
+							box.bottom = box.top + height;
+							box.front = 0;
+							box.back = 1;
+
+							m_d3dDeviceContex->UpdateSubresource(g_pRenderBufferTempTex, 0, &box, pData, width * sizeof(uchar4), 0);
+						}
+						g_cudaDevices[i].pThread->UnlockResultImage();
+					}
 				}
 			}
+
+			// blit over into "raycast finished" tex
+			//g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
+			//g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
+
+			m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
+			//m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
+
+			//TODO if g_renderBufferSizeFactor > 2, generate mipmaps first?
+			g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
+			g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::Blit)->Apply(0, m_d3dDeviceContex);
+			m_d3dDeviceContex->Draw(4, 0);
+
+			ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
+			m_d3dDeviceContex->PSSetShaderResources(0, 1, pNullSRV);
+
+			// reset render target
+			//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
+			//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
 		}
-
-		// blit over into "raycast finished" tex
-		//g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
-		//g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
-
-		m_d3dDeviceContex->OMSetRenderTargets(1, &g_pRaycastFinishedRTV, nullptr);
-		//m_d3dDeviceContex->ClearRenderTargetView(g_pRaycastFinishedRTV, (float*)&g_backgroundColor);
-
-		//TODO if g_renderBufferSizeFactor > 2, generate mipmaps first?
-		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
-		g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::Blit)->Apply(0, m_d3dDeviceContex);
-		m_d3dDeviceContex->Draw(4, 0);
-
-		ID3D11ShaderResourceView* pNullSRV[1] = { nullptr };
-		m_d3dDeviceContex->PSSetShaderResources(0, 1, pNullSRV);
-
-		// reset render target
-		//ID3D11RenderTargetView* pRTV = DXUTGetD3D11RenderTargetView();
-		//g_pd3dDeviceContext->OMSetRenderTargets(1, &g_mainRenderTargetView, g_mainDepthStencilView);
 	}
 #pragma endregion
 
+
+#pragma region Miscellaneous
+	{
 	//-----------------------------------------------------------
-	// MISCELANOUS TASKS (Screenshots, ...)
+	// Miscellaneous TASKS (Screenshots, ...)
 	//-----------------------------------------------------------
 
 NoVolumeLoaded:
@@ -1140,6 +1129,9 @@ NoVolumeLoaded:
 		}
 	}
 #endif
+	}
+#pragma endregion
+
 }
 
 bool FlowVisTool::ResizeViewport(int width, int height)
