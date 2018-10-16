@@ -29,6 +29,14 @@ const int max_frames = 150;
 std::vector<float> frameTimes(max_frames);
 int currentFrameTimeIndex = 0;
 
+ImVec4 sectionTextColor = ImVec4(0.67f, 0.52f, 0.00f, 1.00f);
+
+void SectionText(const char* str)
+{
+	ImGui::PushStyleColor(ImGuiCol_Text, sectionTextColor);
+	ImGui::Text(str);
+	ImGui::PopStyleColor();
+}
 
 #pragma region Dialogs
 void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& g_flowVisTool)
@@ -258,7 +266,7 @@ void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame
 void FlowVisToolGUI::DockSpace()
 {
 	static bool opt_fullscreen_persistant = true;
-	static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_PassthruInEmptyNodes | ImGuiDockNodeFlags_RenderWindowBg;
+	static ImGuiDockNodeFlags opt_flags = ImGuiDockNodeFlags_None;// | ImGuiDockNodeFlags_PassthruInEmptyNodes | ImGuiDockNodeFlags_RenderWindowBg;
 	bool opt_fullscreen = opt_fullscreen_persistant;
 
 	// We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
@@ -839,6 +847,12 @@ void FlowVisToolGUI::HeatmapWindow(FlowVisTool& g_flowVisTool)
 
 void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 {
+	ImGui::Begin("Debug");
+
+	ImGui::ColorEdit4("SectionTextColor", (float*)&sectionTextColor);
+
+	ImGui::End();
+
 	// Rendering config window
 	if (g_showRenderingOptionsWindow)
 	{
@@ -850,24 +864,26 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 				if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
 					g_flowVisTool.m_redraw = true;
 
+				ImGui::Checkbox("Enabled", &g_flowVisTool.g_particleRenderParams.m_linesEnabled);
+
 				ImGui::Checkbox("Rendering Preview", &g_flowVisTool.g_showPreview);
 
-				if (ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_backgroundColor))
-					g_flowVisTool.m_redraw = true;
-
+				ImGui::Checkbox("Show Brick Boxes", &g_flowVisTool.g_bRenderBrickBoxes);
 				ImGui::Checkbox("Show Seed Box", &g_flowVisTool.g_bRenderSeedBox);
+				
 				ImGui::Checkbox("Show Domain Box", &g_flowVisTool.g_bRenderDomainBox);
-
-				if (ImGui::DragFloat("Domain Box Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
+				ImGui::SameLine();
+				if (ImGui::DragFloat("Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
 				{
 					g_flowVisTool.g_renderingManager.m_DomainBoxThickness = std::max(0.0f, g_flowVisTool.g_renderingManager.m_DomainBoxThickness);
 					g_flowVisTool.m_redraw = true;
 				}
 
-				ImGui::Checkbox("Show Brick Boxes", &g_flowVisTool.g_bRenderBrickBoxes);
-
 				ImGui::Spacing();
 				ImGui::Separator();
+
+				if (ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_backgroundColor))
+					g_flowVisTool.m_redraw = true;
 
 				ImGui::Checkbox("Fixed Light Dir", &g_flowVisTool.g_particleRenderParams.m_FixedLightDir);
 
@@ -897,7 +913,7 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				ImGui::Checkbox("Particle rendering", &g_flowVisTool.g_particleRenderParams.m_linesEnabled);
+				SectionText("Rendering Mode");
 
 				static auto getterLineRenderMode = [](void* data, int idx, const char** out_str)
 				{
@@ -907,39 +923,65 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 				};
 				ImGui::Combo("Line render mode", (int*)&g_flowVisTool.g_particleRenderParams.m_lineRenderMode, getterLineRenderMode, nullptr, LINE_RENDER_MODE_COUNT);
 
-				if (ImGui::DragFloat("Ribbon Width", &g_flowVisTool.g_particleRenderParams.m_ribbonWidth, 0.001f, 0.0f, FLT_MAX, "%.3f"))
-					g_flowVisTool.g_particleRenderParams.m_ribbonWidth = std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_ribbonWidth);
 
-				if (ImGui::DragFloat("Tube Radius", &g_flowVisTool.g_particleRenderParams.m_tubeRadius, 0.001f, 0.0f, FLT_MAX, "%.3f"))
-					g_flowVisTool.g_particleRenderParams.m_tubeRadius = std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_tubeRadius);
-
-				if (ImGui::DragFloat("Particle Size", &g_flowVisTool.g_particleRenderParams.m_particleSize, 0.001f, 0.0f, FLT_MAX, "%.3f"))
-					g_flowVisTool.g_particleRenderParams.m_particleSize = std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_particleSize);
-
-				ImGui::Checkbox("Display Velocity", &g_flowVisTool.g_particleRenderParams.m_tubeRadiusFromVelocity);
-
-				ImGui::DragFloat("Reference Velocity", &g_flowVisTool.g_particleRenderParams.m_referenceVelocity, 0.001f);
-
-				ImGui::Spacing();
-				ImGui::Separator();
-
-				static auto getterParticleRenderMode = [](void* data, int idx, const char** out_str)
+				switch (g_flowVisTool.g_particleRenderParams.m_lineRenderMode)
 				{
-					if (idx >= PARTICLE_RENDER_MODE_COUNT) return false;
-					*out_str = GetParticleRenderModeName(eParticleRenderMode(idx));
-					return true;
-				};
-				ImGui::Combo("Particle render mode", (int*)&g_flowVisTool.g_particleRenderParams.m_particleRenderMode, getterParticleRenderMode, nullptr, PARTICLE_RENDER_MODE_COUNT);
+				case eLineRenderMode::LINE_RENDER_TUBE:
+				{
+					ImGui::Spacing();
+					ImGui::Separator();
+					SectionText("Tube Rendering Settings");
+					if (ImGui::DragFloat("Radius", &g_flowVisTool.g_particleRenderParams.m_tubeRadius, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_flowVisTool.g_particleRenderParams.m_tubeRadius = std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_tubeRadius);
+					break;
+				}
+				case eLineRenderMode::LINE_RENDER_RIBBON:
+				{
+					ImGui::Spacing();
+					ImGui::Separator();
+					SectionText("Ribbon Rendering Settings");
+					if (ImGui::DragFloat("Width", &g_flowVisTool.g_particleRenderParams.m_ribbonWidth, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_flowVisTool.g_particleRenderParams.m_ribbonWidth = std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_ribbonWidth);
+					break;
+				}
+				case eLineRenderMode::LINE_RENDER_PARTICLES:
+				{
+					ImGui::Spacing();
+					ImGui::Separator();
+					SectionText("Particle Rendering Settings");
+					if (ImGui::DragFloat("Size", &g_flowVisTool.g_particleRenderParams.m_particleSize, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+						g_flowVisTool.g_particleRenderParams.m_particleSize = std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_particleSize);
 
-				if (ImGui::DragFloat("Particle Transparency", &g_flowVisTool.g_particleRenderParams.m_particleTransparency, 0.001f, 0.0f, 1.0f, "%.3f"))
-					g_flowVisTool.g_particleRenderParams.m_particleTransparency = std::min(1.0f, std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_particleTransparency));
+					static auto getterParticleRenderMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= PARTICLE_RENDER_MODE_COUNT) return false;
+						*out_str = GetParticleRenderModeName(eParticleRenderMode(idx));
+						return true;
+					};
+					ImGui::Combo("Render mode", (int*)&g_flowVisTool.g_particleRenderParams.m_particleRenderMode, getterParticleRenderMode, nullptr, PARTICLE_RENDER_MODE_COUNT);
 
-				ImGui::Checkbox("Sort Particles", &g_flowVisTool.g_particleRenderParams.m_sortParticles);
+					if (ImGui::DragFloat("Transparency", &g_flowVisTool.g_particleRenderParams.m_particleTransparency, 0.001f, 0.0f, 1.0f, "%.3f"))
+						g_flowVisTool.g_particleRenderParams.m_particleTransparency = std::min(1.0f, std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_particleTransparency));
+
+					ImGui::Checkbox("Sort Particles", &g_flowVisTool.g_particleRenderParams.m_sortParticles);
+
+					break;
+				}
+				}
+				
+				if (g_flowVisTool.g_particleRenderParams.m_lineRenderMode == eLineRenderMode::LINE_RENDER_TUBE || g_flowVisTool.g_particleRenderParams.m_lineRenderMode == eLineRenderMode::LINE_RENDER_PARTICLES)
+				{
+					ImGui::Checkbox("Display Velocity", &g_flowVisTool.g_particleRenderParams.m_tubeRadiusFromVelocity);
+					ImGui::SameLine();
+					ImGui::DragFloat("Reference", &g_flowVisTool.g_particleRenderParams.m_referenceVelocity, 0.001f);
+				}
+
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
 
+				SectionText("Color Mode");
 				static auto getterLineColorMode = [](void* data, int idx, const char** out_str)
 				{
 					if (idx >= LINE_COLOR_MODE_COUNT) return false;
@@ -948,26 +990,40 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 				};
 				ImGui::Combo("Color Mode", (int*)&g_flowVisTool.g_particleRenderParams.m_lineColorMode, getterLineColorMode, nullptr, LINE_COLOR_MODE_COUNT);
 
-				ImGui::ColorEdit3("Color 0", (float*)&g_flowVisTool.g_particleRenderParams.m_color0);
-				ImGui::ColorEdit3("Color 1", (float*)&g_flowVisTool.g_particleRenderParams.m_color1);
-
-				if (ImGui::Button("Load Color Texture", ImVec2(buttonWidth, 0)))
-					LoadColorTexture(g_flowVisTool);
-
-				static auto getterMeasureMode = [](void* data, int idx, const char** out_str)
+				switch (g_flowVisTool.g_particleRenderParams.m_lineColorMode)
 				{
-					if (idx >= MEASURE_COUNT) return false;
-					*out_str = GetMeasureName(eMeasure(idx));
-					return true;
-				};
-				ImGui::Combo("Measure", (int*)&g_flowVisTool.g_particleRenderParams.m_measure, getterMeasureMode, nullptr, MEASURE_COUNT);
+				case eLineColorMode::AGE:
+				{
+					ImGui::ColorEdit3("Color 0", (float*)&g_flowVisTool.g_particleRenderParams.m_color0);
+					ImGui::ColorEdit3("Color 1", (float*)&g_flowVisTool.g_particleRenderParams.m_color1);
+					break;
+				}
+				case eLineColorMode::TEXTURE:
+				{
+					if (ImGui::Button("Load Color Texture", ImVec2(buttonWidth, 0)))
+						LoadColorTexture(g_flowVisTool);
+					break;
+				}
+				case eLineColorMode::MEASURE:
+				{
+					static auto getterMeasureMode = [](void* data, int idx, const char** out_str)
+					{
+						if (idx >= MEASURE_COUNT) return false;
+						*out_str = GetMeasureName(eMeasure(idx));
+						return true;
+					};
+					ImGui::Combo("Measure", (int*)&g_flowVisTool.g_particleRenderParams.m_measure, getterMeasureMode, nullptr, MEASURE_COUNT);
 
-				if (ImGui::DragFloat("Measure scale", &g_flowVisTool.g_particleRenderParams.m_measureScale, 0.001f, 0.0f, 1.0f, "%.3f"))
-					g_flowVisTool.g_particleRenderParams.m_measureScale = std::min(1.0f, std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_measureScale));
+					if (ImGui::DragFloat("Measure scale", &g_flowVisTool.g_particleRenderParams.m_measureScale, 0.001f, 0.0f, 1.0f, "%.3f"))
+						g_flowVisTool.g_particleRenderParams.m_measureScale = std::min(1.0f, std::max(0.0f, g_flowVisTool.g_particleRenderParams.m_measureScale));
+					break;
+				}
+				}
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
+				SectionText("Time Stripes");
 				ImGui::Checkbox("Time Stripes", &g_flowVisTool.g_particleRenderParams.m_timeStripes);
 
 				if (ImGui::DragFloat("Time Stripe Length", &g_flowVisTool.g_particleRenderParams.m_timeStripeLength, 0.001f, 0.001f, FLT_MAX, "%.3f"))
@@ -976,6 +1032,7 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
+				SectionText("Slice");
 				if (ImGui::Button("Load Slice Texture", ImVec2(buttonWidth, 0)))
 					LoadSliceTexture(g_flowVisTool);
 
