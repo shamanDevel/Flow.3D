@@ -1349,7 +1349,12 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 
 		static bool p_open = true;
 
-		ImGui::SetNextWindowBgAlpha(0.1f); // Transparent background
+		static bool isHelperWindowHovered = false;
+
+		ImGui::SetNextWindowBgAlpha(isHelperWindowHovered ? 0.75f : 0.15f);
+		
+		ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Border, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+
 		if (ImGui::Begin("Example: Simple Overlay", &p_open, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav))
 		{
 			static auto makeRotationFromDir = [](tum3D::Vec3f direction)
@@ -1388,12 +1393,15 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 			ImVec4 bColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_Button];
 			ImVec4 tColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_Text];
 			ImVec4 fColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_FrameBg];
+			ImVec4 sColor = ImGui::GetStyle().Colors[ImGuiCol_::ImGuiCol_Separator];
+			
 
-			if (!ImGui::IsWindowHovered()) { bColor.w = 0.15f; tColor.w = 0.15f; fColor.w = 0.15f; }
+			if (!isHelperWindowHovered) { bColor.w = 0.15f; tColor.w = 0.15f; fColor.w = 0.15f; sColor.w = 0.15f; }
 
 			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, bColor);
 			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Text, tColor);
 			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_FrameBg, fColor);
+			ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Separator, sColor);
 			{
 				ImVec2 bsize(60, 0);
 
@@ -1466,7 +1474,7 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 					g_flowVisTool.g_viewParams.m_viewDistance = 5.0f;
 				ImGui::PopID();
 			}
-			ImGui::PopStyleColor(3);
+			ImGui::PopStyleColor(4);
 
 			static tum3D::Vec4f targetQuat;
 			static bool interp = false;
@@ -1499,8 +1507,11 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 				if (ImGui::MenuItem("Bottom-right", NULL, corner == 3)) corner = 3;
 				ImGui::EndPopup();
 			}
+
+			isHelperWindowHovered = ImGui::IsWindowHovered();
 		}
 		ImGui::End();
+		ImGui::PopStyleColor();
 	}
 	ImGui::End();
 	ImGui::PopStyleVar(ImGuiStyleVar_::ImGuiStyleVar_WindowPadding);

@@ -757,25 +757,36 @@ namespace
 }
 
 
-RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, const TimeVolume& volume, const std::vector<FilteredVolume>& filteredVolumes,
-	const ViewParams& viewParams, const StereoParams& stereoParams,
-	bool renderDomainBox, bool renderClipBox, bool renderSeedBox, bool renderBrickBoxes,
-	const ParticleTraceParams& particleTraceParams, const ParticleRenderParams& particleRenderParams,
-	const std::vector<LineBuffers*>& pLineBuffers, bool linesOnly,
-	const std::vector<BallBuffers*>& pBallBuffers, float ballRadius,
+RenderingManager::eRenderState RenderingManager::StartRendering(
+	bool isTracing, 
+	const TimeVolume& volume, 
+	const std::vector<FilteredVolume>& filteredVolumes,
+	const ViewParams& viewParams, 
+	const StereoParams& stereoParams,
+	bool renderDomainBox, 
+	bool renderClipBox, 
+	bool renderSeedBox, 
+	bool renderBrickBoxes,
+	const ParticleTraceParams& particleTraceParams, 
+	const ParticleRenderParams& particleRenderParams,
+	const std::vector<LineBuffers*>& pLineBuffers, 
+	bool linesOnly,
+	const std::vector<BallBuffers*>& pBallBuffers, 
+	float ballRadius,
 	HeatMapManager* pHeatMapManager,
-	const RaycastParams& raycastParams, cudaArray* pTransferFunction, SimpleParticleVertexDeltaT* dpParticles, int transferFunctionDevice)
+	const RaycastParams& raycastParams, 
+	cudaArray* pTransferFunction, 
+	SimpleParticleVertexDeltaT* dpParticles, 
+	int transferFunctionDevice)
 {
-	if(IsRendering()) CancelRendering();
+	if (IsRendering()) 
+		CancelRendering();
 
-	if(!volume.IsOpen()) return STATE_ERROR;
+	if (!volume.IsOpen()) 
+		return STATE_ERROR;
 
-	if(m_projectionParams.GetImageWidth(m_range) * m_projectionParams.GetImageHeight(m_range) == 0)
-	{
+	if (m_projectionParams.GetImageWidth(m_range) * m_projectionParams.GetImageHeight(m_range) == 0)
 		return STATE_DONE;
-	}
-
-	bool measureChanged = (m_raycastParams.m_measure1 != raycastParams.m_measure1);
 
 	m_pVolume = &volume;
 	m_pFilteredVolumes = &filteredVolumes;
@@ -792,106 +803,14 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 	m_renderSeedBox = renderSeedBox;
 	m_renderBrickBoxes = renderBrickBoxes;
 
-	bool doRaycasting = m_raycastParams.m_raycastingEnabled && !linesOnly;
 
-	// copy transfer function
-	if(doRaycasting && pTransferFunction)
-	{
-		cudaChannelFormatDesc desc;
-		cudaExtent extent;
-		cudaSafeCall(cudaArrayGetInfo(&desc, &extent, nullptr, pTransferFunction));
-		// for 1D arrays, this returns 0 in width and height...
-		extent.height = (extent.height, size_t(1));
-		extent.depth = (extent.depth, size_t(1));
-		std::cout << "cudaMallocArray " << (extent.width * extent.height * 16) / 1024.0f << "KB" << std::endl;
-		cudaSafeCall(cudaMallocArray(&m_pTfArray, &desc, extent.width, extent.height));
-		size_t elemCount = extent.width * extent.height * extent.depth;
-		size_t bytesPerElem = (desc.x + desc.y + desc.z + desc.w) / 8;
-
-		int myDevice = -1;
-		cudaSafeCall(cudaGetDevice(&myDevice));
-		if(myDevice == transferFunctionDevice || transferFunctionDevice == -1)
-		{
-			cudaSafeCall(cudaMemcpyArrayToArray(m_pTfArray, 0, 0, pTransferFunction, 0, 0, elemCount * bytesPerElem));
-		}
-		else
-		{
-			cudaMemcpy3DPeerParms params = {};
-			params.srcArray = pTransferFunction;
-			params.srcDevice = transferFunctionDevice;
-			params.srcPos = make_cudaPos(0, 0, 0);
-			params.dstArray = m_pTfArray;
-			params.dstDevice = myDevice;
-			params.dstPos = make_cudaPos(0, 0, 0);
-			params.extent = extent;
-			cudaSafeCall(cudaMemcpy3DPeer(&params));
-		}
-	}
-
-	//This would stop rendering if lines and raycasting are disabled
-	//By removing that, at least the outlines are rendered and one can see the camera interactions
-#if 0
-	if(!doRaycasting && !m_particleRenderParams.m_linesEnabled && pBallBuffers.empty())
-	{
-		// nothing to do...
-		CancelRendering();
-		return STATE_DONE;
-	}
-#endif
-
-	if(doRaycasting)
-	{
-		// set params and create resources
-		m_raycaster.SetBrickSizeWorld(m_pVolume->GetBrickSizeWorld());
-		m_raycaster.SetBrickOverlapWorld(m_pVolume->GetBrickOverlapWorld());
-		m_raycaster.SetGridSpacing(m_pVolume->GetGridSpacing());
-		m_raycaster.SetParams(m_projectionParams, m_stereoParams, m_range);
-
-		if( m_pVolume->GetBrickSizeWithOverlap() != m_brickSize ||
-			m_pVolume->GetChannelCount() != m_channelCount ||
-			GetRequiredBrickSlotCount() != m_brickSlots.size())
-		{
-			if(FAILED(CreateVolumeDependentResources()))
-			{
-				MessageBoxA(nullptr, "RenderingManager::StartRendering: Failed creating volume-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
-				CancelRendering();
-				return STATE_ERROR;
-			}
-		}
-
-		if(!ManageMeasureBrickSlots())
-		{
-			MessageBoxA(nullptr, "RenderingManager::StartRendering: Failed creating brick slots for precomputed measure (probably not enough GPU memory). Reverting to on-the-fly computation.", "Fail", MB_OK | MB_ICONINFORMATION);
-			m_raycastParams.m_measureComputeMode = MEASURE_COMPUTE_ONTHEFLY;
-		}
-
-		// if the measure was changed, have to clear all the precomputed measure bricks
-		if(measureChanged)
-		{
-			for(uint i = 0; i < m_measureBrickSlotsFilled.size(); i++)
-			{
-				m_measureBrickSlotsFilled[i] = false;
-			}
-			for(uint i = 0; i < m_measureBricksCompressed.size(); i++)
-			{
-				m_measureBricksCompressed[i].clear();
-			}
-		}
-	}
-	else
-	{
-		// raycasting disabled, release resources
-		ReleaseMeasureBrickSlots();
-		ReleaseVolumeDependentResources();
-	}
-
-
+#pragma region ComputeFrustumPlanes
 	// compute frustum planes in view space
 	Vec4f frustumPlanes[6];
 	Vec4f frustumPlanes2[6];
-	if(m_stereoParams.m_stereoEnabled)
+	if (m_stereoParams.m_stereoEnabled)
 	{
-		m_projectionParams.GetFrustumPlanes(frustumPlanes,  EYE_LEFT,  m_stereoParams.m_eyeDistance, m_range);
+		m_projectionParams.GetFrustumPlanes(frustumPlanes, EYE_LEFT, m_stereoParams.m_eyeDistance, m_range);
 		m_projectionParams.GetFrustumPlanes(frustumPlanes2, EYE_RIGHT, m_stereoParams.m_eyeDistance, m_range);
 
 		// we want the inverse transpose of the inverse of view
@@ -902,9 +821,9 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 		Mat4f viewRightTrans;
 		viewRight.transpose(viewRightTrans);
 
-		for(uint i = 0; i < 6; i++)
+		for (uint i = 0; i < 6; i++)
 		{
-			frustumPlanes [i] = viewLeftTrans  * frustumPlanes[i];
+			frustumPlanes[i] = viewLeftTrans  * frustumPlanes[i];
 			frustumPlanes2[i] = viewRightTrans * frustumPlanes[i];
 		}
 	}
@@ -917,118 +836,226 @@ RenderingManager::eRenderState RenderingManager::StartRendering(bool isTracing, 
 		Mat4f viewTrans;
 		view.transpose(viewTrans);
 
-		for(uint i = 0; i < 6; i++)
+		for (uint i = 0; i < 6; i++)
 		{
 			frustumPlanes[i] = viewTrans * frustumPlanes[i];
 		}
 	}
+#pragma endregion
 
-	// if we're doing raycasting, build list of bricks to render
-	m_bricksToRender.clear();
-	m_nextBrickToRender = 0;
-	m_nextPass = 0;
-	if(doRaycasting)
+	
+#pragma region SetupRaycastingStuff
 	{
-		// get bricks of current timestep, sort by distance
-		std::vector<BrickSortItem> bricksCurTimestep;
-		const Vec3f& camPos = m_viewParams.GetCameraPosition();
-		auto& bricks = m_pVolume->GetNearestTimestep().bricks;
-		for(auto it = bricks.cbegin(); it != bricks.cend(); ++it)
+		bool doRaycasting = m_raycastParams.m_raycastingEnabled && !linesOnly;
+
+		// copy transfer function
+		if (doRaycasting && pTransferFunction)
 		{
-			const TimeVolumeIO::Brick* pBrick = &(*it);
-			bricksCurTimestep.push_back(BrickSortItem(pBrick, GetDistance(volume, pBrick->GetSpatialIndex(), camPos)));
-		}
-		std::sort(bricksCurTimestep.begin(), bricksCurTimestep.end());
+			cudaChannelFormatDesc desc;
+			cudaExtent extent;
+			cudaSafeCall(cudaArrayGetInfo(&desc, &extent, nullptr, pTransferFunction));
+			// for 1D arrays, this returns 0 in width and height...
+			extent.height = (extent.height, size_t(1));
+			extent.depth = (extent.depth, size_t(1));
+			std::cout << "cudaMallocArray " << (extent.width * extent.height * 16) / 1024.0f << "KB" << std::endl;
+			cudaSafeCall(cudaMallocArray(&m_pTfArray, &desc, extent.width, extent.height));
+			size_t elemCount = extent.width * extent.height * extent.depth;
+			size_t bytesPerElem = (desc.x + desc.y + desc.z + desc.w) / 8;
 
-		// walk brick list, collect bricks to render
-		for(size_t brickIndex = 0; brickIndex < bricksCurTimestep.size(); brickIndex++)
-		{
-			// get brick
-			const TimeVolumeIO::Brick* pBrick = bricksCurTimestep[brickIndex].pBrick;
-
-			Vec3f boxMin, boxMax;
-			m_pVolume->GetBrickBoxWorld(pBrick->GetSpatialIndex(), boxMin, boxMax);
-
-			bool clipped = false;
-
-			// check if brick is clipped against clip box
-			clipped = clipped || IsBoxClippedAgainstBox(m_raycastParams.m_clipBoxMin, m_raycastParams.m_clipBoxMax, boxMin, boxMax);
-
-			// check if brick is outside view frustum
-			for(uint i = 0; i < 6; i++)
+			int myDevice = -1;
+			cudaSafeCall(cudaGetDevice(&myDevice));
+			if (myDevice == transferFunctionDevice || transferFunctionDevice == -1)
 			{
-				bool planeClipped = IsBoxClippedAgainstPlane(frustumPlanes[i], boxMin, boxMax);
-				if(m_stereoParams.m_stereoEnabled)
-				{
-					planeClipped = planeClipped && IsBoxClippedAgainstPlane(frustumPlanes2[i], boxMin, boxMax);
-				}
-				clipped = clipped || planeClipped;
-			}
-
-			if(clipped)
-			{
-				m_bricksClipped.push_back(pBrick);
+				cudaSafeCall(cudaMemcpyArrayToArray(m_pTfArray, 0, 0, pTransferFunction, 0, 0, elemCount * bytesPerElem));
 			}
 			else
 			{
-				m_bricksToRender.push_back(pBrick);
+				cudaMemcpy3DPeerParms params = {};
+				params.srcArray = pTransferFunction;
+				params.srcDevice = transferFunctionDevice;
+				params.srcPos = make_cudaPos(0, 0, 0);
+				params.dstArray = m_pTfArray;
+				params.dstDevice = myDevice;
+				params.dstPos = make_cudaPos(0, 0, 0);
+				params.extent = extent;
+				cudaSafeCall(cudaMemcpy3DPeer(&params));
 			}
 		}
+
+		//This would stop rendering if lines and raycasting are disabled
+		//By removing that, at least the outlines are rendered and one can see the camera interactions
+#if 0
+		if (!doRaycasting && !m_particleRenderParams.m_linesEnabled && pBallBuffers.empty())
+		{
+			// nothing to do...
+			CancelRendering();
+			return STATE_DONE;
+		}
+#endif
+
+		bool measureChanged = (m_raycastParams.m_measure1 != raycastParams.m_measure1);
+
+		if (doRaycasting)
+		{
+			// set params and create resources
+			m_raycaster.SetBrickSizeWorld(m_pVolume->GetBrickSizeWorld());
+			m_raycaster.SetBrickOverlapWorld(m_pVolume->GetBrickOverlapWorld());
+			m_raycaster.SetGridSpacing(m_pVolume->GetGridSpacing());
+			m_raycaster.SetParams(m_projectionParams, m_stereoParams, m_range);
+
+			if (m_pVolume->GetBrickSizeWithOverlap() != m_brickSize ||
+				m_pVolume->GetChannelCount() != m_channelCount ||
+				GetRequiredBrickSlotCount() != m_brickSlots.size())
+			{
+				if (FAILED(CreateVolumeDependentResources()))
+				{
+					MessageBoxA(nullptr, "RenderingManager::StartRendering: Failed creating volume-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
+					CancelRendering();
+					return STATE_ERROR;
+				}
+			}
+
+			if (!ManageMeasureBrickSlots())
+			{
+				MessageBoxA(nullptr, "RenderingManager::StartRendering: Failed creating brick slots for precomputed measure (probably not enough GPU memory). Reverting to on-the-fly computation.", "Fail", MB_OK | MB_ICONINFORMATION);
+				m_raycastParams.m_measureComputeMode = MEASURE_COMPUTE_ONTHEFLY;
+			}
+
+			// if the measure was changed, have to clear all the precomputed measure bricks
+			if (measureChanged)
+			{
+				for (uint i = 0; i < m_measureBrickSlotsFilled.size(); i++)
+				{
+					m_measureBrickSlotsFilled[i] = false;
+				}
+				for (uint i = 0; i < m_measureBricksCompressed.size(); i++)
+				{
+					m_measureBricksCompressed[i].clear();
+				}
+			}
+		}
+		else
+		{
+			// raycasting disabled, release resources
+			ReleaseMeasureBrickSlots();
+			ReleaseVolumeDependentResources();
+		}
+
+		// if we're doing raycasting, build list of bricks to render
+		m_bricksToRender.clear();
+		m_nextBrickToRender = 0;
+		m_nextPass = 0;
+		if (doRaycasting)
+		{
+			// get bricks of current timestep, sort by distance
+			std::vector<BrickSortItem> bricksCurTimestep;
+			const Vec3f& camPos = m_viewParams.GetCameraPosition();
+			auto& bricks = m_pVolume->GetNearestTimestep().bricks;
+			for (auto it = bricks.cbegin(); it != bricks.cend(); ++it)
+			{
+				const TimeVolumeIO::Brick* pBrick = &(*it);
+				bricksCurTimestep.push_back(BrickSortItem(pBrick, GetDistance(volume, pBrick->GetSpatialIndex(), camPos)));
+			}
+			std::sort(bricksCurTimestep.begin(), bricksCurTimestep.end());
+
+			// walk brick list, collect bricks to render
+			for (size_t brickIndex = 0; brickIndex < bricksCurTimestep.size(); brickIndex++)
+			{
+				// get brick
+				const TimeVolumeIO::Brick* pBrick = bricksCurTimestep[brickIndex].pBrick;
+
+				Vec3f boxMin, boxMax;
+				m_pVolume->GetBrickBoxWorld(pBrick->GetSpatialIndex(), boxMin, boxMax);
+
+				bool clipped = false;
+
+				// check if brick is clipped against clip box
+				clipped = clipped || IsBoxClippedAgainstBox(m_raycastParams.m_clipBoxMin, m_raycastParams.m_clipBoxMax, boxMin, boxMax);
+
+				// check if brick is outside view frustum
+				for (uint i = 0; i < 6; i++)
+				{
+					bool planeClipped = IsBoxClippedAgainstPlane(frustumPlanes[i], boxMin, boxMax);
+					if (m_stereoParams.m_stereoEnabled)
+					{
+						planeClipped = planeClipped && IsBoxClippedAgainstPlane(frustumPlanes2[i], boxMin, boxMax);
+					}
+					clipped = clipped || planeClipped;
+				}
+
+				if (clipped)
+				{
+					m_bricksClipped.push_back(pBrick);
+				}
+				else
+				{
+					m_bricksToRender.push_back(pBrick);
+				}
+			}
+		}
+
+		// now we can update the list of bricks to load
+		UpdateBricksToLoad();
 	}
+#pragma endregion
 
-	// now we can update the list of bricks to load
-	UpdateBricksToLoad();
 	
-
 	// clear rendertargets and depth buffer
 	ClearResult();
 
+
+#pragma region RenderOpaqueStuffImmediately
 	// render opaque stuff immediately
-	RenderBoxes(true, false);
-	bool linesRendered = false;
-	if(m_particleRenderParams.m_linesEnabled)
 	{
-		for(size_t i = 0; i < pLineBuffers.size(); i++)
+		RenderBoxes(true, false);
+		bool linesRendered = false;
+		if (m_particleRenderParams.m_linesEnabled)
 		{
-			RenderLines(pLineBuffers[i], true, false);
-			if (pLineBuffers[i]->m_indexCountTotal >= 0) linesRendered = true;
+			for (size_t i = 0; i < pLineBuffers.size(); i++)
+			{
+				RenderLines(pLineBuffers[i], true, false);
+				if (pLineBuffers[i]->m_indexCountTotal >= 0) linesRendered = true;
+			}
 		}
-	}
 
-	if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr) 
-	{
-		PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, m_pVolume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
-		ExtraRenderSlice();
-	}
-
-	if (m_particleTraceParams.m_ftleEnabled)
-	{
-		if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
-			CreateFTLETexture();
-
-		if (isTracing)
-			ComputeFTLE(dpParticles);
-
-		if (m_particleRenderParams.m_ftleShowTexture)
+		if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr)
 		{
-			tum3D::Vec2f center(m_particleTraceParams.m_seedBoxMin.x() + m_particleTraceParams.m_seedBoxSize.x() * 0.5f, m_particleTraceParams.m_seedBoxMin.y() + m_particleTraceParams.m_seedBoxSize.y() * 0.5f);
-			PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY, m_particleTraceParams.m_seedBoxSize, center);
+			PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, m_pVolume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
 			ExtraRenderSlice();
 		}
-	}
 
-	for(size_t i = 0; i < pBallBuffers.size(); i++)
-	{
-		RenderBalls(pBallBuffers[i], ballRadius);
-	}
+		if (m_particleTraceParams.m_ftleEnabled)
+		{
+			if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
+				CreateFTLETexture();
 
-	//render heat map directly
-	if (pHeatMapManager != nullptr) {
-		RenderHeatMap(pHeatMapManager);
-	}
+			if (isTracing)
+				ComputeFTLE(dpParticles);
 
-	//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
-	//RenderSliceTexture();
+			if (m_particleRenderParams.m_ftleShowTexture)
+			{
+				tum3D::Vec2f center(m_particleTraceParams.m_seedBoxMin.x() + m_particleTraceParams.m_seedBoxSize.x() * 0.5f, m_particleTraceParams.m_seedBoxMin.y() + m_particleTraceParams.m_seedBoxSize.y() * 0.5f);
+				PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY, m_particleTraceParams.m_seedBoxSize, center);
+				ExtraRenderSlice();
+			}
+		}
+
+		for (size_t i = 0; i < pBallBuffers.size(); i++)
+		{
+			RenderBalls(pBallBuffers[i], ballRadius);
+		}
+
+
+		//render heat map directly
+		if (pHeatMapManager != nullptr) {
+			RenderHeatMap(pHeatMapManager);
+		}
+
+		//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
+		//RenderSliceTexture();
+	}
+#pragma endregion
+
 
 	// if there's nothing to raycast, we're finished now
 	if(m_bricksToRender.empty())

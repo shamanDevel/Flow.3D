@@ -114,6 +114,7 @@ public:
 
 	float				m_DomainBoxThickness = 0.0004f;
 
+
 private:
 	HRESULT CreateScreenDependentResources();
 	void ReleaseScreenDependentResources();
@@ -164,19 +165,20 @@ private:
 
 	void CreateFTLETexture();
 
-	bool          m_isCreated;
 
-	GPUResources*            m_pCompressShared;
-	CompressVolumeResources* m_pCompressVolume;
-	ID3D11Device*            m_pDevice;
 
-	Box           m_box;
 
-	LineEffect    m_lineEffect;
-	Raycaster     m_raycaster;
 
-	ProjectionParams m_projectionParams;
-	Range1D          m_range;
+
+	bool m_renderDomainBox;
+	bool m_renderClipBox;
+	bool m_renderSeedBox;
+	bool m_renderBrickBoxes;
+
+	bool			m_isCreated;
+	Box				m_box;
+	Range1D			m_range;
+	ID3D11Device*	m_pDevice;
 
 	ID3D11Texture1D*          m_pRandomColorsTex;
 	ID3D11ShaderResourceView* m_pRandomColorsSRV;
@@ -186,10 +188,6 @@ private:
 	ID3D11Texture2D*          m_pOpaqueTex;
 	ID3D11ShaderResourceView* m_pOpaqueSRV;
 	ID3D11RenderTargetView*   m_pOpaqueRTV;
-	ID3D11Texture2D*          m_pRaycastTex;
-	ID3D11ShaderResourceView* m_pRaycastSRV;
-	ID3D11RenderTargetView*   m_pRaycastRTV;
-	cudaGraphicsResource*     m_pRaycastTexCuda;
 	ID3D11Texture2D*          m_pTransparentTex;
 	ID3D11ShaderResourceView* m_pTransparentSRV;
 	ID3D11RenderTargetView*   m_pTransparentRTV;
@@ -198,63 +196,68 @@ private:
 	ID3D11ShaderResourceView* m_pDepthSRV;
 	ID3D11Texture2D*          m_pDepthTexCopy;
 	cudaGraphicsResource*     m_pDepthTexCopyCuda;
-	// if there is no D3D device:
-	cudaArray*                m_pRaycastArray;
-	//TODO m_pDepthArray?
 
+	LineEffect				  m_lineEffect;
 	ScreenEffect*             m_pScreenEffect;
 	QuadEffect*               m_pQuadEffect;
+	
 
-	// volume-dependent resources
-	std::vector<float*> m_dpChannelBuffer;
-	std::vector<BrickSlot> m_brickSlots;
-	int m_brickSize;
-	int m_channelCount;
-
-
-	uint m_bricksPerFrame;
-
-	// only valid while rendering
-	const TimeVolume*                  m_pVolume;
-	const std::vector<FilteredVolume>* m_pFilteredVolumes;
-	cudaArray*                         m_pTfArray;
-
+	ProjectionParams	 m_projectionParams;
 	ViewParams           m_viewParams;
 	StereoParams         m_stereoParams;
 	ParticleTraceParams  m_particleTraceParams;
 	ParticleRenderParams m_particleRenderParams;
-	RaycastParams        m_raycastParams;
 
-	bool m_renderDomainBox;
-	bool m_renderClipBox;
-	bool m_renderSeedBox;
-	bool m_renderBrickBoxes;
 
+#pragma region RaycastingStuff
+	RaycastParams				m_raycastParams;
+	cudaArray*					m_pTfArray;
+	Raycaster					m_raycaster;
+	const TimeVolume*			m_pVolume;
+	GPUResources*				m_pCompressShared;
+	CompressVolumeResources*	m_pCompressVolume;
+	// pre-computed measure bricks, only exist in appropriate eMeasureComputeModes
+	std::vector<BrickSlot*>			m_measureBrickSlots;
+	std::vector<bool>				m_measureBrickSlotsFilled;
+	std::vector<std::vector<uint>>	m_measureBricksCompressed;
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToRender;
 	std::vector<const TimeVolumeIO::Brick*> m_bricksClipped;
-	uint m_nextBrickToRender;
-	uint m_nextPass;
-	size_t m_brickSlotsFilled;
-
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
+	size_t									m_brickSlotsFilled;
+	uint									m_bricksPerFrame;
+	uint									m_nextBrickToRender;
+	uint									m_nextPass;
 
+	const std::vector<FilteredVolume>*		m_pFilteredVolumes;
 
-	// pre-computed measure bricks, only exist in appropriate eMeasureComputeModes
-	std::vector<BrickSlot*> m_measureBrickSlots;
-	std::vector<bool>       m_measureBrickSlotsFilled;
-	std::vector<std::vector<uint>> m_measureBricksCompressed;
-
+	// volume-dependent resources
+	std::vector<float*>		m_dpChannelBuffer;
+	std::vector<BrickSlot>	m_brickSlots;
+	int						m_brickSize;
+	int						m_channelCount;
 
 	// timing
+	Timings       m_timings;
+	TimerCPU      m_timerRender;
 	MultiTimerGPU m_timerUploadDecompress;
 	MultiTimerGPU m_timerComputeMeasure;
 	MultiTimerGPU m_timerRaycast;
 	MultiTimerGPU m_timerCompressDownload;
-	TimerCPU      m_timerRender;
 
-	Timings       m_timings;
+	// if there is no D3D device:
+	cudaArray*	m_pRaycastArray;
+	//TODO m_pDepthArray?
+
+	// screen-dependent resources
+	// if there is a D3D device:
+	ID3D11Texture2D*          m_pRaycastTex;
+	ID3D11ShaderResourceView* m_pRaycastSRV;
+	ID3D11RenderTargetView*   m_pRaycastRTV;
+	cudaGraphicsResource*     m_pRaycastTexCuda;
+#pragma endregion
 
 
+private:
 	// disallow copy and assignment
 	RenderingManager(const RenderingManager&);
 	RenderingManager& operator=(const RenderingManager&);
