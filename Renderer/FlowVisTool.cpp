@@ -167,6 +167,7 @@ void FlowVisTool::ReleaseVolumeDependentResources()
 	ReleaseLineBuffers();
 
 	g_renderingManager.Release();
+	g_raycasterManager.Release();
 
 	g_heatMapManager.Release();
 
@@ -205,6 +206,9 @@ bool FlowVisTool::CreateVolumeDependentResources()
 	if (!g_renderingManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
 		return false;
 	
+	if (!g_raycasterManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
+		return false;
+
 	if (!g_heatMapManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
 		return false;
 
@@ -569,16 +573,16 @@ void FlowVisTool::CheckForChanges()
 	}
 
 
-	static bool renderDomainBoxPrev = g_bRenderDomainBox;
-	static bool renderBrickBoxesPrev = g_bRenderBrickBoxes;
-	static bool renderClipBoxPrev = g_bRenderClipBox;
-	static bool renderSeedBoxPrev = g_bRenderSeedBox;
-	if (renderDomainBoxPrev != g_bRenderDomainBox || renderBrickBoxesPrev != g_bRenderBrickBoxes || renderClipBoxPrev != g_bRenderClipBox || renderSeedBoxPrev != g_bRenderSeedBox)
+	static bool renderDomainBoxPrev = g_renderingManager.m_renderDomainBox;
+	static bool renderBrickBoxesPrev = g_renderingManager.m_renderBrickBoxes;
+	static bool renderClipBoxPrev = g_renderingManager.m_renderClipBox;
+	static bool renderSeedBoxPrev = g_renderingManager.m_renderSeedBox;
+	if (renderDomainBoxPrev != g_renderingManager.m_renderDomainBox || renderBrickBoxesPrev != g_renderingManager.m_renderBrickBoxes || renderClipBoxPrev != g_renderingManager.m_renderClipBox || renderSeedBoxPrev != g_renderingManager.m_renderSeedBox)
 	{
-		renderDomainBoxPrev = g_bRenderDomainBox;
-		renderBrickBoxesPrev = g_bRenderBrickBoxes;
-		renderClipBoxPrev = g_bRenderClipBox;
-		renderSeedBoxPrev = g_bRenderSeedBox;
+		renderDomainBoxPrev = g_renderingManager.m_renderDomainBox;
+		renderBrickBoxesPrev = g_renderingManager.m_renderBrickBoxes;
+		renderClipBoxPrev = g_renderingManager.m_renderClipBox;
+		renderSeedBoxPrev = g_renderingManager.m_renderSeedBox;
 		m_redraw = true;
 	}
 
@@ -596,7 +600,7 @@ void FlowVisTool::CheckForChanges()
 	if (projParamsChanged || rangeChanged)
 	{
 		// cancel rendering
-		g_renderingManager.CancelRendering();
+		g_raycasterManager.CancelRendering();
 		if (g_useAllGPUs)
 		{
 			for (size_t i = 0; i < g_cudaDevices.size(); i++)
@@ -607,6 +611,7 @@ void FlowVisTool::CheckForChanges()
 		}
 
 		// forward the new params
+		g_raycasterManager.SetProjectionParams(g_projParams, g_cudaDevices[g_primaryCudaDeviceIndex].range);
 		g_renderingManager.SetProjectionParams(g_projParams, g_cudaDevices[g_primaryCudaDeviceIndex].range);
 		if (g_useAllGPUs)
 		{
@@ -754,7 +759,7 @@ void FlowVisTool::Filtering()
 	bool needFilteredBricks = g_filterParams.HasNonZeroRadius();
 	if (needFilteredBricks && !s_isFiltering && g_filteringManager.GetResultCount() == 0)
 	{
-		g_renderingManager.CancelRendering();
+		g_raycasterManager.CancelRendering();
 		if (g_useAllGPUs)
 		{
 			for (size_t i = 0; i < g_cudaDevices.size(); i++)
@@ -765,7 +770,7 @@ void FlowVisTool::Filtering()
 		}
 		// release other resources - we'll need a lot of memory for filtering
 		g_tracingManager.ReleaseResources();
-		g_renderingManager.ReleaseResources();
+		g_raycasterManager.ReleaseResources();
 
 		assert(g_filteringManager.IsCreated());
 
@@ -787,7 +792,7 @@ void FlowVisTool::Tracing()
 	bool traceStartNow = !s_isFiltering && traceDelayPassed;
 	if (m_retrace && traceStartNow)
 	{
-		g_renderingManager.CancelRendering();
+		g_raycasterManager.CancelRendering();
 		if (g_useAllGPUs)
 		{
 			for (size_t i = 0; i < g_cudaDevices.size(); i++)
@@ -797,7 +802,7 @@ void FlowVisTool::Tracing()
 			}
 		}
 		// release other resources - we're gonna need a lot of memory
-		g_renderingManager.ReleaseResources();
+		g_raycasterManager.ReleaseResources();
 		g_filteringManager.ReleaseResources();
 
 		assert(g_tracingManager.IsCreated());
@@ -817,7 +822,7 @@ void FlowVisTool::Tracing()
 
 
 	const std::vector<const TimeVolumeIO::Brick*>& bricksToLoad =	s_isFiltering ? g_filteringManager.GetBricksToLoad() :
-																	(s_isTracing ? g_tracingManager.GetBricksToLoad() : g_renderingManager.GetBricksToLoad());
+																	(s_isTracing ? g_tracingManager.GetBricksToLoad() : g_raycasterManager.GetBricksToLoad());
 	//TODO when nothing's going on, load bricks in any order? (while memory is available etc..)
 	g_volume.UpdateLoadingQueue(bricksToLoad);
 	g_volume.UnloadLRUBricks();
@@ -862,7 +867,7 @@ void FlowVisTool::Rendering()
 	if (m_redraw)
 	{
 		// cancel rendering of current image
-		g_renderingManager.CancelRendering();
+		g_raycasterManager.CancelRendering();
 		if (g_useAllGPUs)
 		{
 			for (size_t i = 0; i < g_cudaDevices.size(); i++)
@@ -895,18 +900,31 @@ void FlowVisTool::Rendering()
 		{
 			lineBuffers.push_back(pTracedLines);
 		}
-		RenderingManager::eRenderState state = g_renderingManager.StartRendering(g_tracingManager.IsTracing(),
-			g_volume, g_filteringManager.GetResults(),
-			g_viewParams, g_stereoParams,
-			g_bRenderDomainBox, g_bRenderClipBox, g_bRenderSeedBox, g_bRenderBrickBoxes,
-			g_particleTraceParams, g_particleRenderParams,
-			lineBuffers, linesOnly,
-			g_ballBuffers, g_ballRadius,
+
+		RenderingManager::eRenderState stateRenderer = g_renderingManager.Render(
+			g_tracingManager.IsTracing(),
+			g_volume, 
+			g_viewParams, 
+			g_stereoParams,
+			g_particleTraceParams, 
+			g_particleRenderParams,
+			g_raycastParams,
+			lineBuffers,
+			g_ballBuffers, 
+			g_ballRadius,
 			&g_heatMapManager,
-			g_raycastParams, pTfArray, g_tracingManager.m_dpParticles);
+			pTfArray,
+			g_tracingManager.m_dpParticles);
 
 
-		if (state == RenderingManager::STATE_ERROR)
+		RaycasterManager::eRenderState stateRaycaster;
+		if (g_raycastParams.m_raycastingEnabled && !linesOnly)
+		{
+			g_renderingManager.CopyDepthTexture(m_d3dDeviceContex, g_raycasterManager.m_pDepthTexCopy);
+			stateRaycaster = g_raycasterManager.StartRendering(g_volume, g_viewParams, g_stereoParams, g_raycastParams, g_filteringManager.GetResults(), pTfArray);
+		}
+
+		if (stateRenderer == RenderingManager::STATE_ERROR || stateRaycaster == RaycasterManager::STATE_ERROR)
 		{
 			printf("RenderingManager::StartRendering returned STATE_ERROR.\n");
 			s_isRendering = false;
@@ -945,10 +963,10 @@ void FlowVisTool::Rendering()
 	//bool renderDelayPassed = (timeSinceRenderUpdate >= g_startWorkingDelay);
 	if (s_isRendering)
 	{
-		if (g_renderingManager.IsRendering())
+		if (g_raycasterManager.IsRendering())
 		{
 			// render next brick on primary GPU
-			renderingFinished = (g_renderingManager.Render() == RenderingManager::STATE_DONE);
+			renderingFinished = (g_raycasterManager.Render() == RaycasterManager::STATE_DONE);
 			renderingUpdated = true;
 		}
 
@@ -1021,7 +1039,7 @@ void FlowVisTool::Rendering()
 			m_d3dDeviceContex->Draw(4, 0);
 
 			// blend raycaster result over
-			g_screenEffect.m_pTexVariable->SetResource(g_renderingManager.GetRaycastSRV());
+			g_screenEffect.m_pTexVariable->SetResource(g_raycasterManager.GetRaycastSRV());
 			g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 			m_d3dDeviceContex->Draw(4, 0);
 
@@ -1049,7 +1067,7 @@ void FlowVisTool::Rendering()
 					box.front = 0;
 					box.back = 1;
 
-					m_d3dDeviceContex->CopySubresourceRegion(g_pRenderBufferTempTex, 0, left, 0, 0, g_renderingManager.GetRaycastTex(), 0, &box);
+					m_d3dDeviceContex->CopySubresourceRegion(g_pRenderBufferTempTex, 0, left, 0, 0, g_raycasterManager.GetRaycastTex(), 0, &box);
 				}
 				else
 				{

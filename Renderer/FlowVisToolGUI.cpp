@@ -466,7 +466,9 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 								filenames.push_back(str.str());
 							}
 
-							g_flowVisTool.g_renderingManager.WriteCurTimestepToRaws(g_flowVisTool.g_volume, filenames);
+							std::cout << "Not implemented." << std::endl;
+
+							//g_flowVisTool.g_renderingManager.WriteCurTimestepToRaws(g_flowVisTool.g_volume, filenames);
 						}
 					}
 
@@ -486,7 +488,9 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 								str << filename << char('X' + c) << ".la3d";
 								filenames.push_back(str.str());
 							}
-							g_flowVisTool.g_renderingManager.WriteCurTimestepToLA3Ds(g_flowVisTool.g_volume, filenames);
+							std::cout << "Not implemented." << std::endl;
+
+							//g_flowVisTool.g_renderingManager.WriteCurTimestepToLA3Ds(g_flowVisTool.g_volume, filenames);
 						}
 					}
 				}
@@ -885,10 +889,10 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 
 				ImGui::Checkbox("Rendering Preview", &g_flowVisTool.g_showPreview);
 
-				ImGui::Checkbox("Show Brick Boxes", &g_flowVisTool.g_bRenderBrickBoxes);
-				ImGui::Checkbox("Show Seed Box", &g_flowVisTool.g_bRenderSeedBox);
+				ImGui::Checkbox("Show Brick Boxes", &g_flowVisTool.g_renderingManager.m_renderBrickBoxes);
+				ImGui::Checkbox("Show Seed Box", &g_flowVisTool.g_renderingManager.m_renderSeedBox);
 				
-				ImGui::Checkbox("Show Domain Box", &g_flowVisTool.g_bRenderDomainBox);
+				ImGui::Checkbox("Show Domain Box", &g_flowVisTool.g_renderingManager.m_renderDomainBox);
 				ImGui::SameLine();
 				if (ImGui::DragFloat("Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
 				{
@@ -1077,6 +1081,10 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 			{
 				ImGui::Checkbox("Enabled", &g_flowVisTool.g_raycastParams.m_raycastingEnabled);
 
+				int v = g_flowVisTool.g_raycasterManager.m_bricksPerFrame;
+				if (ImGui::SliderInt("Bricks per frame", &v, 0, 20))
+					g_flowVisTool.g_raycasterManager.m_bricksPerFrame = (unsigned int)v;
+
 				static auto getterMeasureComputeMode = [](void* data, int idx, const char** out_str)
 				{
 					if (idx >= MEASURE_COMPUTE_COUNT) return false;
@@ -1172,7 +1180,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Separator();
 				ImGui::Text("Filter");
 
-				int v = g_flowVisTool.g_filterParams.m_radius[0];
+				v = g_flowVisTool.g_filterParams.m_radius[0];
 				if (ImGui::SliderInt("Radius 1", &v, 0, 247))
 					g_flowVisTool.g_filterParams.m_radius[0] = (unsigned int)v;
 
@@ -1193,7 +1201,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				ImGui::Checkbox("Show Clip Box (Red)", &g_flowVisTool.g_bRenderClipBox);
+				ImGui::Checkbox("Show Clip Box", &g_flowVisTool.g_renderingManager.m_renderClipBox);
 
 				ImGui::DragFloat3("ClipBoxMin", (float*)&g_flowVisTool.g_raycastParams.m_clipBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
 				ImGui::DragFloat3("ClipBoxMax", (float*)&g_flowVisTool.g_raycastParams.m_clipBoxMax, 0.005f, 0.0f, 0.0f, "%.3f");
@@ -1583,11 +1591,11 @@ void FlowVisToolGUI::StatusWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Text("Tracing");
 			}
 
-			if (g_flowVisTool.g_renderingManager.IsRendering())
+			if (g_flowVisTool.g_raycasterManager.IsRendering())
 			{
-				ImGui::ProgressBar(g_flowVisTool.g_renderingManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::ProgressBar(g_flowVisTool.g_raycasterManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
 				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-				ImGui::Text("Rendering");
+				ImGui::Text("Raycasting");
 			}
 
 			if (g_flowVisTool.g_volume.GetLoadingProgress() > 0.0f && g_flowVisTool.g_volume.GetLoadingProgress() < 1.0f)

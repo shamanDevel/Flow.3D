@@ -17,7 +17,6 @@
 #include <HeatMap.h>
 #include <FilteringManager.h>
 #include <TracingManager.h>
-#include <RenderingManager.h>
 #include <HeatMapManager.h>
 #include <ProjectionParams.h>
 #include <StereoParams.h>
@@ -27,6 +26,8 @@
 #include <TimerCPU.h>
 #include <RenderTexture.h>
 #include <ScreenEffect.h>
+#include <RenderingManager.h>
+#include <RaycasterManager.h>
 
 #include <Vec.h>
 
@@ -132,10 +133,6 @@ public:
 	bool m_redraw = false;
 	bool m_retrace = false;
 	bool g_particleTracingPaused = false;
-	bool g_bRenderDomainBox = true;
-	bool g_bRenderBrickBoxes = false;
-	bool g_bRenderClipBox = true;
-	bool g_bRenderSeedBox = true;
 	//FIXME have to reset these on destroy/create device...
 	bool s_isFiltering = false;
 	bool s_isTracing = false;
@@ -163,8 +160,9 @@ public:
 	// resources on primary GPU
 	FilteringManager g_filteringManager;
 	TracingManager   g_tracingManager;
-	RenderingManager g_renderingManager;
 	HeatMapManager   g_heatMapManager;
+	RenderingManager g_renderingManager;
+	RaycasterManager g_raycasterManager;
 #pragma endregion
 
 

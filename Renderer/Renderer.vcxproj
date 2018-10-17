@@ -199,6 +199,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClCompile Include="ProjectionParams.cpp" />
     <ClCompile Include="QuadEffect.cpp" />
     <ClCompile Include="Range.cpp" />
+    <ClCompile Include="RaycasterManager.cpp" />
     <ClCompile Include="RaycastMode.cpp" />
     <ClCompile Include="RaycastParams.cpp" />
     <CudaCompile Include="HeatMapKernel.cu">
@@ -317,6 +318,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="RaycasterKernelDefines.h" />
     <ClInclude Include="RaycasterKernelParams.h" />
     <ClInclude Include="RaycasterKernels.h" />
+    <ClInclude Include="RaycasterManager.h" />
     <ClInclude Include="RaycastMode.h" />
     <ClInclude Include="RaycastParams.h" />
     <ClInclude Include="RenderingManager.h" />

@@ -8,6 +8,7 @@
 
 #include "Range.h"
 #include "RenderingManager.h"
+#include <RaycasterManager.h>
 
 #include "CompressVolume.h"
 #include "GPUResources.h"
@@ -107,6 +108,7 @@ private:
 		GPUResources            compressShared;
 		CompressVolumeResources compressVolume;
 		RenderingManager        renderingManager;
+		RaycasterManager		raycasterManager;
 	} m_private;
 
 

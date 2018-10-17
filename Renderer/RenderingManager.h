@@ -40,9 +40,20 @@
 #include "ScreenEffect.h"
 #include "QuadEffect.h"
 
+//#define WriteVolumeToFileStuff
+
 class RenderingManager
 {
 public:
+	D3D11CudaTexture	m_ftleTexture;
+	float				m_ftleScale = 0.02f;
+
+	float	m_DomainBoxThickness = 0.0004f;
+	bool	m_renderDomainBox;
+	bool	m_renderClipBox;
+	bool	m_renderSeedBox;
+	bool	m_renderBrickBoxes;
+	
 	RenderingManager();
 	~RenderingManager();
 
@@ -60,82 +71,45 @@ public:
 		STATE_ERROR
 	};
 
-	eRenderState StartRendering( bool isTracing,
-		const TimeVolume& volume, const std::vector<FilteredVolume>& filteredVolumes,
-		const ViewParams& viewParams, const StereoParams& stereoParams,
-		bool renderDomainBox, bool renderClipBox, bool renderSeedBox, bool renderBrickBoxes,
-		const ParticleTraceParams& particleTraceParams, const ParticleRenderParams& particleRenderParams,
-		const std::vector<LineBuffers*>& pLineBuffers, bool linesOnly,
-		const std::vector<BallBuffers*>& pBallBuffers, float ballRadius,
+	eRenderState Render(
+		bool isTracing,
+		const TimeVolume& volume,
+		const ViewParams& viewParams,
+		const StereoParams& stereoParams,
+		const ParticleTraceParams& particleTraceParams,
+		const ParticleRenderParams& particleRenderParams,
+		const RaycastParams& raycastParams,
+		const std::vector<LineBuffers*>& pLineBuffers,
+		const std::vector<BallBuffers*>& pBallBuffers,
+		float ballRadius,
 		HeatMapManager* pHeatMapManager,
-		const RaycastParams& raycastParams, cudaArray* pTransferFunction, SimpleParticleVertexDeltaT* dpParticles = nullptr, int transferFunctionDevice = -1);
-	eRenderState Render();
-	void CancelRendering();
-	bool IsRendering() const;
-	float GetRenderingProgress() const;
-
-	const std::vector<const TimeVolumeIO::Brick*>& GetBricksToLoad() const { return m_bricksToLoad; }
-
-	// release memory-heavy resources (will be recreated on StartRendering)
-	void ReleaseResources();
-
-	// if there is a D3D device:
-	ID3D11Texture2D*          GetRaycastTex()   { return m_pRaycastTex; }
-	ID3D11ShaderResourceView* GetRaycastSRV()   { return m_pRaycastSRV; }
+		cudaArray* pTransferFunction,
+		SimpleParticleVertexDeltaT* dpParticles,
+		int transferFunctionDevice = -1);
+	
 	ID3D11Texture2D*          GetOpaqueTex()    { return m_pOpaqueTex; }
 	ID3D11ShaderResourceView* GetOpaqueSRV()    { return m_pOpaqueSRV; }
-	// if there is no D3D device:
-	cudaArray*                GetRaycastArray() { return m_pRaycastArray; }
 
 	void ClearResult();
+	void CopyDepthTexture(ID3D11DeviceContext* deviceContext, ID3D11Texture2D* target);
 
 
-	struct Timings
-	{
-		Timings() { memset(this, 0, sizeof(*this)); }
-		bool operator==(const Timings& other) { return memcmp(this, &other, sizeof(*this)) == 0; }
-		bool operator!=(const Timings& other) { return !(*this == other); }
-
-		MultiTimerGPU::Stats UploadDecompressGPU;
-		MultiTimerGPU::Stats ComputeMeasureGPU;
-		MultiTimerGPU::Stats RaycastGPU;
-		MultiTimerGPU::Stats CompressDownloadGPU;
-
-		float                RenderWall;
-	};
-	const Timings& GetTimings() const { return m_timings; }
-
-
+#ifdef WriteVolumeToFileStuff
 	bool WriteCurTimestepToRaws(TimeVolume& volume, const std::vector<std::string>& filenames);
 	bool WriteCurTimestepToLA3Ds(TimeVolume& volume, const std::vector<std::string>& filenames);
-
-	D3D11CudaTexture	m_ftleTexture;
-	float				m_ftleScale = 0.02f;
-
-	float				m_DomainBoxThickness = 0.0004f;
-
+#endif
 
 private:
-	HRESULT CreateScreenDependentResources();
+	bool CreateScreenDependentResources();
+
 	void ReleaseScreenDependentResources();
 
-	HRESULT CreateVolumeDependentResources();
-	void ReleaseVolumeDependentResources();
-
-	size_t GetRequiredBrickSlotCount() const;
-
-	bool CreateMeasureBrickSlots(uint count, uint countCompressed);
-	void ReleaseMeasureBrickSlots();
-	bool ManageMeasureBrickSlots();
-
-
-	void UpdateBricksToLoad();
-
-
-	void RenderBoxes(bool enableColor, bool blendBehind);
+	
+	void RenderBoxes(const TimeVolume& vol, const RaycastParams& raycastParams, bool enableColor, bool blendBehind);
 
 	//Renders the stream + path lines
-	void RenderLines(LineBuffers* pLineBuffers, bool enableColor, bool blendBehind);
+	void RenderLines(const TimeVolume& vol, LineBuffers* pLineBuffers, bool enableColor, bool blendBehind);
+
 	//If lineRenderMode==Particles, RenderLines delegates to this method after setting the shader parameters
 	//If clipPlane != NULL, this defines a clip plane and only the points with a positive signed distance are drawn
 	//If drawSlice == true, the slice texture drawing call is injected after the drawing of the particles.
@@ -147,6 +121,7 @@ private:
 	//Prepares the slice renderer: computes the clip plane and sets the parameters
 	//Returns the clip plane
 	tum3D::Vec4f PrepareRenderSlice(ID3D11ShaderResourceView* tex, float alpha, float slicePosition, tum3D::Vec3f volumeSizeWorld, tum3D::Vec2f center);
+
 	//Renders the slice if no lines are drawn.
 	//When lines are drawn, slice rendering is done in the line/particle rendering 
 	// to allow correct alpha blending
@@ -154,26 +129,14 @@ private:
 
 	void SortParticles(LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext);
 	
-	void ComputeFTLE(SimpleParticleVertexDeltaT* dpParticles);
+	void ComputeFTLE(const TimeVolume& vol, SimpleParticleVertexDeltaT* dpParticles);
 
-	void RenderBalls(const BallBuffers* pBallBuffers, float radius);
-	void RenderBricks(bool recordEvents);
+	void RenderBalls(const TimeVolume& vol, const BallBuffers* pBallBuffers, float radius);
+	
 
 	void RenderHeatMap(HeatMapManager* pHeatMapManager);
 
-	void UpdateTimings();
-
 	void CreateFTLETexture();
-
-
-
-
-
-
-	bool m_renderDomainBox;
-	bool m_renderClipBox;
-	bool m_renderSeedBox;
-	bool m_renderBrickBoxes;
 
 	bool			m_isCreated;
 	Box				m_box;
@@ -194,68 +157,16 @@ private:
 	ID3D11Texture2D*          m_pDepthTex;
 	ID3D11DepthStencilView*   m_pDepthDSV;
 	ID3D11ShaderResourceView* m_pDepthSRV;
-	ID3D11Texture2D*          m_pDepthTexCopy;
-	cudaGraphicsResource*     m_pDepthTexCopyCuda;
-
+	
 	LineEffect				  m_lineEffect;
 	ScreenEffect*             m_pScreenEffect;
 	QuadEffect*               m_pQuadEffect;
 	
-
 	ProjectionParams	 m_projectionParams;
 	ViewParams           m_viewParams;
 	StereoParams         m_stereoParams;
 	ParticleTraceParams  m_particleTraceParams;
 	ParticleRenderParams m_particleRenderParams;
-
-
-#pragma region RaycastingStuff
-	RaycastParams				m_raycastParams;
-	cudaArray*					m_pTfArray;
-	Raycaster					m_raycaster;
-	const TimeVolume*			m_pVolume;
-	GPUResources*				m_pCompressShared;
-	CompressVolumeResources*	m_pCompressVolume;
-	// pre-computed measure bricks, only exist in appropriate eMeasureComputeModes
-	std::vector<BrickSlot*>			m_measureBrickSlots;
-	std::vector<bool>				m_measureBrickSlotsFilled;
-	std::vector<std::vector<uint>>	m_measureBricksCompressed;
-	std::vector<const TimeVolumeIO::Brick*> m_bricksToRender;
-	std::vector<const TimeVolumeIO::Brick*> m_bricksClipped;
-	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
-	size_t									m_brickSlotsFilled;
-	uint									m_bricksPerFrame;
-	uint									m_nextBrickToRender;
-	uint									m_nextPass;
-
-	const std::vector<FilteredVolume>*		m_pFilteredVolumes;
-
-	// volume-dependent resources
-	std::vector<float*>		m_dpChannelBuffer;
-	std::vector<BrickSlot>	m_brickSlots;
-	int						m_brickSize;
-	int						m_channelCount;
-
-	// timing
-	Timings       m_timings;
-	TimerCPU      m_timerRender;
-	MultiTimerGPU m_timerUploadDecompress;
-	MultiTimerGPU m_timerComputeMeasure;
-	MultiTimerGPU m_timerRaycast;
-	MultiTimerGPU m_timerCompressDownload;
-
-	// if there is no D3D device:
-	cudaArray*	m_pRaycastArray;
-	//TODO m_pDepthArray?
-
-	// screen-dependent resources
-	// if there is a D3D device:
-	ID3D11Texture2D*          m_pRaycastTex;
-	ID3D11ShaderResourceView* m_pRaycastSRV;
-	ID3D11RenderTargetView*   m_pRaycastRTV;
-	cudaGraphicsResource*     m_pRaycastTexCuda;
-#pragma endregion
-
 
 private:
 	// disallow copy and assignment

@@ -183,6 +183,7 @@
     <ClCompile Include="FlowVisToolGUI.cpp">
       <Filter>gui</Filter>
     </ClCompile>
+    <ClCompile Include="RaycasterManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -553,6 +554,7 @@
     <ClInclude Include="FlowVisToolGUI.h">
       <Filter>gui</Filter>
     </ClInclude>
+    <ClInclude Include="RaycasterManager.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />

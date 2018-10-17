@@ -285,12 +285,20 @@ void WorkerThread::TaskRender()
 {
 	std::vector<LineBuffers*> lineBuffers;
 	std::vector<BallBuffers*> ballBuffers;
-	RenderingManager::eRenderState state = m_private.renderingManager.StartRendering(false,
-		*m_pVolume, *m_shared.pFilteredVolumes,
-		m_shared.viewParams, m_shared.stereoParams,
-		false, false, false, false,
-		m_shared.particleTraceParams, m_shared.particleRenderParams, lineBuffers, false, ballBuffers, 0.0f, NULL,
-		m_shared.raycastParams, m_shared.pTransferFunction, nullptr, m_shared.transferFunctionDevice);
+	RenderingManager::eRenderState state = m_private.renderingManager.Render(false,
+		*m_pVolume, 
+		m_shared.viewParams,
+		m_shared.stereoParams,
+		m_shared.particleTraceParams, 
+		m_shared.particleRenderParams,
+		m_shared.raycastParams,
+		lineBuffers, 
+		ballBuffers, 
+		0.0f, 
+		NULL,
+		m_shared.pTransferFunction, 
+		nullptr, 
+		m_shared.transferFunctionDevice);
 	if(state != RenderingManager::STATE_RENDERING) //FIXME ?
 	{
 		return;
@@ -312,12 +320,12 @@ void WorkerThread::TaskRender()
 	{
 		if(m_cancelCurrentTask)
 		{
-			m_private.renderingManager.CancelRendering();
+			m_private.raycasterManager.CancelRendering();
 			break;
 		}
 
-		finished = (m_private.renderingManager.Render() == RenderingManager::STATE_DONE);
-		m_progress = m_private.renderingManager.GetRenderingProgress();
+		finished = (m_private.raycasterManager.Render() == RenderingManager::STATE_DONE);
+		m_progress = m_private.raycasterManager.GetRenderingProgress();
 
 		// download result
 		// if previous download isn't finished yet, don't bother starting the next one
@@ -329,7 +337,7 @@ void WorkerThread::TaskRender()
 			cudaSafeCall(cudaEventSynchronize(m_resultImageDownloadSyncEvent));
 			// start download and swap buffers
 			{ tthread::lock_guard<tthread::mutex> guard(m_mutexResultImage);
-				cudaSafeCall(cudaMemcpyFromArrayAsync(m_pResultImage[m_resultImageIndex], m_private.renderingManager.GetRaycastArray(), 0, 0, width * height * sizeof(uchar4), cudaMemcpyDeviceToHost));
+			cudaSafeCall(cudaMemcpyFromArrayAsync(m_pResultImage[m_resultImageIndex], m_private.raycasterManager.GetRaycastArray(), 0, 0, width * height * sizeof(uchar4), cudaMemcpyDeviceToHost));
 				m_resultImageTimestamp[m_resultImageIndex] = m_resultImageTimestamp[1 - m_resultImageIndex] + 1;
 				m_resultImageIndex = 1 - m_resultImageIndex;
 			}
