@@ -10,7 +10,7 @@
 using namespace tum3D;
 
 
-__constant__ VolumeInfoGPU c_volumeInfo;
+//__constant__ VolumeInfoGPU c_volumeInfo;
 VolumeInfoGPU g_volumeInfo;
 
 
@@ -33,11 +33,7 @@ void VolumeInfoGPU::Fill(const TimeVolumeInfo& info)
 void VolumeInfoGPU::Upload(bool cpuTracing) const
 {
 	if(cpuTracing)
-	{
 		memcpy(&g_volumeInfo, this, sizeof(g_volumeInfo));
-	}
-	else
-	{
-		cudaSafeCall(cudaMemcpyToSymbolAsync(c_volumeInfo, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
-	}
+	//else
+	//	cudaSafeCall(cudaMemcpyToSymbolAsync(c_volumeInfo, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
 }

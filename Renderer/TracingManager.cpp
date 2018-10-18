@@ -827,12 +827,15 @@ bool TracingManager::TraceParticlesIteratively()
 
 	//check if particles should be seeded
 	int seed = -1;
+
 	std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now();
-	std::chrono::duration<double> time_passed 
-		= std::chrono::duration_cast<std::chrono::duration<double >> (tp - m_particlesLastTime);
+	std::chrono::duration<double> time_passed = std::chrono::duration_cast<std::chrono::duration<double >> (tp - m_particlesLastTime);
 	double timeBetweenSeeds = 1.0 / m_traceParams.m_particlesPerSecond;
-	if (timeBetweenSeeds < time_passed.count() || m_seedManyParticles) {
-		if (LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
+
+	if (timeBetweenSeeds < time_passed.count() || m_seedManyParticles) 
+	{
+		if (LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) 
+		{
 			//generate new seeds
 			float spawnTime = GetLineSpawnTime();
 			CreateInitialCheckpoints(spawnTime);
@@ -857,7 +860,7 @@ bool TracingManager::TraceParticlesIteratively()
 	m_timerIntegrateCPU.Start();
 	m_timerIntegrate.StartNextTimer();
 	//cudaSafeCall(cudaDeviceSynchronize());
-	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_traceParams, seed, tpf * 100);
+	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_traceParams, seed, tpf * 100);
 
 	// seed many particles
 	if (m_seedManyParticles && LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
@@ -1773,9 +1776,9 @@ void TracingManager::TraceRound()
 	//cudaSafeCall(cudaDeviceSynchronize());
 
 	if (m_traceParams.m_ftleEnabled)
-		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_traceParams, m_dpParticles);
+		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_traceParams, m_dpParticles);
 	else
-		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_traceParams);
+		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_traceParams);
 
 	//cudaSafeCall(cudaDeviceSynchronize());
 	m_timerIntegrate.StopCurrentTimer();

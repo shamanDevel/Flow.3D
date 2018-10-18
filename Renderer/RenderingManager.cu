@@ -21,8 +21,6 @@
 
 
 #pragma region CudaKernels
-extern __constant__ LineInfoGPU c_lineInfo;
-
 __global__ void FillVertexDepth(const LineVertex* vertices, const uint* indices, float* depthOut, float4 vec, uint maxIndex)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;

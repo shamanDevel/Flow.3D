@@ -15,17 +15,17 @@
 #include "TextureFilterTime.cuh"
 #include "Jacobian.cuh"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
 extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
-extern __constant__ LineInfoGPU c_lineInfo;
+//extern __constant__ LineInfoGPU c_lineInfo;
 
 extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void integratePathLinesKernel()
+__global__ void integratePathLinesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU c_volumeInfo)
 {
 	uint lineIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -55,7 +55,7 @@ __global__ void integratePathLinesKernel()
 	float brickTimeMax;
 	float time2texOffset;
 	float time2texScale;
-	if(!findBrickTime(
+	if (!findBrickTime(c_volumeInfo,
 		vertex.Position, vertex.Time,
 		brickBoxMin, brickBoxMax, world2texOffset, world2texScale,
 		brickTimeMin, brickTimeMax, time2texOffset, time2texScale))
@@ -162,7 +162,7 @@ __global__ void integratePathLinesKernel()
 			if(!isInBrickTime(vertex.Position, vertex.Time, brickBoxMin, brickBoxMax, brickTimeMin, brickTimeMax)) {
 				bool isOutOfDomain = c_volumeInfo.isOutsideOfDomain(vertex.Position);
 				if(isOutOfDomain ||
-					!findBrickTime(
+					!findBrickTime(c_volumeInfo,
 						vertex.Position, vertex.Time,
 						brickBoxMin, brickBoxMax, world2texOffset, world2texScale,
 						brickTimeMin, brickTimeMax, time2texOffset, time2texScale))
@@ -212,12 +212,12 @@ __global__ void integratePathLinesKernel()
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelPathLines(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode)
+void integratorKernelPathLines(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode)
 {
 	uint blockSize = 128;
 	uint blockCount = (lineInfo.lineCount + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) integratePathLinesKernel <advect, filter> <<<blockCount, blockSize>>> ()
+#define INTEGRATE(advect, filter) integratePathLinesKernel <advect, filter> <<<blockCount, blockSize>>> (lineInfo, volumeInfo)
 
 	ADVECT_SWITCH;
 	cudaCheckMsg("integratePathLinesKernel execution failed");

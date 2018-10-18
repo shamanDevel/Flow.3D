@@ -17,7 +17,7 @@
 
 #include "Advect.cuh"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
 extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
@@ -27,7 +27,7 @@ extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void computePathFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint particleCount)
+__global__ void computePathFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, VolumeInfoGPU c_volumeInfo, uint particleCount)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -59,7 +59,7 @@ __global__ void computePathFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, u
 	float brickTimeMax;
 	float time2texOffset;
 	float time2texScale;
-	if (!findBrickTime(	vertex.Position, vertex.Time,
+	if (!findBrickTime(c_volumeInfo, vertex.Position, vertex.Time,
 						brickBoxMin, brickBoxMax, world2texOffset, world2texScale,
 						brickTimeMin, brickTimeMax, time2texOffset, time2texScale))
 	{
@@ -170,7 +170,7 @@ __global__ void computePathFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, u
 			if (!isInBrickTime(vertex.Position, vertex.Time, brickBoxMin, brickBoxMax, brickTimeMin, brickTimeMax)) 
 			{
 				bool isOutOfDomain = c_volumeInfo.isOutsideOfDomain(vertex.Position);
-				if (isOutOfDomain || !findBrickTime(	vertex.Position, vertex.Time,
+				if (isOutOfDomain || !findBrickTime(c_volumeInfo, vertex.Position, vertex.Time,
 														brickBoxMin, brickBoxMax, world2texOffset, world2texScale,
 														brickTimeMin, brickTimeMax, time2texOffset, time2texScale))
 				{
@@ -219,7 +219,7 @@ __global__ void computePathFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, u
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, bool invertVelocity)
+__global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles, VolumeInfoGPU c_volumeInfo, uint particleCount, bool invertVelocity)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -248,7 +248,7 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 	float3 brickBoxMax;
 	float3 world2texOffset;
 	float3 world2texScale;
-	if (!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+	if (!findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		return;
 	}
 
@@ -359,7 +359,7 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 				//	lastOutTime = vertex.Time;
 				//}
 
-				if (isOutOfDomain || !findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale))
+				if (isOutOfDomain || !findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale))
 				{
 					// new brick isn't available (or we went out of the domain) - get outta here
 					// (if we're still inside the domain, the new brick has already been requested in findBrick!)
@@ -411,12 +411,12 @@ __global__ void computeStreamFTLEKernel(SimpleParticleVertexDeltaT* dpParticles,
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode, bool invertVelocity)
+void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, VolumeInfoGPU volumeInfo, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode, bool invertVelocity)
 {
 	uint blockSize = 128;
 	uint blockCount = (particleCount + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) computeStreamFTLEKernel <advect, filter> <<<blockCount, blockSize>>> (dpParticles, particleCount, invertVelocity)
+#define INTEGRATE(advect, filter) computeStreamFTLEKernel <advect, filter> <<<blockCount, blockSize>>> (dpParticles, volumeInfo, particleCount, invertVelocity)
 
 	ADVECT_SWITCH;
 	cudaCheckMsg("integratePathLinesKernel execution failed");

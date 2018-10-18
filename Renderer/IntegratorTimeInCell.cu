@@ -5,7 +5,7 @@
 #include "VolumeInfoGPU.h"
 #include "IntegrationParamsGPU.h"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
 texture<uint32, cudaTextureType2D, cudaReadModeElementType> g_cellTexture;
 
@@ -32,7 +32,7 @@ void IntegratorTimeInCell::Free(CellTextureGPU & info)
 	std::cout << "IntegratorTimeInCell: CellTexture freed" << std::endl;
 }
 
-__device__ void IntegratorTimeInCell::processParticle(LineVertex * vertex, float deltaTime)
+__device__ void IntegratorTimeInCell::processParticle(LineVertex * vertex, VolumeInfoGPU& c_volumeInfo, float deltaTime)
 {
 	if (!c_integrationParams.timeInCellEnabled) {
 		return; //no seed texture

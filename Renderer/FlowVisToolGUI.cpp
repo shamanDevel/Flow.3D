@@ -514,8 +514,18 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 				if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
 					g_flowVisTool.m_retrace = true;
 
-				if (ImGui::Button(g_flowVisTool.g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.g_particleTracingPaused = !g_flowVisTool.g_particleTracingPaused;
+				{
+					bool wasPaused = g_flowVisTool.g_particleTracingPaused;
+					if (wasPaused)
+						ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, sectionTextColor);
+
+					if (ImGui::Button(g_flowVisTool.g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
+						g_flowVisTool.g_particleTracingPaused = !g_flowVisTool.g_particleTracingPaused;
+
+					if (wasPaused)
+						ImGui::PopStyleColor();
+				}
+
 
 				ImGui::Spacing();
 				ImGui::Separator();

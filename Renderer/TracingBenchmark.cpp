@@ -107,7 +107,7 @@ bool TracingBenchmark::RunBenchmark(const ParticleTraceParams& params, uint line
 		for(uint pass = 0; pass < passCount; pass++)
 		{
 			cudaSafeCall(cudaMemsetAsync(dpVertexCounts, 0, lineCountMax * sizeof(uint)));
-			integrator.IntegrateLines(brickSlot, lineInfo, params);
+			//integrator.IntegrateLines(brickSlot, lineInfo,  params);
 		}
 
 		cudaSafeCall(cudaProfilerStop());

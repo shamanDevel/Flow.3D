@@ -9,13 +9,13 @@
 #include "TracingCommon.h"
 
 
-void integratorKernelSimpleParticles(SimpleParticleVertex* dpParticles, uint particleCount, float deltaT, uint stepCountMax, eAdvectMode advectMode, eTextureFilterMode filterMode);
+void integratorKernelSimpleParticles(SimpleParticleVertex* dpParticles, VolumeInfoGPU volumeInfo, uint particleCount, float deltaT, uint stepCountMax, eAdvectMode advectMode, eTextureFilterMode filterMode);
 
-void integratorKernelStreamLines(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
-void integratorKernelPathLines  (const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
+void integratorKernelStreamLines(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
+void integratorKernelPathLines(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
 //void integratorKernelComputeFTLE(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
-void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode, bool invertVelocity);
-void integratorKernelStreamLinesDense(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
+void integratorKernelComputeFTLE(SimpleParticleVertexDeltaT* dpParticles, VolumeInfoGPU volumeInfo, uint particleCount, eAdvectMode advectMode, eTextureFilterMode filterMode, bool invertVelocity);
+void integratorKernelStreamLinesDense(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode);
 
 
 #endif

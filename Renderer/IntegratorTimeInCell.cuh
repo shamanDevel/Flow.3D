@@ -4,6 +4,7 @@
 #include <global.h>
 #include "TracingCommon.h"
 #include "cudaUtil.h"
+#include <VolumeInfoGPU.h>
 
 // host code
 struct CellTextureGPU
@@ -22,7 +23,7 @@ public:
 	static void Free(CellTextureGPU& info);
 
 	// device code
-	static __device__ void processParticle(LineVertex* vertex, float deltaTime);
+	static __device__ void processParticle(LineVertex* vertex, VolumeInfoGPU& c_volumeInfo, float deltaTime);
 };
 
 

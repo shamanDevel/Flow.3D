@@ -15,17 +15,17 @@
 #include "TextureFilter.cuh"
 #include "Jacobian.cuh"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
 extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
-extern __constant__ LineInfoGPU c_lineInfo;
+//extern __constant__ LineInfoGPU c_lineInfo;
 
 extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void integrateStreamLinesDenseKernel()
+__global__ void integrateStreamLinesDenseKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU c_volumeInfo)
 {
 	uint lineIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -52,7 +52,7 @@ __global__ void integrateStreamLinesDenseKernel()
 	float3 brickBoxMax;
 	float3 world2texOffset;
 	float3 world2texScale;
-	if(!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+	if (!findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		return;
 	}
 
@@ -206,7 +206,7 @@ __global__ void integrateStreamLinesDenseKernel()
 					lastOutPos  = vertex.Position;
 					lastOutTime = vertex.Time;
 				}
-				if(isOutOfDomain || !findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+				if (isOutOfDomain || !findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 					// new brick isn't available (or we went out of the domain) - get outta here
 					// (if we're still inside the domain, the new brick has already been requested in findBrick!)
 					stayedInAvailableBrick = false;
@@ -252,12 +252,12 @@ __global__ void integrateStreamLinesDenseKernel()
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelStreamLinesDense(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode)
+void integratorKernelStreamLinesDense(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode)
 {
 	uint blockSize = 128; //TODO try out different values
 	uint blockCount = (lineInfo.lineCount + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) integrateStreamLinesDenseKernel <advect, filter> <<<blockCount, blockSize>>> ()
+#define INTEGRATE(advect, filter) integrateStreamLinesDenseKernel <advect, filter> <<<blockCount, blockSize>>> (lineInfo, volumeInfo)
 
 	ADVECT_DENSE_SWITCH;
 	cudaCheckMsg("integrateStreamLinesDenseKernel execution failed");

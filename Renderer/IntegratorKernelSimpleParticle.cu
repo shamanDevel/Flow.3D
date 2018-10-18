@@ -13,7 +13,7 @@
 #include "IntegratorCommon.cuh"
 #include "TextureFilter.cuh"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
 extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
@@ -23,7 +23,7 @@ extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
 __global__ void integrateSimpleParticlesKernel(
-	SimpleParticleVertex* pParticles, uint particleCount,
+	SimpleParticleVertex* pParticles, VolumeInfoGPU c_volumeInfo, uint particleCount,
 	float deltaTime, uint stepCountMax)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -38,7 +38,7 @@ __global__ void integrateSimpleParticlesKernel(
 	float3 brickBoxMax;
 	float3 world2texOffset;
 	float3 world2texScale;
-	if(!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+	if(!findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		return;
 	}
 
@@ -75,7 +75,7 @@ __global__ void integrateSimpleParticlesKernel(
 			// check if we left the current brick
 			if(!isInBrick(vertex.Position, brickBoxMin, brickBoxMax)) {
 				bool isOutOfDomain = c_volumeInfo.isOutsideOfDomain(vertex.Position);
-				if(isOutOfDomain || !findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+				if (isOutOfDomain || !findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 					// new brick isn't available (or we went out of the domain) - get outta here
 					// (if we're still inside the domain, the new brick has already been requested in findBrick!)
 					break;
@@ -102,7 +102,7 @@ __global__ void integrateSimpleParticlesKernel(
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelSimpleParticles(SimpleParticleVertex* dpParticles, uint particleCount, float deltaT, uint stepCountMax, eAdvectMode advectMode, eTextureFilterMode filterMode)
+void integratorKernelSimpleParticles(SimpleParticleVertex* dpParticles, VolumeInfoGPU volumeInfo, uint particleCount, float deltaT, uint stepCountMax, eAdvectMode advectMode, eTextureFilterMode filterMode)
 {
 	uint blockSize = 128;
 	uint blockCount = (particleCount + blockSize - 1) / blockSize;
@@ -111,7 +111,7 @@ void integratorKernelSimpleParticles(SimpleParticleVertex* dpParticles, uint par
 		integrateSimpleParticlesKernel \
 		<advect, filter> \
 		<<<blockCount, blockSize>>> \
-		(dpParticles, particleCount, deltaT, stepCountMax)
+		(dpParticles, volumeInfo, particleCount, deltaT, stepCountMax)
 
 	ADVECT_SWITCH;
 	cudaCheckMsg("integrateSimpleParticlesKernel execution failed");

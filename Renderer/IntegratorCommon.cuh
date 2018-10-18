@@ -7,7 +7,7 @@
 #include "BrickRequestsGPU.h"
 #include "VolumeInfoGPU.h"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
 extern __constant__ BrickRequestsGPU c_brickRequests;
 
@@ -62,7 +62,7 @@ __device__ inline bool isAdvectModeAdaptive(eAdvectMode advectMode)
 }
 
 
-__device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float3& world2texScale)
+__device__ inline bool findBrick(VolumeInfoGPU& c_volumeInfo, float3 worldPos, float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float3& world2texScale)
 {
 	// find out which brick we're in
 	uint3 brickIndex = c_volumeInfo.getBrickIndex(worldPos);
@@ -87,7 +87,7 @@ __device__ inline bool findBrick(float3 worldPos, float3& brickBoxMin, float3& b
 }
 
 
-__device__ inline bool findBrickTime(
+__device__ inline bool findBrickTime(VolumeInfoGPU& c_volumeInfo,
 	float3 worldPos, float time,
 	float3& brickBoxMin, float3& brickBoxMax, float3& world2texOffset, float3& world2texScale,
 	float& brickTimeMin, float& brickTimeMax, float& time2texOffset, float& time2texScale)

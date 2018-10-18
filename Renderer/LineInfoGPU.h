@@ -14,7 +14,6 @@ struct LineInfoGPU
 	// Does not sync on the upload, so don't overwrite any members without syncing first!
 	void Upload(bool cpuTracing) const;
 
-
 	uint lineCount;
 
 	LineCheckpoint* pCheckpoints;

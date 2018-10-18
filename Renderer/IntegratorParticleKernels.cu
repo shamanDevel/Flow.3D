@@ -16,18 +16,18 @@
 #include "TextureFilter.cuh"
 #include "Jacobian.cuh"
 
-extern __constant__ VolumeInfoGPU c_volumeInfo;
+//extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ BrickIndexGPU c_brickIndex;
 extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
-extern __constant__ LineInfoGPU c_lineInfo;
+//extern __constant__ LineInfoGPU c_lineInfo;
 
 extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void integrateParticlesKernel(double tpf)
+__global__ void integrateParticlesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU c_volumeInfo, double tpf)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -56,7 +56,7 @@ __global__ void integrateParticlesKernel(double tpf)
 	float3 brickBoxMax;
 	float3 world2texOffset;
 	float3 world2texScale;
-	if (!findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+	if (!findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		//no brick found, this should not happen
 		printf("i=%d: pos=(%5.3f,%5.3f,%5.3f) no brick found\n", index, vertex.Position.x, vertex.Position.y, vertex.Position.z);
 		c_lineInfo.pVertices[index].Time = -1;
@@ -123,7 +123,7 @@ __global__ void integrateParticlesKernel(double tpf)
 			// check if we left the current brick
 			if (!isInBrick(vertex.Position, brickBoxMin, brickBoxMax)) {
 				bool isOutOfDomain = c_volumeInfo.isOutsideOfDomain(vertex.Position);
-				if (isOutOfDomain || !findBrick(vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+				if (isOutOfDomain || !findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 					// new brick isn't available (or we went out of the domain) - get outta here
 					// (if we're still inside the domain, the new brick has already been requested in findBrick!)
 					stayedInAvailableBrick = false;
@@ -145,14 +145,14 @@ __global__ void integrateParticlesKernel(double tpf)
 	vertex.HeatCurrent = gradT;
 
 	//compute time-in-cell measures
-	IntegratorTimeInCell::processParticle(&vertex, deltaTime);
+	IntegratorTimeInCell::processParticle(&vertex, c_volumeInfo, deltaTime);
 
 	//write vertex back
 	c_lineInfo.pVertices[index] = vertex;
 }
 
 
-__global__ void seedParticlesKernel(int particleEntry)
+__global__ void seedParticlesKernel(LineInfoGPU c_lineInfo, int particleEntry)
 {
 	uint lineIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -167,7 +167,7 @@ __global__ void seedParticlesKernel(int particleEntry)
 	c_lineInfo.pVertices[lineIndex * c_lineInfo.vertexStride + particleEntry] = vertex;
 }
 
-__global__ void initParticlesKernel()
+__global__ void initParticlesKernel(LineInfoGPU c_lineInfo)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -187,12 +187,12 @@ __global__ void initParticlesKernel()
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelParticles(const LineInfo& lineInfo, eAdvectMode advectMode, eTextureFilterMode filterMode, double tpf)
+void integratorKernelParticles(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode, double tpf)
 {
 	uint blockSize = 128;
-	uint blockCount = (lineInfo.lineCount * lineInfo.lineVertexStride + blockSize - 1) / blockSize;
+	uint blockCount = (lineInfo.lineCount * lineInfo.vertexStride + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) integrateParticlesKernel <advect, filter> <<<blockCount, blockSize>>> (tpf)
+#define INTEGRATE(advect, filter) integrateParticlesKernel <advect, filter> <<<blockCount, blockSize>>> (lineInfo, volumeInfo, tpf)
 
 	ADVECT_SWITCH;
 	cudaCheckMsg("integrateParticlesKernel execution failed");
@@ -200,17 +200,17 @@ void integratorKernelParticles(const LineInfo& lineInfo, eAdvectMode advectMode,
 #undef INTEGRATE
 }
 
-void integratorKernelSeedParticles(const LineInfo& lineInfo, int particleEntry)
+void integratorKernelSeedParticles(LineInfoGPU lineInfo, int particleEntry)
 {
 	uint blockSize = 128;
 	uint blockCount = (lineInfo.lineCount + blockSize - 1) / blockSize;
 
-	seedParticlesKernel <<<blockCount, blockSize>>> (particleEntry);
+	seedParticlesKernel << <blockCount, blockSize >> > (lineInfo, particleEntry);
 }
 
-void integratorKernelInitParticles(const LineInfo& lineInfo)
+void integratorKernelInitParticles(LineInfoGPU lineInfo)
 {
 	uint blockSize = 128;
-	uint blockCount = (lineInfo.lineCount * lineInfo.lineVertexStride + blockSize - 1) / blockSize;
-	initParticlesKernel <<< blockCount, blockSize >>> ();
+	uint blockCount = (lineInfo.lineCount * lineInfo.vertexStride + blockSize - 1) / blockSize;
+	initParticlesKernel << < blockCount, blockSize >> > (lineInfo);
 }
