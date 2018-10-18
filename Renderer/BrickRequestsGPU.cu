@@ -7,7 +7,7 @@
 #include "cudaUtil.h"
 
 
-__constant__ BrickRequestsGPU c_brickRequests;
+//__constant__ BrickRequestsGPU c_brickRequests;
 BrickRequestsGPU g_brickRequests;
 
 
@@ -41,13 +41,9 @@ void BrickRequestsGPU::Deallocate()
 void BrickRequestsGPU::Upload(bool cpuTracing) const
 {
 	if(cpuTracing)
-	{
 		memcpy(&g_brickRequests, this, sizeof(g_brickRequests));
-	}
-	else
-	{
-		cudaSafeCall(cudaMemcpyToSymbolAsync(c_brickRequests, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
-	}
+	//else
+	//	cudaSafeCall(cudaMemcpyToSymbolAsync(c_brickRequests, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
 }
 
 void BrickRequestsGPU::Clear(bool cpuTracing, uint brickCount, uint offset)

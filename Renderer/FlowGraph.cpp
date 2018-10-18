@@ -227,7 +227,7 @@ void FlowGraph::Build(GPUResources* pCompressShared, CompressVolumeResources* pC
 
 
 		// integrate!
-		integrator.IntegrateSimpleParticles(brickSlot, dpParticles, volumeInfoGPU, uint(particles.size()), params);
+		integrator.IntegrateSimpleParticles(brickSlot, dpParticles, volumeInfoGPU, brickIndexGPU, brickRequestsGPU, uint(particles.size()), params);
 
 
 		// download particles

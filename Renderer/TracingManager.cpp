@@ -860,7 +860,7 @@ bool TracingManager::TraceParticlesIteratively()
 	m_timerIntegrateCPU.Start();
 	m_timerIntegrate.StartNextTimer();
 	//cudaSafeCall(cudaDeviceSynchronize());
-	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_traceParams, seed, tpf * 100);
+	m_integrator.IntegrateParticles(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_brickIndexGPU, m_brickRequestsGPU, m_traceParams, seed, tpf * 100);
 
 	// seed many particles
 	if (m_seedManyParticles && LineModeGenerateAlwaysNewSeeds(m_traceParams.m_lineMode)) {
@@ -1776,9 +1776,9 @@ void TracingManager::TraceRound()
 	//cudaSafeCall(cudaDeviceSynchronize());
 
 	if (m_traceParams.m_ftleEnabled)
-		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_traceParams, m_dpParticles);
+		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_brickIndexGPU, m_brickRequestsGPU, m_volumeInfoGPU, m_traceParams, m_dpParticles);
 	else
-		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_volumeInfoGPU, m_traceParams);
+		m_integrator.IntegrateLines(m_brickAtlas, lineInfo, m_brickIndexGPU, m_brickRequestsGPU, m_volumeInfoGPU, m_traceParams);
 
 	//cudaSafeCall(cudaDeviceSynchronize());
 	m_timerIntegrate.StopCurrentTimer();

@@ -113,7 +113,7 @@ void Integrator::ForceParamUpdate(const ParticleTraceParams& params, const LineI
 }
 
 
-void Integrator::IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimpleParticleVertex* dpParticles, VolumeInfoGPU volumeInfoGPU, uint particleCount, const ParticleTraceParams& params)
+void Integrator::IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimpleParticleVertex* dpParticles, VolumeInfoGPU& volumeInfoGPU, BrickIndexGPU& brickIndex, BrickRequestsGPU& brickRequests, uint particleCount, const ParticleTraceParams& params)
 {
 	float timeMax = 1e10f;
 	UpdateIntegrationParams(params, timeMax);
@@ -122,13 +122,13 @@ void Integrator::IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimplePar
 	g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
 	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, brickAtlas.GetCudaArray()));
 
-	integratorKernelSimpleParticles(dpParticles, volumeInfoGPU, particleCount, params.m_advectDeltaT, params.m_advectStepsPerRound, params.m_advectMode, params.m_filterMode);
+	integratorKernelSimpleParticles(dpParticles, volumeInfoGPU, brickIndex, brickRequests, particleCount, params.m_advectDeltaT, params.m_advectStepsPerRound, params.m_advectMode, params.m_filterMode);
 
 	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
 }
 
 
-void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, VolumeInfoGPU volumeInfoGPU, const ParticleTraceParams& params, SimpleParticleVertexDeltaT* dpParticles)
+void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, BrickIndexGPU& brickIndex, BrickRequestsGPU& brickRequests, VolumeInfoGPU& volumeInfoGPU, const ParticleTraceParams& params, SimpleParticleVertexDeltaT* dpParticles)
 {
 	float timeMax = lineInfo.lineSeedTime + params.m_lineAgeMax;
 
@@ -161,16 +161,16 @@ void Integrator::IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lin
 		case LINE_STREAM:
 		{
 			if (params.m_enableDenseOutput && IsAdvectModeDenseOutput(params.m_advectMode))
-				integratorKernelStreamLinesDense(m_lineInfoGPU, volumeInfoGPU, params.m_advectMode, params.m_filterMode);
+				integratorKernelStreamLinesDense(m_lineInfoGPU, volumeInfoGPU, brickIndex, brickRequests, params.m_advectMode, params.m_filterMode);
 			else
-				integratorKernelStreamLines(m_lineInfoGPU, volumeInfoGPU, params.m_advectMode, params.m_filterMode);
+				integratorKernelStreamLines(m_lineInfoGPU, volumeInfoGPU, brickIndex, brickRequests, params.m_advectMode, params.m_filterMode);
 			break;
 		}
 		case LINE_PATH:
-			integratorKernelPathLines(m_lineInfoGPU, volumeInfoGPU, params.m_advectMode, params.m_filterMode);
+			integratorKernelPathLines(m_lineInfoGPU, volumeInfoGPU, brickIndex, brickRequests, params.m_advectMode, params.m_filterMode);
 			break;
 		case LINE_PATH_FTLE:
-			integratorKernelComputeFTLE(dpParticles, volumeInfoGPU, params.m_lineCount, params.m_advectMode, params.m_filterMode, params.m_ftleInvertVelocity);
+			integratorKernelComputeFTLE(dpParticles, volumeInfoGPU, brickIndex, brickRequests, params.m_lineCount, params.m_advectMode, params.m_filterMode, params.m_ftleInvertVelocity);
 			break;
 		}
 	}
@@ -191,7 +191,7 @@ void Integrator::InitIntegrateParticles(const LineInfo& lineInfo, const Particle
 	printf("Integrator::InitIntegrateParticles: particles initialized\n");
 }
 
-void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, VolumeInfoGPU volumeInfoGPU, const ParticleTraceParams& params, int seed, double tpf)
+void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, VolumeInfoGPU& volumeInfoGPU, BrickIndexGPU& brickIndex, BrickRequestsGPU& brickRequests, const ParticleTraceParams& params, int seed, double tpf)
 {
 	if (params.m_cpuTracing)
 		return;
@@ -213,7 +213,7 @@ void Integrator::IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo&
 	}
 
 	// launch advection kernel
-	integratorKernelParticles(m_lineInfoGPU, volumeInfoGPU, params.m_advectMode, params.m_filterMode, tpf);
+	integratorKernelParticles(m_lineInfoGPU, volumeInfoGPU, brickIndex, brickRequests, params.m_advectMode, params.m_filterMode, tpf);
 
 	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
 }

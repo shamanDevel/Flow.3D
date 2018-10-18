@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-__constant__ BrickIndexGPU c_brickIndex;
+//__constant__ BrickIndexGPU c_brickIndex;
 BrickIndexGPU g_brickIndex;
 
 
@@ -68,11 +68,7 @@ void BrickIndexGPU::Update(bool cpuTracing, const uint2* pBrickToSlot, const uin
 void BrickIndexGPU::Upload(bool cpuTracing) const
 {
 	if(cpuTracing)
-	{
 		memcpy(&g_brickIndex, this, sizeof(g_brickIndex));
-	}
-	else
-	{
-		cudaSafeCall(cudaMemcpyToSymbolAsync(c_brickIndex, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
-	}
+	//else
+	//	cudaSafeCall(cudaMemcpyToSymbolAsync(c_brickIndex, this, sizeof(*this), 0, cudaMemcpyHostToDevice));
 }

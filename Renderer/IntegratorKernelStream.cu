@@ -16,8 +16,8 @@
 #include "Jacobian.cuh"
 
 //extern __constant__ VolumeInfoGPU c_volumeInfo;
-extern __constant__ BrickIndexGPU c_brickIndex;
-extern __constant__ BrickRequestsGPU c_brickRequests;
+//extern __constant__ BrickIndexGPU c_brickIndex;
+//extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
 //extern __constant__ LineInfoGPU c_lineInfo;
 
@@ -25,7 +25,7 @@ extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>
-__global__ void integrateStreamLinesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU c_volumeInfo)
+__global__ void integrateStreamLinesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU c_volumeInfo, BrickIndexGPU c_brickIndex, BrickRequestsGPU c_brickRequests)
 {
 	uint lineIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -52,7 +52,7 @@ __global__ void integrateStreamLinesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU
 	float3 brickBoxMax;
 	float3 world2texOffset;
 	float3 world2texScale;
-	if (!findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+	if (!findBrick(c_volumeInfo, c_brickIndex, c_brickRequests, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 		return;
 	}
 
@@ -155,7 +155,7 @@ __global__ void integrateStreamLinesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU
 					lastOutPos  = vertex.Position;
 					lastOutTime = vertex.Time;
 				}
-				if (isOutOfDomain || !findBrick(c_volumeInfo, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
+				if (isOutOfDomain || !findBrick(c_volumeInfo, c_brickIndex, c_brickRequests, vertex.Position, brickBoxMin, brickBoxMax, world2texOffset, world2texScale)) {
 					// new brick isn't available (or we went out of the domain) - get outta here
 					// (if we're still inside the domain, the new brick has already been requested in findBrick!)
 					stayedInAvailableBrick = false;
@@ -201,12 +201,12 @@ __global__ void integrateStreamLinesKernel(LineInfoGPU c_lineInfo, VolumeInfoGPU
 #include "IntegratorKernelDefines.h"
 
 
-void integratorKernelStreamLines(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode)
+void integratorKernelStreamLines(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, BrickIndexGPU brickIndex, BrickRequestsGPU brickRequests, eAdvectMode advectMode, eTextureFilterMode filterMode)
 {
 	uint blockSize = 128;
 	uint blockCount = (lineInfo.lineCount + blockSize - 1) / blockSize;
 
-#define INTEGRATE(advect, filter) integrateStreamLinesKernel <advect, filter> <<<blockCount, blockSize>>> (lineInfo, volumeInfo)
+#define INTEGRATE(advect, filter) integrateStreamLinesKernel <advect, filter> <<<blockCount, blockSize>>> (lineInfo, volumeInfo, brickIndex, brickRequests)
 
 	ADVECT_SWITCH;
 	cudaCheckMsg("integrateStreamLinesKernel execution failed");

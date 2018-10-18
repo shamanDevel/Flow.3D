@@ -9,7 +9,7 @@
 #include <VolumeInfoGPU.h>
 
 //advects all particles if they are still valid (time>=0)
-void integratorKernelParticles(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, eAdvectMode advectMode, eTextureFilterMode filterMode, double tpf);
+void integratorKernelParticles(LineInfoGPU lineInfo, VolumeInfoGPU volumeInfo, BrickIndexGPU brickIndex, BrickRequestsGPU brickRequests, eAdvectMode advectMode, eTextureFilterMode filterMode, double tpf);
 
 //Seeds new particles at 'particleEntry' in the lines
 void integratorKernelSeedParticles(LineInfoGPU lineInfo, int particleEntry);
