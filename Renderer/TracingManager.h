@@ -38,6 +38,7 @@
 
 #include "IntegratorTimeInCell.cuh"
 
+
 class TracingManager
 {
 public:
@@ -263,15 +264,14 @@ private:
 	ID3D11Device*            m_pDevice;
 
 	VolumeInfoGPU    m_volumeInfoGPU;
+
 	BrickIndexGPU    m_brickIndexGPU;
 	uint2*           m_pBrickToSlot;
 	uint*            m_pSlotTimestepMin;
 	uint*            m_pSlotTimestepMax;
-	cudaEvent_t      m_brickIndexUploadEvent;
+
+
 	BrickRequestsGPU m_brickRequestsGPU;
-	uint*            m_pBrickRequestCounts;
-	uint*            m_pBrickTimestepMins;
-	cudaEvent_t      m_brickRequestsDownloadEvent;
 
 	Integrator       m_integrator;
 
@@ -295,13 +295,7 @@ private:
 	// volume-dependent resources
 	std::vector<float*>   m_dpChannelBuffer;
 	std::vector<float*>   m_pChannelBufferCPU;
-	BrickSlot             m_brickAtlas;
-	tum3D::Vec3ui         m_brickSlotCount;
-	std::vector<SlotInfo> m_brickSlotInfo;
-	std::map<uint, uint>  m_bricksOnGPU; // map from brick index to slot index
-	std::vector<BrickSortItem> m_bricksToDo;
-	bool                  m_bricksToDoDirty;
-	bool                  m_bricksToDoPrioritiesDirty;
+	
 
 	// param-dependent resources
 	// note: if m_traceParams.m_cpuTracing, then these are actually CPU arrays!
@@ -324,11 +318,11 @@ private:
 	float                     m_progress;
 
 	// for particle tracing
-	bool                      m_particlesNeedsUploadTimestep;
-	std::chrono::steady_clock::time_point m_particlesLastTime;
-	int                       m_particlesSeedPosition;
-	bool                      m_seedManyParticles;
-	std::chrono::steady_clock::time_point m_particlesLastFrame;
+	bool									m_particlesNeedsUploadTimestep;
+	int										m_particlesSeedPosition;
+	bool									m_seedManyParticles;
+	std::chrono::steady_clock::time_point	m_particlesLastTime;
+	std::chrono::steady_clock::time_point	m_particlesLastFrame;
 
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
 
@@ -357,6 +351,26 @@ private:
 	CellTextureGPU m_cellTextureGPU;
 
 	bool m_verbose;
+
+#pragma region AtlasStuff
+	uint*            m_pBrickRequestCounts;
+	uint*            m_pBrickTimestepMins;
+	cudaEvent_t      m_brickRequestsDownloadEvent;
+	cudaEvent_t      m_brickIndexUploadEvent;
+
+	BrickSlot             m_brickAtlas;
+	tum3D::Vec3ui         m_brickSlotCount;
+	std::vector<SlotInfo> m_brickSlotInfo;
+	std::map<uint, uint>  m_bricksOnGPU; // map from brick index to slot index
+	std::vector<BrickSortItem> m_bricksToDo;
+	bool                  m_bricksToDoDirty;
+	bool                  m_bricksToDoPrioritiesDirty;
+#pragma endregion
+
+private:
+	// disable copy and assignment
+	TracingManager(const TracingManager&);
+	TracingManager& operator=(const TracingManager&);
 };
 
 
