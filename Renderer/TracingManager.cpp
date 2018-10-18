@@ -32,6 +32,159 @@ namespace
 }
 
 
+
+#pragma region Timings
+bool TracingManager::Timings::WriteToFile(const std::string& filename) const
+{
+	std::ofstream file(filename);
+	return WriteToFile(file);
+}
+
+bool TracingManager::Timings::WriteToFile(std::ostream& file) const
+{
+	if (!file.good()) return false;
+
+	file << "WallTime: " << TraceWall << "\n";
+	file << "DiskWaitTime: " << WaitDiskWall << "\n";
+	file << "UploadDecompressTimeAvg: " << UploadDecompressGPU.Avg << "\n";
+	file << "UploadDecompressTimeSum: " << UploadDecompressGPU.Total << "\n";
+	file << "IntegrateTimeAvg: " << IntegrateGPU.Avg << "\n";
+	file << "IntegrateTimeSum: " << IntegrateGPU.Total << "\n";
+	file << "BuildIndexBufferTimeAvg: " << BuildIndexBufferGPU.Avg << "\n";
+	file << "BuildIndexBufferTimeSum: " << BuildIndexBufferGPU.Total << "\n";
+
+	return true;
+}
+
+bool TracingManager::Timings::WriteCSVHeader(std::ostream& file, const std::vector<std::string>& extraColumns)
+{
+	if (!file.good()) return false;
+
+	for (auto& str : extraColumns)
+	{
+		file << str << ";";
+	}
+	file << "WallTime;";
+	file << "DiskWaitTime;";
+	file << "UploadDecompressTimeAvg;";
+	file << "UploadDecompressTimeSum;";
+	file << "IntegrateTimeAvg;";
+	file << "IntegrateTimeSum;";
+	file << "BuildIndexBufferTimeAvg;";
+	file << "BuildIndexBufferTimeSum" << std::endl;
+
+	return true;
+}
+
+bool TracingManager::Timings::WriteToCSVFile(std::ostream& file, const std::vector<std::string>& extraColumns) const
+{
+	if (!file.good()) return false;
+
+	for (auto& str : extraColumns)
+	{
+		file << str << ";";
+	}
+	file << TraceWall << ";";
+	file << WaitDiskWall << ";";
+	file << UploadDecompressGPU.Avg << ";";
+	file << UploadDecompressGPU.Total << ";";
+	file << IntegrateGPU.Avg << ";";
+	file << IntegrateGPU.Total << ";";
+	file << BuildIndexBufferGPU.Avg << ";";
+	file << BuildIndexBufferGPU.Total << std::endl;
+
+	return true;
+}
+#pragma endregion
+
+#pragma region Stats
+void TracingManager::Stats::Clear()
+{
+	BricksUploadedTotal = 0;
+	BricksUploadedUnique = 0;
+	StepsTotal = 0;
+	StepsAccepted = 0;
+	Evaluations = 0;
+	LinesReachedMaxAge = 0;
+	LinesLeftDomain = 0;
+	DiskBusyTimeMS = 0.0f;
+	DiskBytesLoaded = 0;
+	DiskBytesUsed = 0;
+}
+
+bool TracingManager::Stats::WriteToFile(const std::string& filename) const
+{
+	std::ofstream file(filename);
+	return WriteToFile(file);
+}
+
+bool TracingManager::Stats::WriteToFile(std::ostream& file) const
+{
+	if (!file.good()) return false;
+
+	file << "TotalBricksUploaded: " << BricksUploadedTotal << "\n";
+	file << "UniqueBricksUploaded: " << BricksUploadedUnique << "\n";
+
+	file << "StepsTotal: " << StepsTotal << "\n";
+	file << "StepsAccepted: " << StepsAccepted << "\n";
+	file << "Evaluations: " << Evaluations << "\n";
+
+	file << "LinesReachedMaxAge: " << LinesReachedMaxAge << "\n";
+	file << "LinesLeftDomain: " << LinesLeftDomain << "\n";
+
+	file << "DiskBusyTimeMS: " << DiskBusyTimeMS << "\n";
+	file << "DiskBytesLoaded: " << DiskBytesLoaded << "\n";
+	file << "DiskBytesUsed: " << DiskBytesUsed << "\n";
+
+	return true;
+}
+
+bool TracingManager::Stats::WriteCSVHeader(std::ostream& file, const std::vector<std::string>& extraColumns)
+{
+	if (!file.good()) return false;
+
+	for (auto& str : extraColumns)
+	{
+		file << str << ";";
+	}
+	file << "TotalBricksUploaded;";
+	file << "UniqueBricksUploaded;";
+	file << "StepsTotal;";
+	file << "StepsAccepted;";
+	file << "Evaluations;";
+	file << "LinesReachedMaxAge;";
+	file << "LinesLeftDomain;";
+	file << "DiskBusyTimeMS;";
+	file << "DiskBytesLoaded;";
+	file << "DiskBytesUsed" << std::endl;
+
+	return true;
+}
+
+bool TracingManager::Stats::WriteToCSVFile(std::ostream& file, const std::vector<std::string>& extraColumns) const
+{
+	if (!file.good()) return false;
+
+	for (auto& str : extraColumns)
+	{
+		file << str << ";";
+	}
+	file << BricksUploadedTotal << ";";
+	file << BricksUploadedUnique << ";";
+	file << StepsTotal << ";";
+	file << StepsAccepted << ";";
+	file << Evaluations << ";";
+	file << LinesReachedMaxAge << ";";
+	file << LinesLeftDomain << ";";
+	file << DiskBusyTimeMS << ";";
+	file << DiskBytesLoaded << ";";
+	file << DiskBytesUsed << std::endl;
+
+	return true;
+}
+#pragma endregion
+
+
 TracingManager::TracingManager()
 	: m_brickSlotCountMax(1024), m_timeSlotCountMax(8)
 	, m_roundsPerFrame(0), m_uploadsPerFrame(0)
@@ -138,9 +291,11 @@ void TracingManager::SetParams(const ParticleTraceParams& traceParams)
 
 bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph)
 {
-	if(!volume.IsOpen()) return false;
+	if(!volume.IsOpen()) 
+		return false;
 
-	if(IsTracing()) CancelTracing();
+	if(IsTracing()) 
+		CancelTracing();
 
 	//HACK for now, release resources first
 	ReleaseResources();
@@ -795,156 +950,6 @@ float TracingManager::GetTracingProgress() const
 void TracingManager::ClearResult()
 {
 	ReleaseResultResources();
-}
-
-
-bool TracingManager::Timings::WriteToFile(const std::string& filename) const
-{
-	std::ofstream file(filename);
-	return WriteToFile(file);
-}
-
-bool TracingManager::Timings::WriteToFile(std::ostream& file) const
-{
-	if(!file.good()) return false;
-
-	file << "WallTime: " << TraceWall << "\n";
-	file << "DiskWaitTime: " << WaitDiskWall << "\n";
-	file << "UploadDecompressTimeAvg: " << UploadDecompressGPU.Avg << "\n";
-	file << "UploadDecompressTimeSum: " << UploadDecompressGPU.Total << "\n";
-	file << "IntegrateTimeAvg: " << IntegrateGPU.Avg << "\n";
-	file << "IntegrateTimeSum: " << IntegrateGPU.Total << "\n";
-	file << "BuildIndexBufferTimeAvg: " << BuildIndexBufferGPU.Avg << "\n";
-	file << "BuildIndexBufferTimeSum: " << BuildIndexBufferGPU.Total << "\n";
-
-	return true;
-}
-
-bool TracingManager::Timings::WriteCSVHeader(std::ostream& file, const std::vector<std::string>& extraColumns)
-{
-	if(!file.good()) return false;
-
-	for(auto& str : extraColumns)
-	{
-		file << str << ";";
-	}
-	file << "WallTime;";
-	file << "DiskWaitTime;";
-	file << "UploadDecompressTimeAvg;";
-	file << "UploadDecompressTimeSum;";
-	file << "IntegrateTimeAvg;";
-	file << "IntegrateTimeSum;";
-	file << "BuildIndexBufferTimeAvg;";
-	file << "BuildIndexBufferTimeSum" << std::endl;
-
-	return true;
-}
-
-bool TracingManager::Timings::WriteToCSVFile(std::ostream& file, const std::vector<std::string>& extraColumns) const
-{
-	if(!file.good()) return false;
-
-	for(auto& str : extraColumns)
-	{
-		file << str << ";";
-	}
-	file << TraceWall << ";";
-	file << WaitDiskWall << ";";
-	file << UploadDecompressGPU.Avg << ";";
-	file << UploadDecompressGPU.Total << ";";
-	file << IntegrateGPU.Avg << ";";
-	file << IntegrateGPU.Total << ";";
-	file << BuildIndexBufferGPU.Avg << ";";
-	file << BuildIndexBufferGPU.Total << std::endl;
-
-	return true;
-}
-
-
-void TracingManager::Stats::Clear()
-{
-	BricksUploadedTotal = 0;
-	BricksUploadedUnique = 0;
-	StepsTotal = 0;
-	StepsAccepted = 0;
-	Evaluations = 0;
-	LinesReachedMaxAge = 0;
-	LinesLeftDomain = 0;
-	DiskBusyTimeMS = 0.0f;
-	DiskBytesLoaded = 0;
-	DiskBytesUsed = 0;
-}
-
-
-bool TracingManager::Stats::WriteToFile(const std::string& filename) const
-{
-	std::ofstream file(filename);
-	return WriteToFile(file);
-}
-
-bool TracingManager::Stats::WriteToFile(std::ostream& file) const
-{
-	if(!file.good()) return false;
-
-	file << "TotalBricksUploaded: " << BricksUploadedTotal << "\n";
-	file << "UniqueBricksUploaded: " << BricksUploadedUnique << "\n";
-
-	file << "StepsTotal: " << StepsTotal << "\n";
-	file << "StepsAccepted: " << StepsAccepted << "\n";
-	file << "Evaluations: " << Evaluations << "\n";
-
-	file << "LinesReachedMaxAge: " << LinesReachedMaxAge << "\n";
-	file << "LinesLeftDomain: " << LinesLeftDomain << "\n";
-
-	file << "DiskBusyTimeMS: " << DiskBusyTimeMS << "\n";
-	file << "DiskBytesLoaded: " << DiskBytesLoaded << "\n";
-	file << "DiskBytesUsed: " << DiskBytesUsed << "\n";
-
-	return true;
-}
-
-bool TracingManager::Stats::WriteCSVHeader(std::ostream& file, const std::vector<std::string>& extraColumns)
-{
-	if(!file.good()) return false;
-
-	for(auto& str : extraColumns)
-	{
-		file << str << ";";
-	}
-	file << "TotalBricksUploaded;";
-	file << "UniqueBricksUploaded;";
-	file << "StepsTotal;";
-	file << "StepsAccepted;";
-	file << "Evaluations;";
-	file << "LinesReachedMaxAge;";
-	file << "LinesLeftDomain;";
-	file << "DiskBusyTimeMS;";
-	file << "DiskBytesLoaded;";
-	file << "DiskBytesUsed" << std::endl;
-
-	return true;
-}
-
-bool TracingManager::Stats::WriteToCSVFile(std::ostream& file, const std::vector<std::string>& extraColumns) const
-{
-	if(!file.good()) return false;
-
-	for(auto& str : extraColumns)
-	{
-		file << str << ";";
-	}
-	file << BricksUploadedTotal << ";";
-	file << BricksUploadedUnique << ";";
-	file << StepsTotal << ";";
-	file << StepsAccepted << ";";
-	file << Evaluations << ";";
-	file << LinesReachedMaxAge << ";";
-	file << LinesLeftDomain << ";";
-	file << DiskBusyTimeMS << ";";
-	file << DiskBytesLoaded << ";";
-	file << DiskBytesUsed << std::endl;
-
-	return true;
 }
 
 

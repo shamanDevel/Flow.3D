@@ -161,8 +161,8 @@
       <Command>@echo Copying the CUDA runtime DLL to the output directory...
 copy "$(CudaToolkitBinDir)\cudart64_*.dll" "$(TargetDir)"
 
-@echo Copying $(TargetDir)$(TargetName).lib to $(SolutionDir)lib\
-xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
+::@echo Copying $(TargetDir)$(TargetName).lib to $(SolutionDir)lib\
+::xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>
@@ -220,8 +220,8 @@ xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
       <Command>@echo Copying the CUDA runtime DLL to the output directory...
 copy "$(CudaToolkitBinDir)\cudart64_*.dll" "$(TargetDir)"
 
-@echo Copying $(TargetDir)$(TargetName).lib to $(SolutionDir)lib\
-xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
+::@echo Copying $(TargetDir)$(TargetName).lib to $(SolutionDir)lib\
+::xcopy /y /d  "$(TargetDir)$(TargetName).lib" "$(SolutionDir)lib\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>

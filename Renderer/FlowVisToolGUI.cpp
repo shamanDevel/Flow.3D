@@ -1532,6 +1532,7 @@ void FlowVisToolGUI::ProfilerWindow(FlowVisTool& g_flowVisTool)
 
 	if (g_showProfilerWindow)
 	{
+		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Profiler"))
 		{
 			//ImGui::Text("Average %.2f ms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
@@ -1575,6 +1576,7 @@ void FlowVisToolGUI::StatusWindow(FlowVisTool& g_flowVisTool)
 {
 	if (g_showStatusWindow)
 	{
+		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Status"))
 		{
 			if (g_flowVisTool.g_filteringManager.IsFiltering())

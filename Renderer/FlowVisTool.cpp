@@ -808,7 +808,6 @@ void FlowVisTool::Tracing()
 		assert(g_tracingManager.IsCreated());
 
 		g_tracingManager.ClearResult();
-
 		g_tracingManager.ReleaseResources();
 
 		s_isTracing = g_tracingManager.StartTracing(g_volume, g_particleTraceParams, g_flowGraph);

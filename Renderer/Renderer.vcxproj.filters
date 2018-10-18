@@ -2,38 +2,36 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
-    <ClCompile Include="TimeVolume.cpp" />
     <ClCompile Include="..\shared\CSysTools.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="Effect.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\SysTools.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="stb_image_write.c">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="stb_image.c">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="BrickUpload.cpp" />
     <ClCompile Include="..\shared\ConfigFile.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="WorkerThread.cpp" />
     <ClCompile Include="..\shared\tinythread.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="Range.cpp" />
     <ClCompile Include="LineBuffers.cpp" />
     <ClCompile Include="Box.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="BoxUtils.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="FilteredVolume.cpp">
       <Filter>Filtering</Filter>
@@ -89,7 +87,6 @@
     <ClCompile Include="LineMode.cpp">
       <Filter>Enums</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\TimeVolumeInfo.cpp" />
     <ClCompile Include="LineEffect.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
@@ -114,13 +111,13 @@
       <Filter>ParticleTracing</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\MultiTimerGPU.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\TimerCPU.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\TimerGPU.cpp">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\CompressVolume.cpp" />
     <ClCompile Include="..\shared\GPUResources.cpp" />
@@ -161,42 +158,44 @@
       <Filter>ParticleTracing</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui.cpp">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_demo.cpp">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_draw.cpp">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_impl_dx11.cpp">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_impl_win32.cpp">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClCompile>
     <ClCompile Include="..\include\imgui\imgui_widgets.cpp">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClCompile>
     <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="FlowVisTool.cpp" />
     <ClCompile Include="FlowVisToolGUI.cpp">
-      <Filter>gui</Filter>
+      <Filter>GUI</Filter>
     </ClCompile>
-    <ClCompile Include="RaycasterManager.cpp" />
+    <ClCompile Include="RaycasterManager.cpp">
+      <Filter>Raycaster</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeVolume.cpp">
+      <Filter>TimeVol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\TimeVolumeInfo.cpp">
+      <Filter>TimeVol</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\TimeVolumeIO.cpp">
+      <Filter>TimeVol</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
       <UniqueIdentifier>{38fc9e8e-60a2-45e6-a1a8-64b7aa78ab74}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cudaCompress">
-      <UniqueIdentifier>{93b7ed83-9235-4e8d-a24a-f30964c097ce}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="util">
-      <UniqueIdentifier>{48d9e9bb-afaf-4acb-9d2c-e3f4563f2a21}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="cudaTurbulence">
-      <UniqueIdentifier>{2179bdba-656b-4494-8dd1-06c18e942b61}</UniqueIdentifier>
     </Filter>
     <Filter Include="Raycaster">
       <UniqueIdentifier>{905db05e-dc65-4727-8fb9-dc645b0311fc}</UniqueIdentifier>
@@ -225,57 +224,67 @@
     <Filter Include="ParticleTracing\CPU">
       <UniqueIdentifier>{b07430df-c488-4c74-a6cb-2fc0226cd750}</UniqueIdentifier>
     </Filter>
-    <Filter Include="cudaCompress\util">
-      <UniqueIdentifier>{bcc8ef94-7b44-4973-931f-b0d27ae48524}</UniqueIdentifier>
-    </Filter>
     <Filter Include="DirectXTK">
       <UniqueIdentifier>{a0c422fd-afd1-4c36-a38a-02fdb5650ad9}</UniqueIdentifier>
     </Filter>
     <Filter Include="HeatMap">
       <UniqueIdentifier>{db030e08-c948-4491-a97d-d9647924065a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imgui">
+    <Filter Include="GUI">
+      <UniqueIdentifier>{b19d78d2-ae23-478e-9544-25f321fc3575}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GUI\imgui">
       <UniqueIdentifier>{26a811c5-c29b-42f8-a9da-be0f96ca89e8}</UniqueIdentifier>
     </Filter>
-    <Filter Include="gui">
-      <UniqueIdentifier>{b19d78d2-ae23-478e-9544-25f321fc3575}</UniqueIdentifier>
+    <Filter Include="Util">
+      <UniqueIdentifier>{48d9e9bb-afaf-4acb-9d2c-e3f4563f2a21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CudaTurbulence">
+      <UniqueIdentifier>{2179bdba-656b-4494-8dd1-06c18e942b61}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CudaCompress">
+      <UniqueIdentifier>{93b7ed83-9235-4e8d-a24a-f30964c097ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CudaCompress\util">
+      <UniqueIdentifier>{bcc8ef94-7b44-4973-931f-b0d27ae48524}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TimeVol">
+      <UniqueIdentifier>{bd204b32-d08b-480d-aefd-89ee5d757e34}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\TimeVolumeIO.h" />
-    <ClInclude Include="TimeVolume.h" />
     <ClInclude Include="..\include\CSysTools.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaUtil.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="cutil_math.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="Effect.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\Vec.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\SysTools.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="stb_image_write.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\global.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="RenderingManager.h" />
     <ClInclude Include="BrickUpload.h" />
     <ClInclude Include="BrickSlot.h" />
     <ClInclude Include="..\include\ConfigFile.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="RaycasterKernelDefines.h">
       <Filter>Raycaster</Filter>
@@ -285,11 +294,11 @@
     </ClInclude>
     <ClInclude Include="WorkerThread.h" />
     <ClInclude Include="..\include\tinythread.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="Range.h" />
     <ClInclude Include="cudaTum3D.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="LineBuffers.h" />
     <ClInclude Include="Raycaster.h">
@@ -299,13 +308,13 @@
       <Filter>Raycaster</Filter>
     </ClInclude>
     <ClInclude Include="Box.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="ClearCudaArray.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="BoxUtils.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="FilteredVolume.h">
       <Filter>Filtering</Filter>
@@ -373,7 +382,6 @@
     <ClInclude Include="LineMode.h">
       <Filter>Enums</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\TimeVolumeInfo.h" />
     <ClInclude Include="IntegratorKernels.h">
       <Filter>ParticleTracing</Filter>
     </ClInclude>
@@ -428,60 +436,60 @@
       <Filter>ParamsGPU</Filter>
     </ClInclude>
     <ClInclude Include="..\include\LargeArray3D.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="TracingTestData.h">
       <Filter>ParticleTracing</Filter>
     </ClInclude>
     <ClInclude Include="..\include\MultiTimerGPU.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\TimerCPU.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\TimerGPU.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\MemUtils.h">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\util\Bits.h">
-      <Filter>cudaCompress\util</Filter>
+      <Filter>CudaCompress\util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\util\CudaTimer.h">
-      <Filter>cudaCompress\util</Filter>
+      <Filter>CudaCompress\util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\util\DWT.h">
-      <Filter>cudaCompress\util</Filter>
+      <Filter>CudaCompress\util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\util\Quantize.h">
-      <Filter>cudaCompress\util</Filter>
+      <Filter>CudaCompress\util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\util\YCoCg.h">
-      <Filter>cudaCompress\util</Filter>
+      <Filter>CudaCompress\util</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\BitStream.h">
-      <Filter>cudaCompress</Filter>
+      <Filter>CudaCompress</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\Encode.h">
-      <Filter>cudaCompress</Filter>
+      <Filter>CudaCompress</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\EncodeCommon.h">
-      <Filter>cudaCompress</Filter>
+      <Filter>CudaCompress</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\global.h">
-      <Filter>cudaCompress</Filter>
+      <Filter>CudaCompress</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\Init.h">
-      <Filter>cudaCompress</Filter>
+      <Filter>CudaCompress</Filter>
     </ClInclude>
     <ClInclude Include="..\include\cudaCompress\Timing.h">
-      <Filter>cudaCompress</Filter>
+      <Filter>CudaCompress</Filter>
     </ClInclude>
     <ClInclude Include="..\include\CompressVolume.h" />
     <ClInclude Include="..\include\GPUResources.h" />
     <ClInclude Include="HeatCurrent.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </ClInclude>
     <ClInclude Include="ParticleRenderMode.h">
       <Filter>Enums</Filter>
@@ -526,35 +534,46 @@
       <Filter>DirectXTK</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imconfig.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imgui.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imgui_impl_dx11.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imgui_impl_win32.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imgui_internal.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imstb_rectpack.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imstb_textedit.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\include\imgui\imstb_truetype.h">
-      <Filter>imgui</Filter>
+      <Filter>GUI\imgui</Filter>
     </ClInclude>
     <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="FlowVisTool.h" />
     <ClInclude Include="FlowVisToolGUI.h">
-      <Filter>gui</Filter>
+      <Filter>GUI</Filter>
     </ClInclude>
-    <ClInclude Include="RaycasterManager.h" />
+    <ClInclude Include="RaycasterManager.h">
+      <Filter>Raycaster</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeVolume.h">
+      <Filter>TimeVol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\TimeVolumeInfo.h">
+      <Filter>TimeVol</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\TimeVolumeIO.h">
+      <Filter>TimeVol</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -583,7 +602,7 @@
       <Filter>Raycaster</Filter>
     </CudaCompile>
     <CudaCompile Include="ClearCudaArray.cu">
-      <Filter>util</Filter>
+      <Filter>Util</Filter>
     </CudaCompile>
     <CudaCompile Include="VolumeFilter.cu">
       <Filter>Filtering</Filter>
@@ -622,7 +641,7 @@
       <Filter>Raycaster</Filter>
     </CudaCompile>
     <CudaCompile Include="Measures.cu">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </CudaCompile>
     <CudaCompile Include="RaycasterKernelIso2Separate.cu">
       <Filter>Raycaster</Filter>
@@ -658,37 +677,37 @@
       <Filter>Raycaster</Filter>
     </None>
     <None Include="Jacobian.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="Measures.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="MatrixMath.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="TextureFilter.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="Advect.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="Coords.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="VolumeFilterKernels.cui">
       <Filter>Filtering</Filter>
     </None>
     <None Include="TextureFilterTime.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="AdvectTime.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="IntegratorCommon.cuh">
       <Filter>ParticleTracing</Filter>
     </None>
     <None Include="AdvectDense.cuh">
-      <Filter>cudaTurbulence</Filter>
+      <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="RaycasterKernelIso2SeparateStep.cui">
       <Filter>Raycaster</Filter>
