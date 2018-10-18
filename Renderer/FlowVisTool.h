@@ -136,7 +136,7 @@ public:
 	//FIXME have to reset these on destroy/create device...
 	bool s_isFiltering = false;
 	bool s_isTracing = false;
-	bool s_isRendering = false;
+	bool s_isRaycasting = false;
 
 	
 	ProjectionParams		g_projParams;

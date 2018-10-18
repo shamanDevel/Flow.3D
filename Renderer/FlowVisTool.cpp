@@ -341,7 +341,7 @@ void FlowVisTool::OnFrame(float deltatime)
 		bool b;
 		b = s_isFiltering; ImGui::Checkbox("IsFiltering", &b);
 		b = s_isTracing; ImGui::Checkbox("IsTracing", &b);
-		b = s_isRendering; ImGui::Checkbox("IsRendering", &b);
+		b = s_isRaycasting; ImGui::Checkbox("IsRaycasting", &b);
 		b = m_redraw; ImGui::Checkbox("Redraw", &b);
 		b = m_retrace; ImGui::Checkbox("Retrace", &b);
 		b = g_showPreview; ImGui::Checkbox("ShowPreview", &b);
@@ -916,22 +916,24 @@ void FlowVisTool::Rendering()
 			pTfArray,
 			g_tracingManager.m_dpParticles);
 
+		if (stateRenderer == RenderingManager::STATE_ERROR)
+			printf("RenderingManager::Render returned STATE_ERROR.\n");
 
-		RaycasterManager::eRenderState stateRaycaster;
+		RaycasterManager::eRenderState stateRaycaster = RaycasterManager::STATE_DONE;
 		if (g_raycastParams.m_raycastingEnabled && !linesOnly)
 		{
 			g_renderingManager.CopyDepthTexture(m_d3dDeviceContex, g_raycasterManager.m_pDepthTexCopy);
 			stateRaycaster = g_raycasterManager.StartRendering(g_volume, g_viewParams, g_stereoParams, g_raycastParams, g_filteringManager.GetResults(), pTfArray);
 		}
 
-		if (stateRenderer == RenderingManager::STATE_ERROR || stateRaycaster == RaycasterManager::STATE_ERROR)
+		if (stateRaycaster == RaycasterManager::STATE_ERROR)
 		{
-			printf("RenderingManager::StartRendering returned STATE_ERROR.\n");
-			s_isRendering = false;
+			printf("RaycasterManager::StartRendering returned STATE_ERROR.\n");
+			s_isRaycasting = false;
 		}
 		else
 		{
-			s_isRendering = true; // set to true even if STATE_DONE - other GPUs might have something to do
+			s_isRaycasting = true; // set to true even if STATE_DONE - other GPUs might have something to do
 			renderingUpdated = true;
 
 			if (g_useAllGPUs)
@@ -957,34 +959,37 @@ void FlowVisTool::Rendering()
 		m_redraw = false;
 	}
 
-	bool renderingFinished = true; // default to "true", set to false if any GPU is not finished
+	// default to "true", set to false if any GPU is not finished
+	bool raycastingFinished = true;
+
 	//TODO only call g_renderingManager.Render() when renderDelayPassed?
 	//float timeSinceRenderUpdate = float(curTime - g_lastRenderParamsUpdate) / float(CLOCKS_PER_SEC);
 	//bool renderDelayPassed = (timeSinceRenderUpdate >= g_startWorkingDelay);
-	if (s_isRendering)
+
+	if (s_isRaycasting)
 	{
 		if (g_raycasterManager.IsRendering())
 		{
 			// render next brick on primary GPU
-			renderingFinished = (g_raycasterManager.Render() == RaycasterManager::STATE_DONE);
+			raycastingFinished = (g_raycasterManager.Render() == RaycasterManager::STATE_DONE);
 			renderingUpdated = true;
 		}
 
 		// if primary GPU is done, check if other threads are finished as well
-		if (renderingFinished && g_useAllGPUs)
+		if (raycastingFinished && g_useAllGPUs)
 		{
 			for (size_t i = 0; i < g_cudaDevices.size(); i++)
 			{
 				if (g_cudaDevices[i].pThread == nullptr) continue;
 
-				renderingFinished = renderingFinished && !g_cudaDevices[i].pThread->IsWorking();
+				raycastingFinished = raycastingFinished && !g_cudaDevices[i].pThread->IsWorking();
 				renderingUpdated = true;
 			}
 		}
 
-		if (renderingFinished)
+		if (raycastingFinished)
 		{
-			s_isRendering = false;
+			s_isRaycasting = false;
 			g_timerRendering.Stop();
 		}
 	}
@@ -994,7 +999,7 @@ void FlowVisTool::Rendering()
 	//-----------------------------------------------------------
 
 	// if this was the last brick, or we want to see unfinished images, copy from raycast target into finished image tex
-	if (renderingUpdated && (renderingFinished || g_showPreview))
+	if (renderingUpdated && (raycastingFinished || g_showPreview))
 	{
 		//if (s_isTracing) std::cout << "Render while still tracing" << std::endl;
 

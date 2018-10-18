@@ -1058,15 +1058,15 @@ void RenderingManager::RenderLines(const TimeVolume& vol, LineBuffers* pLineBuff
 	m_lineEffect.m_pvTfRange->SetFloatVector(tfRange);
 
 	// common slice texture parameters
-	bool renderSlice = m_particleRenderParams.m_showSlice 
-		&& m_particleRenderParams.m_pSliceTexture != nullptr;
+	bool renderSlice = m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr;
+
 	tum3D::Vec4f clipPlane;
-	if (renderSlice) {
+	if (renderSlice)
 		clipPlane = PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, vol.GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
-	}
 
 	//Check if particles should be rendered
-	if (m_particleRenderParams.m_lineRenderMode == LINE_RENDER_PARTICLES) {
+	if (m_particleRenderParams.m_lineRenderMode == LINE_RENDER_PARTICLES) 
+	{
 		SortParticles(pLineBuffers, pContext);
 		if (!blendBehind) {
 			if (renderSlice) {
@@ -1412,9 +1412,7 @@ void RenderingManager::ComputeFTLE(const TimeVolume& vol, SimpleParticleVertexDe
 	cudaSafeCall(cudaGraphicsUnmapResources(1, &m_ftleTexture.cudaResource));
 }
 
-void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, 
-	ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport, 
-	const tum3D::Vec4f* clipPlane, bool renderSlice)
+void RenderingManager::RenderParticles(const LineBuffers* pLineBuffers, ID3D11DeviceContext* pContext, D3D11_VIEWPORT viewport, const tum3D::Vec4f* clipPlane, bool renderSlice)
 {
 	// IA
 	pContext->IASetInputLayout(m_lineEffect.m_pInputLayout);
