@@ -38,6 +38,8 @@
 
 #include "IntegratorTimeInCell.cuh"
 
+#include <TraceableVolume.h>
+
 
 class TracingManager
 {
@@ -45,17 +47,17 @@ public:
 	TracingManager();
 	~TracingManager();
 
-	bool Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice);
+	bool Create(ID3D11Device* pDevice);
 	void Release();
 	bool IsCreated() const { return m_isCreated; }
 
 	// settings for resource limits. applied on the next StartTracing.
-	uint GetBrickSlotCountMax() const { return m_brickSlotCountMax; }
-	uint& GetBrickSlotCountMax() { return m_brickSlotCountMax; }
-	void SetBrickSlotCountMax(uint brickSlotCountMax) { m_brickSlotCountMax = brickSlotCountMax; }
-	uint GetTimeSlotCountMax() const { return m_timeSlotCountMax; }
-	uint& GetTimeSlotCountMax() { return m_timeSlotCountMax; }
-	void SetTimeSlotCountMax(uint timeSlotCountMax) { m_timeSlotCountMax = timeSlotCountMax; }
+	uint GetBrickSlotCountMax() const { return m_traceableVol->m_brickSlotCountMax; }
+	uint& GetBrickSlotCountMax() { return m_traceableVol->m_brickSlotCountMax; }
+	void SetBrickSlotCountMax(uint brickSlotCountMax) { m_traceableVol->m_brickSlotCountMax = brickSlotCountMax; }
+	uint GetTimeSlotCountMax() const { return m_traceableVol->m_timeSlotCountMax; }
+	uint& GetTimeSlotCountMax() { return m_traceableVol->m_timeSlotCountMax; }
+	void SetTimeSlotCountMax(uint timeSlotCountMax) { m_traceableVol->m_timeSlotCountMax = timeSlotCountMax; }
 
 	bool& GetVerbose() { return m_verbose; }
 
@@ -63,7 +65,7 @@ public:
 	//This is needed for particles that allow changes of some parameters (e.g. the seed box) without retracing
 	void SetParams(const ParticleTraceParams& traceParams);
 	//Starts the tracing, performs the first tracing step
-	bool StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph);
+	bool StartTracing(const TimeVolume& volume, GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph);
 
 	//Performs one tracing step. Is called multiple times (once per frame), until it is done and returns true
 	bool Trace(); // returns true if finished TODO error code
@@ -76,7 +78,7 @@ public:
 	//Called by a button in the ui: many particles should be seeded now
 	void SeedManyParticles() { m_seedManyParticles = true; }
 
-	const std::vector<const TimeVolumeIO::Brick*>& GetBricksToLoad() const { return m_bricksToLoad; }
+	const std::vector<const TimeVolumeIO::Brick*>& GetBricksToLoad() const { return m_traceableVol->m_bricksToLoad; }
 
 	void BuildIndexBuffer();
 	bool NeedIndexBufferRebuild() { return m_indexBufferDirty; }
@@ -143,30 +145,6 @@ public:
 	SimpleParticleVertexDeltaT* m_dpParticles = nullptr;
 
 private:
-	struct BrickSortItem
-	{
-		BrickSortItem(uint linearBrickIndex, int timestepFrom, float priority)
-			: m_linearBrickIndex(linearBrickIndex), m_timestepFrom(timestepFrom), m_priority(priority) {}
-
-		// sort by priority: oldest required timestep first, break ties by precomputed priority
-		bool operator<(const BrickSortItem& other) const
-		{
-			// oldest required timestep always has priority
-			if(m_timestepFrom != other.m_timestepFrom) return (m_timestepFrom < other.m_timestepFrom);
-			// otherwise, sort by stored priority
-			if(m_priority != other.m_priority) return (m_priority > other.m_priority);
-			// if still no difference, arbitrarily break ties by brick index
-			return (m_linearBrickIndex < other.m_linearBrickIndex);
-		}
-
-		uint  m_linearBrickIndex;
-		int   m_timestepFrom;
-		float m_priority;
-	};
-
-
-	HRESULT CreateVolumeDependentResources();
-	void ReleaseVolumeDependentResources();
 
 	HRESULT CreateParamDependentResources();
 	void ReleaseParamDependentResources();
@@ -178,36 +156,9 @@ private:
 	void UpdateFrameBudgets();
 
 
-	std::vector<uint> GetBrickNeighbors(uint linearIndex) const;
-	// get neighbors in -x,-y,-z,+x,+y,+z order; return uint(-1) if non-existing
-	void GetBrickNeighbors(uint linearIndex, uint neighborIndices[6]) const;
-
-	// Check if all specified timesteps of the given brick have been loaded from disk.
-	bool BrickIsLoaded(uint linearIndex, int timestepFrom, int timestepTo) const;
-	// Check if all specified timesteps of the given brick are available on the GPU.
-	bool BrickIsOnGPU(uint linearIndex, int timestepFrom, int timestepTo) const;
-
-	// Find a brick slot which is available for uploading a new brick.
-	// If forcePurgeFinished is set, this includes any filled brick slot with no lines to do,
-	// otherwise only empty brick slots or filled slots where the last use was more than purgeTimeoutInRounds ago.
-	// Returns -1 if no appropriate slot is found.
-	// Note: The download of brick requests must be finished when this is called!
-	int FindAvailableBrickSlot(bool forcePurgeFinished) const;
-
-
-	// Upload bricks (from m_bricksToDo) into available slots.
-	// Returns true if all available slots could be filled, false if we had to bail out
-	// (if a brick isn't loaded from disk yet, or the upload budget ran out).
-	bool UploadBricks(uint& uploadBudget, bool forcePurgeFinished);
-	bool UploadBricks(uint& uploadBudget, bool forcePurgeFinished, uint& uploadedCount);
-	// Update data in the given brick slot: Upload the specified time steps as required, limited by the budget.
-	// Returns true if all required time steps were uploaded, false if the budget ran out.
-	bool UpdateBrickSlot(uint& uploadBudget, uint brickSlotIndex, uint brickLinearIndex, int timestepFrom, int timestepTo);
 	
-	// Uploads a whole timestep
-	// Returns true if all bricks of the timestep fit into memory, false if we had to bail out
-	// (if a brick isn't loaded from disk yet, or the upload budget ran out).
-	bool UploadWholeTimestep(int timestep, bool forcePurgeFinished);
+
+	
 	
 	// Perform one round of particle tracing, using the bricks which are currently on the GPU.
 	void TraceRound();
@@ -231,8 +182,8 @@ private:
 	//Sets the delta-t for the checkpoints
 	void SetCheckpointTimeStep(float deltaT);
 
-	void UpdateBricksToDo();
-	void UpdateBricksToLoad();
+	
+	TraceableVolumeHeuristics GetHeuristics() { return TraceableVolumeHeuristics(m_traceParams.HeuristicDoSqrtBPCount(), m_traceParams.HeuristicUseFlowGraph(), m_traceParams.HeuristicDoSqrtBPProb(), m_traceParams.m_heuristicBonusFactor, m_traceParams.m_heuristicPenaltyFactor, m_pFlowGraph); }
 
 	void UpdateProgress();
 
@@ -247,9 +198,7 @@ private:
 	float GetLineTimeMax() const;
 
 
-	// "global" resource settings
-	uint m_brickSlotCountMax;
-	uint m_timeSlotCountMax;
+	
 
 
 	// per-frame budgets
@@ -265,25 +214,10 @@ private:
 
 	Integrator       m_integrator;
 
-	struct SlotInfo
-	{
-		SlotInfo() { Clear(); }
-
-		uint       brickIndex;
-		uint       timestepFirst;
-		uint       timestepCount;
-		int        lastUseTimestamp;
-
-		void Clear() { brickIndex = ~0u; timestepFirst = ~0u; timestepCount = 0; ClearTimestamp(); }
-		void ClearTimestamp() { lastUseTimestamp = std::numeric_limits<int>::min(); }
-		void InvalidateTimestamp() { if(lastUseTimestamp >= 0) lastUseTimestamp -= std::numeric_limits<int>::max(); else ClearTimestamp(); }
-		bool HasValidTimestamp() const { return lastUseTimestamp >= 0; }
-		bool IsFilled() const { return timestepCount > 0; }
-	};
-	int m_currentTimestamp; // incremented per trace round
-
-
 	
+
+
+	int m_currentTimestamp; // incremented per trace round
 
 	// param-dependent resources
 	// note: if m_traceParams.m_cpuTracing, then these are actually CPU arrays!
@@ -312,7 +246,7 @@ private:
 	std::chrono::steady_clock::time_point	m_particlesLastTime;
 	std::chrono::steady_clock::time_point	m_particlesLastFrame;
 
-	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
+	
 
 	// for checkpoint generation
 	std::mt19937 m_engine;
@@ -322,17 +256,15 @@ private:
 	int m_numRejections;
 
 	// timing
-	MultiTimerGPU m_timerUploadDecompress;
+
 	MultiTimerGPU m_timerIntegrate;
 	MultiTimerGPU m_timerBuildIndexBuffer;
 	TimerCPU      m_timerIntegrateCPU;
-	TimerCPU      m_timerDiskWait;
+	
 	TimerCPU      m_timerTrace;
-
 	Timings       m_timings;
 
 	// stats
-	std::unordered_set<uint> m_bricksLoaded; // 4D linear brick index: timestep * brickCount + brickIndex
 	Stats                    m_stats;
 
 	// for cell time tracking
@@ -340,41 +272,7 @@ private:
 
 	bool m_verbose;
 
-#pragma region VolumeDependent
-	GPUResources*				m_pCompressShared;
-	CompressVolumeResources*	m_pCompressVolume;
-
-	const TimeVolume*	m_pVolume;
-	VolumeInfoGPU		m_volumeInfoGPU;
-	BrickIndexGPU		m_brickIndexGPU;
-	BrickRequestsGPU	m_brickRequestsGPU;
-
-	// channel buffers for decompression
-	std::vector<float*>	m_dpChannelBuffer;
-	std::vector<float*>	m_pChannelBufferCPU;
-	
-	// cudaMallocHost for uploading to BrickIndexGPU
-	uint2*      m_pBrickToSlot;			// Size depends on brickcount
-	uint*       m_pSlotTimestepMin;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
-	uint*       m_pSlotTimestepMax;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
-
-	// cudaMallocHost for downloading from BrickRequestsGPU
-	uint*       m_pBrickRequestCounts;	// Size depends on brickcount
-	uint*		m_pBrickTimestepMins;	// Size depends on brickcount. Only used if linemode is time dependent
-
-	// Used to synchronize host and device on download of requests and upload of indexes.
-	cudaEvent_t	m_brickRequestsDownloadEvent;
-	cudaEvent_t m_brickIndexUploadEvent;
-
-	BrickSlot             m_brickAtlas;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
-	tum3D::Vec3ui         m_brickSlotCount;	// X: timeSlotCount; Y,Z: brickSlotCount; Depends on maxTexture3D size, bricksize and available GPU memory.
-	std::vector<SlotInfo> m_brickSlotInfo;	// Size: brickSlotCount.x * brickSlotCount.y
-	std::map<uint, uint>  m_bricksOnGPU;	// map from brick index to slot index
-
-	std::vector<BrickSortItem>	m_bricksToDo;
-	bool						m_bricksToDoDirty;
-	bool						m_bricksToDoPrioritiesDirty;
-#pragma endregion
+	TraceableVolume* m_traceableVol;
 
 private:
 	// disable copy and assignment

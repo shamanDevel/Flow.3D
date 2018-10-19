@@ -18,8 +18,9 @@
 #include "TracingCommon.h"
 #include <VolumeInfoGPU.h>
 
-#include <BrickRequestsGPU.h>
-#include <BrickIndexGPU.h>
+//#include <BrickRequestsGPU.h>
+//#include <BrickIndexGPU.h>
+#include <TraceableVolume.h>
 
 
 class Integrator
@@ -40,7 +41,7 @@ public:
 
 	void IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimpleParticleVertex* dpParticles, VolumeInfoGPU& volumeInfoGPU, BrickIndexGPU& brickIndex, BrickRequestsGPU& brickRequests, uint particleCount, const ParticleTraceParams& params);
 
-	void IntegrateLines(const BrickSlot& brickAtlas, const LineInfo& lineInfo, BrickIndexGPU& brickIndex, BrickRequestsGPU& brickRequests, VolumeInfoGPU& volumeInfoGPU, const ParticleTraceParams& params, SimpleParticleVertexDeltaT* dpParticles = nullptr);
+	void IntegrateLines(const TraceableVolume& traceableVol, const LineInfo& lineInfo, const ParticleTraceParams& params, SimpleParticleVertexDeltaT* dpParticles = nullptr);
 
 	//Initializes the particles. This must be called once before IntegrateParticles(...)
 	void InitIntegrateParticles(const LineInfo& lineInfo, const ParticleTraceParams& params);
@@ -50,7 +51,7 @@ public:
 	//the checkpoints contains the seed.
 	//It can be used interchangeable to IntegrateLines
 	//seed: the seeding position in the line or -1 if nothing should be seeded
-	void IntegrateParticles(const BrickSlot& brickAtlas, const LineInfo& lineInfo, VolumeInfoGPU& volumeInfoGPU, BrickIndexGPU& brickIndex, BrickRequestsGPU& brickRequests, const ParticleTraceParams& params, int seed, double tpf);
+	void IntegrateParticles(const TraceableVolume& traceableVol, const LineInfo& lineInfo, const ParticleTraceParams& params, int seed, double tpf);
 
 	//Triggers an additional seeding kernel without advection
 	void IntegrateParticlesExtraSeed(const LineInfo& lineInfo, const ParticleTraceParams& params, int seed);

@@ -200,7 +200,7 @@ bool FlowVisTool::CreateVolumeDependentResources()
 	if (!g_filteringManager.Create(&g_compressShared, &g_compressVolume))
 		return false;
 
-	if (!g_tracingManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
+	if (!g_tracingManager.Create(m_d3dDevice))
 		return false;
 
 	if (!g_renderingManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
@@ -810,7 +810,7 @@ void FlowVisTool::Tracing()
 		g_tracingManager.ClearResult();
 		g_tracingManager.ReleaseResources();
 
-		s_isTracing = g_tracingManager.StartTracing(g_volume, g_particleTraceParams, g_flowGraph);
+		s_isTracing = g_tracingManager.StartTracing(g_volume, &g_compressShared, &g_compressVolume, g_particleTraceParams, g_flowGraph);
 		g_timerTracing.Start();
 
 		//notify the heat map manager

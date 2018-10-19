@@ -192,6 +192,7 @@
     <ClCompile Include="..\shared\TimeVolumeIO.cpp">
       <Filter>TimeVol</Filter>
     </ClCompile>
+    <ClCompile Include="TraceableVolume.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -574,6 +575,7 @@
     <ClInclude Include="..\include\TimeVolumeIO.h">
       <Filter>TimeVol</Filter>
     </ClInclude>
+    <ClInclude Include="TraceableVolume.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />

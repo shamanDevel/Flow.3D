@@ -627,13 +627,14 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				int v = g_flowVisTool.g_tracingManager.GetBrickSlotCountMax();
-				if (ImGui::DragInt("Max Brick Slot Count", &v, 1, 0, INT_MAX))
-					g_flowVisTool.g_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
+				int v;
+				//v = g_flowVisTool.g_tracingManager.GetBrickSlotCountMax();
+				//if (ImGui::DragInt("Max Brick Slot Count", &v, 1, 0, INT_MAX))
+				//	g_flowVisTool.g_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
 
-				v = g_flowVisTool.g_tracingManager.GetTimeSlotCountMax();
-				if (ImGui::DragInt("Max Time Slot Count", &v, 1, 0, INT_MAX))
-					g_flowVisTool.g_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
+				//v = g_flowVisTool.g_tracingManager.GetTimeSlotCountMax();
+				//if (ImGui::DragInt("Max Time Slot Count", &v, 1, 0, INT_MAX))
+				//	g_flowVisTool.g_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
 
 				ImGui::Spacing();
 				ImGui::Separator();

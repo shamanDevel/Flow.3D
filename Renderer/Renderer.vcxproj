@@ -212,6 +212,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     </CudaCompile>
     <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="ScreenEffect.cpp" />
+    <ClCompile Include="TraceableVolume.cpp" />
     <ClCompile Include="TracingTestData.cpp" />
     <ClCompile Include="TransferFunctionEditor\TransferFunctionEditor.cpp" />
     <ClCompile Include="TransferFunctionEditor\TransferFunctionLine.cpp" />
@@ -326,6 +327,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="ScreenEffect.h" />
     <ClInclude Include="TextureCPU.h" />
     <ClInclude Include="TextureFilterCPU.h" />
+    <ClInclude Include="TraceableVolume.h" />
     <ClInclude Include="TracingTestData.h" />
     <ClInclude Include="TransferFunctionEditor\TransferFunctionEditor.h" />
     <ClInclude Include="TransferFunctionEditor\TransferFunctionLine.h" />
