@@ -357,172 +357,6 @@ void TracingManager::ReleaseResources()
 	IntegratorTimeInCell::Free(m_cellTextureGPU);
 }
 
-HRESULT TracingManager::CreateVolumeDependentResources()
-{
-	assert(m_pVolume != nullptr);
-
-	ReleaseVolumeDependentResources();
-
-
-	int device = -1;
-	cudaSafeCall(cudaGetDevice(&device));
-	cudaDeviceProp devProp;
-	cudaSafeCall(cudaGetDeviceProperties(&devProp, device));
-
-
-	uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
-	uint channelCount = m_pVolume->GetChannelCount();
-	uint channelCountTex = (channelCount == 3) ? 4 : channelCount;
-
-
-	// allocate channel buffers for decompression
-	size_t brickSizeBytePerChannel = brickSize * brickSize * brickSize * sizeof(float);
-	m_dpChannelBuffer.resize(channelCount);
-	m_pChannelBufferCPU.resize(channelCount);
-	for (size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
-	{
-		cudaSafeCall(cudaMalloc2(&m_dpChannelBuffer[channel], brickSizeBytePerChannel));
-		cudaSafeCall(cudaMallocHost(&m_pChannelBufferCPU[channel], brickSizeBytePerChannel));
-	}
-
-	uint brickCount = m_pVolume->GetBrickCount().volume();
-
-
-	// allocate brick requests structure
-	cudaSafeCall(cudaMallocHost(&m_pBrickRequestCounts, brickCount * sizeof(uint)));
-	memset(m_pBrickRequestCounts, 0, brickCount * sizeof(uint));
-	cudaSafeCall(cudaMallocHost(&m_pBrickTimestepMins, brickCount * sizeof(uint)));
-	uint timestepMinInit = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? ~0u : GetLineFloorTimestepIndex(GetLineSpawnTime());
-	for (uint i = 0; i < brickCount; i++)
-	{
-		m_pBrickTimestepMins[i] = timestepMinInit;
-	}
-	m_brickRequestsGPU.Allocate(m_traceParams.m_cpuTracing, brickCount);
-	m_brickRequestsGPU.Clear(m_traceParams.m_cpuTracing, brickCount);
-
-
-	// allocate brick slots
-	size_t memFree = 0;
-	size_t memTotal = 0;
-	cudaSafeCall(cudaMemGetInfo(&memFree, &memTotal));
-
-	std::cout << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
-
-	size_t memPerTimeSlot = brickSize * brickSize * brickSize * channelCountTex * sizeof(float);
-
-	// leave some wiggle room - arbitrarily chosen to be the size of a brick, or at least min(128 MB, 0.1 * totalMemory)
-	// with large bricks, CUDA tends to start paging otherwise...
-	size_t memBuffer = max(memPerTimeSlot, min(size_t(32) * 1024 * 1024, memTotal / 100));
-	//size_t memAvailable = memFree - min(memBuffer, memFree);
-	//size_t memAvailable = 1024ll * 1024ll * 1024ll;
-	size_t memAvailable = 1024ll * 1024ll * 512ll;
-
-	float memAvailableMB = float(memAvailable) / (1024.0f * 1024.0f);
-
-	// calculate max number of time slots
-	uint timeSlotCountMax = min(devProp.maxTexture3D[0] / brickSize, m_timeSlotCountMax);
-	timeSlotCountMax = min(max(1, uint(memAvailable / memPerTimeSlot)), timeSlotCountMax);
-	uint timeSlotCount = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? timeSlotCountMax : 1;
-
-	// calculate max number of brick slots based on the available memory
-	size_t memPerBrickSlot = brickSize * brickSize * brickSize * channelCountTex * timeSlotCount * sizeof(float);
-	uint brickSlotCount1DMax = devProp.maxTexture3D[1] / brickSize;
-	uint brickSlotCountMax = min(max(1, uint(memAvailable / memPerBrickSlot)), m_brickSlotCountMax);
-	Vec2ui brickSlotCount = Fit2DSlotCount(brickSlotCountMax, brickSlotCount1DMax);
-	m_brickSlotCount = Vec3ui(timeSlotCount, brickSlotCount);
-
-	if (m_traceParams.m_cpuTracing)
-	{
-		Vec3ui size = brickSize * m_brickSlotCount;
-		g_volume.size = make_uint3(size);
-		g_volume.data.resize(size.volume());
-		printf("TracingManager::CreateVolumeDependentResources:\n\tAllocated %ux%u brick slot(s) (target %u) with %u time slot(s) each\n",
-			m_brickSlotCount.y(), m_brickSlotCount.z(), brickSlotCountMax, m_brickSlotCount.x());
-	}
-	else
-	{
-		if (!m_brickAtlas.Create(brickSize, channelCount, m_brickSlotCount))
-		{
-			// out of memory
-			//TODO retry with fewer brick/time slots
-			printf("TracingManager::CreateVolumeDependentResources: Failed to create brick slots\n");
-			ReleaseVolumeDependentResources();
-			return E_FAIL;
-		}
-		printf("TracingManager::CreateVolumeDependentResources: %.2f MB available\n\tCreated %ux%u brick slot(s) (target %u) with %u time slot(s) each\n",
-			memAvailableMB, m_brickAtlas.GetSlotCount().y(), m_brickAtlas.GetSlotCount().z(), brickSlotCountMax, m_brickAtlas.GetSlotCount().x());
-	}
-
-
-	m_brickSlotInfo.resize(m_brickSlotCount.yz().area());
-
-
-	memFree = 0;
-	memTotal = 0;
-	cudaMemGetInfo(&memFree, &memTotal);
-	std::cout << "cudaMallocHost: " << float(brickCount * sizeof(uint2)) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
-
-	// allocate brick index *after* brick slots - need to know the slot count!
-	cudaSafeCall(cudaMallocHost(&m_pBrickToSlot, brickCount * sizeof(uint2)));
-	for (uint i = 0; i < brickCount; i++)
-	{
-		m_pBrickToSlot[i].x = BrickIndexGPU::INVALID;
-		m_pBrickToSlot[i].y = BrickIndexGPU::INVALID;
-	}
-
-	cudaMemGetInfo(&memFree, &memTotal);
-	std::cout << "cudaMallocHost: " << float(brickSlotCount.area() * sizeof(uint) * 2) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
-
-	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMin, brickSlotCount.area() * sizeof(uint)));
-	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMax, brickSlotCount.area() * sizeof(uint)));
-	for (uint i = 0; i < brickCount; i++)
-	{
-		m_pSlotTimestepMin[i] = BrickIndexGPU::INVALID;
-		m_pSlotTimestepMax[i] = BrickIndexGPU::INVALID;
-	}
-	m_brickIndexGPU.Allocate(m_traceParams.m_cpuTracing, brickCount, make_uint2(brickSlotCount));
-	m_brickIndexGPU.Update(m_traceParams.m_cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
-	cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
-
-	std::cout << "TracingManager::CreateVolumeDependentResources done." << std::endl;
-
-	return S_OK;
-}
-
-void TracingManager::ReleaseVolumeDependentResources()
-{
-	m_brickSlotInfo.clear();
-	m_brickAtlas.Release();
-	m_brickSlotCount.set(0, 0, 0);
-
-	g_volume.data.clear();
-	g_volume.data.shrink_to_fit();
-	g_volume.size = make_uint3(0, 0, 0);
-
-	m_bricksOnGPU.clear();
-
-	m_brickRequestsGPU.Deallocate();
-	cudaSafeCall(cudaFreeHost(m_pBrickTimestepMins));
-	m_pBrickTimestepMins = nullptr;
-	cudaSafeCall(cudaFreeHost(m_pBrickRequestCounts));
-	m_pBrickRequestCounts = nullptr;
-	m_brickIndexGPU.Deallocate();
-	cudaSafeCall(cudaFreeHost(m_pSlotTimestepMax));
-	m_pSlotTimestepMax = nullptr;
-	cudaSafeCall(cudaFreeHost(m_pSlotTimestepMin));
-	m_pSlotTimestepMin = nullptr;
-	cudaSafeCall(cudaFreeHost(m_pBrickToSlot));
-	m_pBrickToSlot = nullptr;
-
-	for (size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
-	{
-		cudaSafeCall(cudaFree(m_dpChannelBuffer[channel]));
-		cudaSafeCall(cudaFreeHost(m_pChannelBufferCPU[channel]));
-	}
-	m_dpChannelBuffer.clear();
-	m_pChannelBufferCPU.clear();
-}
-
 HRESULT TracingManager::CreateParamDependentResources()
 {
 	std::cout << "CreateParamDependentResources()" << std::endl;
@@ -1557,7 +1391,173 @@ float TracingManager::GetLineTimeMax() const
 
 
 
-#pragma region AtlasStuff
+#pragma region VolumeDependent
+HRESULT TracingManager::CreateVolumeDependentResources()
+{
+	assert(m_pVolume != nullptr);
+
+	ReleaseVolumeDependentResources();
+
+
+	int device = -1;
+	cudaSafeCall(cudaGetDevice(&device));
+	cudaDeviceProp devProp;
+	cudaSafeCall(cudaGetDeviceProperties(&devProp, device));
+
+
+	uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
+	uint channelCount = m_pVolume->GetChannelCount();
+	uint channelCountTex = (channelCount == 3) ? 4 : channelCount;
+
+
+	// allocate channel buffers for decompression
+	size_t brickSizeBytePerChannel = brickSize * brickSize * brickSize * sizeof(float);
+	m_dpChannelBuffer.resize(channelCount);
+	m_pChannelBufferCPU.resize(channelCount);
+	for (size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
+	{
+		cudaSafeCall(cudaMalloc2(&m_dpChannelBuffer[channel], brickSizeBytePerChannel));
+		cudaSafeCall(cudaMallocHost(&m_pChannelBufferCPU[channel], brickSizeBytePerChannel));
+	}
+
+	uint brickCount = m_pVolume->GetBrickCount().volume();
+
+
+	// allocate brick requests structure
+	cudaSafeCall(cudaMallocHost(&m_pBrickRequestCounts, brickCount * sizeof(uint)));
+	memset(m_pBrickRequestCounts, 0, brickCount * sizeof(uint));
+	cudaSafeCall(cudaMallocHost(&m_pBrickTimestepMins, brickCount * sizeof(uint)));
+	uint timestepMinInit = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? ~0u : GetLineFloorTimestepIndex(GetLineSpawnTime());
+	for (uint i = 0; i < brickCount; i++)
+	{
+		m_pBrickTimestepMins[i] = timestepMinInit;
+	}
+	m_brickRequestsGPU.Allocate(m_traceParams.m_cpuTracing, brickCount);
+	m_brickRequestsGPU.Clear(m_traceParams.m_cpuTracing, brickCount);
+
+
+	// allocate brick slots
+	size_t memFree = 0;
+	size_t memTotal = 0;
+	cudaSafeCall(cudaMemGetInfo(&memFree, &memTotal));
+
+	std::cout << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	size_t memPerTimeSlot = brickSize * brickSize * brickSize * channelCountTex * sizeof(float);
+
+	// leave some wiggle room - arbitrarily chosen to be the size of a brick, or at least min(128 MB, 0.1 * totalMemory)
+	// with large bricks, CUDA tends to start paging otherwise...
+	size_t memBuffer = max(memPerTimeSlot, min(size_t(32) * 1024 * 1024, memTotal / 100));
+	//size_t memAvailable = memFree - min(memBuffer, memFree);
+	//size_t memAvailable = 1024ll * 1024ll * 1024ll;
+	size_t memAvailable = 1024ll * 1024ll * 512ll;
+
+	float memAvailableMB = float(memAvailable) / (1024.0f * 1024.0f);
+
+	// calculate max number of time slots
+	uint timeSlotCountMax = min(devProp.maxTexture3D[0] / brickSize, m_timeSlotCountMax);
+	timeSlotCountMax = min(max(1, uint(memAvailable / memPerTimeSlot)), timeSlotCountMax);
+	uint timeSlotCount = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? timeSlotCountMax : 1;
+
+	// calculate max number of brick slots based on the available memory
+	size_t memPerBrickSlot = brickSize * brickSize * brickSize * channelCountTex * timeSlotCount * sizeof(float);
+	uint brickSlotCount1DMax = devProp.maxTexture3D[1] / brickSize;
+	uint brickSlotCountMax = min(max(1, uint(memAvailable / memPerBrickSlot)), m_brickSlotCountMax);
+	Vec2ui brickSlotCount = Fit2DSlotCount(brickSlotCountMax, brickSlotCount1DMax);
+	m_brickSlotCount = Vec3ui(timeSlotCount, brickSlotCount);
+
+	if (m_traceParams.m_cpuTracing)
+	{
+		Vec3ui size = brickSize * m_brickSlotCount;
+		g_volume.size = make_uint3(size);
+		g_volume.data.resize(size.volume());
+		printf("TracingManager::CreateVolumeDependentResources:\n\tAllocated %ux%u brick slot(s) (target %u) with %u time slot(s) each\n",
+			m_brickSlotCount.y(), m_brickSlotCount.z(), brickSlotCountMax, m_brickSlotCount.x());
+	}
+	else
+	{
+		if (!m_brickAtlas.Create(brickSize, channelCount, m_brickSlotCount))
+		{
+			// out of memory
+			//TODO retry with fewer brick/time slots
+			printf("TracingManager::CreateVolumeDependentResources: Failed to create brick slots\n");
+			ReleaseVolumeDependentResources();
+			return E_FAIL;
+		}
+		printf("TracingManager::CreateVolumeDependentResources: %.2f MB available\n\tCreated %ux%u brick slot(s) (target %u) with %u time slot(s) each\n",
+			memAvailableMB, m_brickAtlas.GetSlotCount().y(), m_brickAtlas.GetSlotCount().z(), brickSlotCountMax, m_brickAtlas.GetSlotCount().x());
+	}
+
+
+	m_brickSlotInfo.resize(m_brickSlotCount.yz().area());
+
+
+	memFree = 0;
+	memTotal = 0;
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "cudaMallocHost: " << float(brickCount * sizeof(uint2)) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	// allocate brick index *after* brick slots - need to know the slot count!
+	cudaSafeCall(cudaMallocHost(&m_pBrickToSlot, brickCount * sizeof(uint2)));
+	for (uint i = 0; i < brickCount; i++)
+	{
+		m_pBrickToSlot[i].x = BrickIndexGPU::INVALID;
+		m_pBrickToSlot[i].y = BrickIndexGPU::INVALID;
+	}
+
+	cudaMemGetInfo(&memFree, &memTotal);
+	std::cout << "cudaMallocHost: " << float(brickSlotCount.area() * sizeof(uint) * 2) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
+
+	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMin, brickSlotCount.area() * sizeof(uint)));
+	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMax, brickSlotCount.area() * sizeof(uint)));
+	for (uint i = 0; i < brickCount; i++)
+	{
+		m_pSlotTimestepMin[i] = BrickIndexGPU::INVALID;
+		m_pSlotTimestepMax[i] = BrickIndexGPU::INVALID;
+	}
+	m_brickIndexGPU.Allocate(m_traceParams.m_cpuTracing, brickCount, make_uint2(brickSlotCount));
+	m_brickIndexGPU.Update(m_traceParams.m_cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
+	cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
+
+	std::cout << "TracingManager::CreateVolumeDependentResources done." << std::endl;
+
+	return S_OK;
+}
+
+void TracingManager::ReleaseVolumeDependentResources()
+{
+	m_brickSlotInfo.clear();
+	m_brickAtlas.Release();
+	m_brickSlotCount.set(0, 0, 0);
+
+	g_volume.data.clear();
+	g_volume.data.shrink_to_fit();
+	g_volume.size = make_uint3(0, 0, 0);
+
+	m_bricksOnGPU.clear();
+
+	m_brickRequestsGPU.Deallocate();
+	cudaSafeCall(cudaFreeHost(m_pBrickTimestepMins));
+	m_pBrickTimestepMins = nullptr;
+	cudaSafeCall(cudaFreeHost(m_pBrickRequestCounts));
+	m_pBrickRequestCounts = nullptr;
+	m_brickIndexGPU.Deallocate();
+	cudaSafeCall(cudaFreeHost(m_pSlotTimestepMax));
+	m_pSlotTimestepMax = nullptr;
+	cudaSafeCall(cudaFreeHost(m_pSlotTimestepMin));
+	m_pSlotTimestepMin = nullptr;
+	cudaSafeCall(cudaFreeHost(m_pBrickToSlot));
+	m_pBrickToSlot = nullptr;
+
+	for (size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
+	{
+		cudaSafeCall(cudaFree(m_dpChannelBuffer[channel]));
+		cudaSafeCall(cudaFreeHost(m_pChannelBufferCPU[channel]));
+	}
+	m_dpChannelBuffer.clear();
+	m_pChannelBufferCPU.clear();
+}
+
 std::vector<uint> TracingManager::GetBrickNeighbors(uint linearIndex) const
 {
 	std::vector<uint> result;

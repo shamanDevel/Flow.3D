@@ -259,19 +259,9 @@ private:
 
 	bool          m_isCreated;
 	// valid between create/release
-	GPUResources*            m_pCompressShared;
-	CompressVolumeResources* m_pCompressVolume;
 	ID3D11Device*            m_pDevice;
 
-	VolumeInfoGPU    m_volumeInfoGPU;
-
-	BrickIndexGPU    m_brickIndexGPU;
-	uint2*           m_pBrickToSlot;
-	uint*            m_pSlotTimestepMin;
-	uint*            m_pSlotTimestepMax;
-
-
-	BrickRequestsGPU m_brickRequestsGPU;
+	
 
 	Integrator       m_integrator;
 
@@ -292,9 +282,7 @@ private:
 	};
 	int m_currentTimestamp; // incremented per trace round
 
-	// volume-dependent resources
-	std::vector<float*>   m_dpChannelBuffer;
-	std::vector<float*>   m_pChannelBufferCPU;
+
 	
 
 	// param-dependent resources
@@ -310,7 +298,7 @@ private:
 
 
 	// only valid while tracing
-	const TimeVolume*         m_pVolume;
+	
 	ParticleTraceParams       m_traceParams;
 	const FlowGraph*          m_pFlowGraph;
 	int                       m_timestepMax; // last timestep that might be needed (limited by lineMaxAge!)
@@ -352,19 +340,40 @@ private:
 
 	bool m_verbose;
 
-#pragma region AtlasStuff
-	uint*            m_pBrickRequestCounts;
-	uint*            m_pBrickTimestepMins;
-	cudaEvent_t      m_brickRequestsDownloadEvent;
-	cudaEvent_t      m_brickIndexUploadEvent;
+#pragma region VolumeDependent
+	GPUResources*				m_pCompressShared;
+	CompressVolumeResources*	m_pCompressVolume;
 
-	BrickSlot             m_brickAtlas;
-	tum3D::Vec3ui         m_brickSlotCount;
-	std::vector<SlotInfo> m_brickSlotInfo;
-	std::map<uint, uint>  m_bricksOnGPU; // map from brick index to slot index
-	std::vector<BrickSortItem> m_bricksToDo;
-	bool                  m_bricksToDoDirty;
-	bool                  m_bricksToDoPrioritiesDirty;
+	const TimeVolume*	m_pVolume;
+	VolumeInfoGPU		m_volumeInfoGPU;
+	BrickIndexGPU		m_brickIndexGPU;
+	BrickRequestsGPU	m_brickRequestsGPU;
+
+	// channel buffers for decompression
+	std::vector<float*>	m_dpChannelBuffer;
+	std::vector<float*>	m_pChannelBufferCPU;
+	
+	// cudaMallocHost for uploading to BrickIndexGPU
+	uint2*      m_pBrickToSlot;			// Size depends on brickcount
+	uint*       m_pSlotTimestepMin;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
+	uint*       m_pSlotTimestepMax;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
+
+	// cudaMallocHost for downloading from BrickRequestsGPU
+	uint*       m_pBrickRequestCounts;	// Size depends on brickcount
+	uint*		m_pBrickTimestepMins;	// Size depends on brickcount. Only used if linemode is time dependent
+
+	// Used to synchronize host and device on download of requests and upload of indexes.
+	cudaEvent_t	m_brickRequestsDownloadEvent;
+	cudaEvent_t m_brickIndexUploadEvent;
+
+	BrickSlot             m_brickAtlas;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
+	tum3D::Vec3ui         m_brickSlotCount;	// X: timeSlotCount; Y,Z: brickSlotCount; Depends on maxTexture3D size, bricksize and available GPU memory.
+	std::vector<SlotInfo> m_brickSlotInfo;	// Size: brickSlotCount.x * brickSlotCount.y
+	std::map<uint, uint>  m_bricksOnGPU;	// map from brick index to slot index
+
+	std::vector<BrickSortItem>	m_bricksToDo;
+	bool						m_bricksToDoDirty;
+	bool						m_bricksToDoPrioritiesDirty;
 #pragma endregion
 
 private:
