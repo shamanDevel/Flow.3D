@@ -203,13 +203,13 @@ bool FlowVisTool::CreateVolumeDependentResources()
 	if (!g_tracingManager.Create(m_d3dDevice))
 		return false;
 
-	if (!g_renderingManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
+	if (!g_renderingManager.Create(m_d3dDevice))
 		return false;
 	
 	if (!g_raycasterManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
 		return false;
 
-	if (!g_heatMapManager.Create(&g_compressShared, &g_compressVolume, m_d3dDevice))
+	if (!g_heatMapManager.Create(m_d3dDevice))
 		return false;
 
 

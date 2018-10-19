@@ -143,7 +143,7 @@ void Integrator::IntegrateLines(const TraceableVolume& traceableVol, const LineI
 	if(!params.m_cpuTracing)
 	{
 		g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
-		cudaSafeCall(cudaBindTextureToArray(g_texVolume1, traceableVol.m_brickAtlas.GetCudaArray()));
+		cudaSafeCall(cudaBindTextureToArray(g_texVolume1, traceableVol.m_brickAtlas->GetCudaArray()));
 	}
 
 	// launch appropriate kernel
@@ -161,16 +161,16 @@ void Integrator::IntegrateLines(const TraceableVolume& traceableVol, const LineI
 		case LINE_STREAM:
 		{
 			if (params.m_enableDenseOutput && IsAdvectModeDenseOutput(params.m_advectMode))
-				integratorKernelStreamLinesDense(m_lineInfoGPU, traceableVol.m_volumeInfoGPU, traceableVol.m_brickIndexGPU, traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode);
+				integratorKernelStreamLinesDense(m_lineInfoGPU, *traceableVol.m_volumeInfoGPU, *traceableVol.m_brickIndexGPU, *traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode);
 			else
-				integratorKernelStreamLines(m_lineInfoGPU, traceableVol.m_volumeInfoGPU, traceableVol.m_brickIndexGPU, traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode);
+				integratorKernelStreamLines(m_lineInfoGPU, *traceableVol.m_volumeInfoGPU, *traceableVol.m_brickIndexGPU, *traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode);
 			break;
 		}
 		case LINE_PATH:
-			integratorKernelPathLines(m_lineInfoGPU, traceableVol.m_volumeInfoGPU, traceableVol.m_brickIndexGPU, traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode);
+			integratorKernelPathLines(m_lineInfoGPU, *traceableVol.m_volumeInfoGPU, *traceableVol.m_brickIndexGPU, *traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode);
 			break;
 		case LINE_PATH_FTLE:
-			integratorKernelComputeFTLE(dpParticles, traceableVol.m_volumeInfoGPU, traceableVol.m_brickIndexGPU, traceableVol.m_brickRequestsGPU, params.m_lineCount, params.m_advectMode, params.m_filterMode, params.m_ftleInvertVelocity);
+			integratorKernelComputeFTLE(dpParticles, *traceableVol.m_volumeInfoGPU, *traceableVol.m_brickIndexGPU, *traceableVol.m_brickRequestsGPU, params.m_lineCount, params.m_advectMode, params.m_filterMode, params.m_ftleInvertVelocity);
 			break;
 		}
 	}
@@ -205,7 +205,7 @@ void Integrator::IntegrateParticles(const TraceableVolume& traceableVol, const L
 	UpdateLineInfo(params, lineInfo);
 
 	g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, traceableVol.m_brickAtlas.GetCudaArray()));
+	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, traceableVol.m_brickAtlas->GetCudaArray()));
 
 	if (seed >= 0) {
 		//launch seeding kernel
@@ -213,7 +213,7 @@ void Integrator::IntegrateParticles(const TraceableVolume& traceableVol, const L
 	}
 
 	// launch advection kernel
-	integratorKernelParticles(m_lineInfoGPU, traceableVol.m_volumeInfoGPU, traceableVol.m_brickIndexGPU, traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode, tpf);
+	integratorKernelParticles(m_lineInfoGPU, *traceableVol.m_volumeInfoGPU, *traceableVol.m_brickIndexGPU, *traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode, tpf);
 
 	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
 }

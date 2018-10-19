@@ -58,7 +58,7 @@ public:
 	~RenderingManager();
 
 	// pDevice may be null!
-	bool Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice);
+	bool Create(ID3D11Device* pDevice);
 	void Release();
 	bool IsCreated() const { return m_isCreated; }
 

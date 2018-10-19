@@ -195,7 +195,7 @@ RenderingManager::~RenderingManager()
 	assert(!m_isCreated);
 }
 
-bool RenderingManager::Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice)
+bool RenderingManager::Create(ID3D11Device* pDevice)
 {
 	std::cout << "Creating RenderingManager..." << std::endl;
 

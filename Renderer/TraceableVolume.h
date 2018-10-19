@@ -77,16 +77,12 @@ public:
 
 
 	//===========================================================================================================================
-	TraceableVolume();
+	TraceableVolume(const TimeVolume* volume);
+	~TraceableVolume();
 
-	void Create(const TimeVolume& timevol, GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume);
-	void Release();
-	bool CreateVolumeDependentResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent);
-	void ReleaseVolumeDependentResources();
-	void SetVolume(const TimeVolume& volume, bool cpuTracing);
-
-
-
+	bool CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent);
+	void ReleaseResources();
+	bool IsCreated();
 
 	//===========================================================================================================================
 	std::vector<uint> GetBrickNeighbors(uint linearIndex) const;
@@ -104,7 +100,6 @@ public:
 	// Returns -1 if no appropriate slot is found.
 	// Note: The download of brick requests must be finished when this is called!
 	int FindAvailableBrickSlot(uint m_purgeTimeoutInRounds, bool forcePurgeFinished, bool timedependent, int currentTimestamp) const;
-
 
 	// Upload bricks (from m_bricksToDo) into available slots.
 	// Returns true if all available slots could be filled, false if we had to bail out
@@ -138,9 +133,10 @@ public:
 	CompressVolumeResources*	m_pCompressVolume;
 
 	const TimeVolume*	m_pVolume;
-	VolumeInfoGPU		m_volumeInfoGPU;
-	BrickIndexGPU		m_brickIndexGPU;
-	BrickRequestsGPU	m_brickRequestsGPU;
+	VolumeInfoGPU*		m_volumeInfoGPU;
+	BrickIndexGPU*		m_brickIndexGPU;
+	BrickRequestsGPU*	m_brickRequestsGPU;
+	BrickSlot*			m_brickAtlas;	// Size depends on maxTexture3D size, bricksize and available GPU memory.
 
 	// channel buffers for decompression
 	std::vector<float*>	m_dpChannelBuffer;
@@ -159,7 +155,7 @@ public:
 	cudaEvent_t	m_brickRequestsDownloadEvent;
 	cudaEvent_t m_brickIndexUploadEvent;
 
-	BrickSlot             m_brickAtlas;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
+	
 	tum3D::Vec3ui         m_brickSlotCount;	// X: timeSlotCount; Y,Z: brickSlotCount; Depends on maxTexture3D size, bricksize and available GPU memory.
 	std::vector<SlotInfo> m_brickSlotInfo;	// Size: brickSlotCount.x * brickSlotCount.y
 	std::map<uint, uint>  m_bricksOnGPU;	// map from brick index to slot index
@@ -171,14 +167,18 @@ public:
 	std::vector<const TimeVolumeIO::Brick*> m_bricksToLoad;
 
 	// Stats stuff
-	MultiTimerGPU	m_timerUploadDecompress;
-	TimerCPU		m_timerDiskWait;
-	int				m_bricksUploadedTotal;
-	std::unordered_set<uint> m_bricksLoaded; // 4D linear brick index: timestep * brickCount + brickIndex
+	MultiTimerGPU				m_timerUploadDecompress;
+	TimerCPU					m_timerDiskWait;
+	int							m_bricksUploadedTotal;
+	std::unordered_set<uint>	m_bricksLoaded; // 4D linear brick index: timestep * brickCount + brickIndex
 
 	bool m_verbose;
 
 private:
+	bool m_isCreated;
+
+private:
+	TraceableVolume() = delete;
 	// disable copy and assignment
 	TraceableVolume(const TraceableVolume&);
 	TraceableVolume& operator=(const TraceableVolume&);

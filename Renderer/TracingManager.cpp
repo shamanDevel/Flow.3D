@@ -274,7 +274,7 @@ void TracingManager::Release()
 
 	if (m_traceableVol)
 	{
-		m_traceableVol->Release();
+		m_traceableVol->ReleaseResources();
 		delete m_traceableVol;
 		m_traceableVol = nullptr;
 	}
@@ -294,7 +294,7 @@ void TracingManager::ReleaseResources()
 	
 	if (m_traceableVol)
 	{
-		m_traceableVol->Release();
+		m_traceableVol->ReleaseResources();
 		delete m_traceableVol;
 		m_traceableVol = nullptr;
 	}
@@ -540,8 +540,7 @@ bool TracingManager::StartTracing(const TimeVolume& volume, GPUResources* pCompr
 
 	printf("\n----------------------------------------------------------------------\nTracingManager::StartTracing\n");
 
-	m_traceableVol = new TraceableVolume();
-	m_traceableVol->Create(volume, pCompressShared, pCompressVolume);
+	m_traceableVol = new TraceableVolume(&volume);
 
 	m_traceParams = traceParams;
 	m_pFlowGraph = &flowGraph;
@@ -567,14 +566,12 @@ bool TracingManager::StartTracing(const TimeVolume& volume, GPUResources* pCompr
 
 	// create volume-dependent resources last - they will take up all available GPU memory
 	//if (FAILED(CreateVolumeDependentResources()))
-	if (!m_traceableVol->CreateVolumeDependentResources(timestepMinInit, m_traceParams.m_cpuTracing, LineModeIsTimeDependent(m_traceParams.m_lineMode)))
+	if (!m_traceableVol->CreateResources(timestepMinInit, m_traceParams.m_cpuTracing, LineModeIsTimeDependent(m_traceParams.m_lineMode)))
 	{
 		MessageBoxA(nullptr, "TracingManager::StartRendering: Failed creating volume-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
 		CancelTracing();
 		return false;
 	}
-
-	m_traceableVol->SetVolume(volume, m_traceParams.m_cpuTracing);
 
 	m_integrator.SetVolumeInfo(volume.GetInfo());
 
@@ -687,11 +684,12 @@ bool TracingManager::Trace()
 
 			//writeOutFinishedLine();
 
-			m_traceableVol->m_bricksToLoad.clear();
+			//m_traceableVol->m_bricksToLoad.clear();
 
-			m_traceableVol->Release();
+			m_traceableVol->ReleaseResources();
 			delete m_traceableVol;
 			m_traceableVol = nullptr;
+
 			m_pFlowGraph = nullptr;
 
 			return true;
@@ -928,9 +926,9 @@ void TracingManager::CancelTracing()
 		printf("TracingManager::CancelTracing\n");
 		ReleaseResultResources(); //TODO hrm..?
 
-		m_traceableVol->m_bricksToDo.clear();
-		m_traceableVol->m_bricksToLoad.clear();
-		m_traceableVol->Release();
+		//m_traceableVol->m_bricksToDo.clear();
+		//m_traceableVol->m_bricksToLoad.clear();
+		m_traceableVol->ReleaseResources();
 		delete m_traceableVol;
 		m_traceableVol = nullptr;
 		m_pFlowGraph = nullptr;

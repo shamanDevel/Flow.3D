@@ -37,25 +37,70 @@ Vec2ui Fit2DSlotCount(uint slotCountTotal, uint slotCount1DMax)
 
 
 
-TraceableVolume::TraceableVolume()
+TraceableVolume::TraceableVolume(const TimeVolume* volume)
 	: m_brickSlotCountMax(1024), m_timeSlotCountMax(8)
 	, m_verbose(false)
-	, m_pCompressShared(nullptr), m_pCompressVolume(nullptr)
+	, m_isCreated(false)
 	, m_pBrickToSlot(nullptr), m_pSlotTimestepMin(nullptr), m_pSlotTimestepMax(nullptr), m_brickIndexUploadEvent(0)
 	, m_pBrickRequestCounts(nullptr), m_pBrickTimestepMins(nullptr), m_brickRequestsDownloadEvent(0)
 	, m_brickSlotCount(0, 0, 0)
 	, m_bricksToDoDirty(true), m_bricksToDoPrioritiesDirty(true)
+	, m_pCompressShared(nullptr)
+	, m_pCompressVolume(nullptr)
 	, m_pVolume(nullptr)
+	, m_volumeInfoGPU(nullptr)
+	, m_brickIndexGPU(nullptr)
+	, m_brickRequestsGPU(nullptr)
+	, m_brickAtlas(nullptr)
 {
-	m_brickIndexGPU.Init();
-	m_brickRequestsGPU.Init();
+	m_pVolume = volume;
 }
 
-void TraceableVolume::Create(const TimeVolume& timevol, GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume)
+TraceableVolume::~TraceableVolume()
 {
-	m_pVolume = &timevol;
-	m_pCompressShared = pCompressShared;
-	m_pCompressVolume = pCompressVolume;
+	assert(!m_isCreated);
+
+	ReleaseResources();
+
+	m_pVolume = nullptr;
+}
+
+bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent)
+{
+	//if (m_pVolume == nullptr || !m_pVolume->IsOpen())
+	//	return false;
+	assert(m_pVolume != nullptr);
+	assert(m_pVolume->IsOpen());
+
+	ReleaseResources();
+
+	m_pCompressShared = new GPUResources();
+	m_pCompressVolume = new CompressVolumeResources();
+
+	if (m_pVolume->IsCompressed())
+	{
+		uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
+		// do multi-channel decoding only for small bricks; for large bricks, mem usage gets too high
+		uint channelCount = (brickSize <= 128) ? m_pVolume->GetChannelCount() : 1;
+		uint huffmanBits = m_pVolume->GetHuffmanBitsMax();
+		m_pCompressShared->create(CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits));
+		m_pCompressVolume->create(m_pCompressShared->getConfig());
+	}
+
+	m_brickIndexGPU = new BrickIndexGPU();
+	m_brickIndexGPU->Init();
+
+	m_brickRequestsGPU = new BrickRequestsGPU();
+	m_brickRequestsGPU->Init();
+
+	m_volumeInfoGPU = new VolumeInfoGPU();
+
+	// probably no need to sync on the previous upload here..?
+	m_volumeInfoGPU->Fill(m_pVolume->GetInfo());
+	m_volumeInfoGPU->Upload(cpuTracing);
+
+	m_brickIndexGPU->Upload(cpuTracing);
+	m_brickRequestsGPU->Upload(cpuTracing);
 
 	cudaSafeCall(cudaHostRegister(&m_volumeInfoGPU, sizeof(m_volumeInfoGPU), cudaHostRegisterDefault));
 
@@ -66,40 +111,6 @@ void TraceableVolume::Create(const TimeVolume& timevol, GPUResources* pCompressS
 	cudaSafeCall(cudaHostRegister(&m_brickRequestsGPU, sizeof(m_brickRequestsGPU), cudaHostRegisterDefault));
 	cudaSafeCall(cudaEventCreate(&m_brickRequestsDownloadEvent, cudaEventDisableTiming));
 	cudaSafeCall(cudaEventRecord(m_brickRequestsDownloadEvent));
-}
-
-void TraceableVolume::Release()
-{
-	if (m_brickRequestsDownloadEvent)
-	{
-		cudaSafeCall(cudaEventDestroy(m_brickRequestsDownloadEvent));
-		m_brickRequestsDownloadEvent = 0;
-	}
-	cudaSafeCall(cudaHostUnregister(&m_brickRequestsGPU));
-
-	if (m_brickIndexUploadEvent)
-	{
-		cudaSafeCall(cudaEventDestroy(m_brickIndexUploadEvent));
-		m_brickIndexUploadEvent = 0;
-	}
-	cudaSafeCall(cudaHostUnregister(&m_brickIndexGPU));
-
-	cudaSafeCall(cudaHostUnregister(&m_volumeInfoGPU));
-
-	ReleaseVolumeDependentResources();
-
-	m_timerUploadDecompress.ReleaseTimers();
-
-	m_pVolume = nullptr;
-	m_pCompressVolume = nullptr;
-	m_pCompressShared = nullptr;
-}
-
-bool TraceableVolume::CreateVolumeDependentResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent)
-{
-	assert(m_pVolume != nullptr);
-
-	ReleaseVolumeDependentResources();
 
 	int device = -1;
 	cudaSafeCall(cudaGetDevice(&device));
@@ -124,7 +135,6 @@ bool TraceableVolume::CreateVolumeDependentResources(uint minTimestepIndex, bool
 
 	uint brickCount = m_pVolume->GetBrickCount().volume();
 
-
 	// allocate brick requests structure
 	cudaSafeCall(cudaMallocHost(&m_pBrickRequestCounts, brickCount * sizeof(uint)));
 	memset(m_pBrickRequestCounts, 0, brickCount * sizeof(uint));
@@ -135,10 +145,9 @@ bool TraceableVolume::CreateVolumeDependentResources(uint minTimestepIndex, bool
 	{
 		m_pBrickTimestepMins[i] = timestepMinInit;
 	}
-	//m_brickRequestsGPU.Allocate(m_traceParams.m_cpuTracing, brickCount);
-	m_brickRequestsGPU.Allocate(cpuTracing, brickCount);
-	//m_brickRequestsGPU.Clear(m_traceParams.m_cpuTracing, brickCount);
-	m_brickRequestsGPU.Clear(cpuTracing, brickCount);
+
+	m_brickRequestsGPU->Allocate(cpuTracing, brickCount);
+	m_brickRequestsGPU->Clear(cpuTracing, brickCount);
 
 
 	// allocate brick slots
@@ -183,16 +192,17 @@ bool TraceableVolume::CreateVolumeDependentResources(uint minTimestepIndex, bool
 	}
 	else
 	{
-		if (!m_brickAtlas.Create(brickSize, channelCount, m_brickSlotCount))
+		m_brickAtlas = new BrickSlot();
+		if (!m_brickAtlas->Create(brickSize, channelCount, m_brickSlotCount))
 		{
 			// out of memory
 			//TODO retry with fewer brick/time slots
 			printf("TracingManager::CreateVolumeDependentResources: Failed to create brick slots\n");
-			ReleaseVolumeDependentResources();
+			ReleaseResources();
 			return false;
 		}
 		printf("TracingManager::CreateVolumeDependentResources: %.2f MB available\n\tCreated %ux%u brick slot(s) (target %u) with %u time slot(s) each\n",
-			memAvailableMB, m_brickAtlas.GetSlotCount().y(), m_brickAtlas.GetSlotCount().z(), brickSlotCountMax, m_brickAtlas.GetSlotCount().x());
+			memAvailableMB, m_brickAtlas->GetSlotCount().y(), m_brickAtlas->GetSlotCount().z(), brickSlotCountMax, m_brickAtlas->GetSlotCount().x());
 	}
 
 
@@ -222,39 +232,101 @@ bool TraceableVolume::CreateVolumeDependentResources(uint minTimestepIndex, bool
 		m_pSlotTimestepMin[i] = BrickIndexGPU::INVALID;
 		m_pSlotTimestepMax[i] = BrickIndexGPU::INVALID;
 	}
-	m_brickIndexGPU.Allocate(cpuTracing, brickCount, make_uint2(brickSlotCount));
-	m_brickIndexGPU.Update(cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
+	m_brickIndexGPU->Allocate(cpuTracing, brickCount, make_uint2(brickSlotCount));
+	m_brickIndexGPU->Update(cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
 	cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
-
-	std::cout << "TracingManager::CreateVolumeDependentResources done." << std::endl;
+	
+	m_isCreated = true;
 
 	return true;
 }
 
-void TraceableVolume::ReleaseVolumeDependentResources()
+void TraceableVolume::ReleaseResources()
 {
-	m_brickSlotInfo.clear();
-	m_brickAtlas.Release();
-	m_brickSlotCount.set(0, 0, 0);
+	if (m_brickRequestsDownloadEvent)
+	{
+		cudaSafeCall(cudaEventDestroy(m_brickRequestsDownloadEvent));
+		m_brickRequestsDownloadEvent = 0;
+	}
 
-	g_volume.data.clear();
-	g_volume.data.shrink_to_fit();
-	g_volume.size = make_uint3(0, 0, 0);
+	if (m_brickIndexUploadEvent)
+	{
+		cudaSafeCall(cudaEventDestroy(m_brickIndexUploadEvent));
+		m_brickIndexUploadEvent = 0;
+	}
 
-	m_bricksOnGPU.clear();
+	if (m_brickRequestsGPU)
+	{
+		cudaSafeCall(cudaHostUnregister(&m_brickRequestsGPU));
+		m_brickRequestsGPU->Deallocate();
+		delete m_brickRequestsGPU;
+		m_brickRequestsGPU = nullptr;
+	}
 
-	m_brickRequestsGPU.Deallocate();
-	cudaSafeCall(cudaFreeHost(m_pBrickTimestepMins));
-	m_pBrickTimestepMins = nullptr;
-	cudaSafeCall(cudaFreeHost(m_pBrickRequestCounts));
-	m_pBrickRequestCounts = nullptr;
-	m_brickIndexGPU.Deallocate();
-	cudaSafeCall(cudaFreeHost(m_pSlotTimestepMax));
-	m_pSlotTimestepMax = nullptr;
-	cudaSafeCall(cudaFreeHost(m_pSlotTimestepMin));
-	m_pSlotTimestepMin = nullptr;
-	cudaSafeCall(cudaFreeHost(m_pBrickToSlot));
-	m_pBrickToSlot = nullptr;
+	if (m_brickIndexGPU)
+	{
+		cudaSafeCall(cudaHostUnregister(&m_brickIndexGPU));
+		m_brickIndexGPU->Deallocate();
+		delete m_brickIndexGPU;
+		m_brickIndexGPU = nullptr;
+	}
+	
+	if (m_volumeInfoGPU)
+	{
+		cudaSafeCall(cudaHostUnregister(&m_volumeInfoGPU));
+		delete m_volumeInfoGPU;
+		m_volumeInfoGPU = nullptr;
+	}
+
+	if (m_brickAtlas)
+	{
+		m_brickAtlas->Release();
+		delete m_brickAtlas;
+		m_brickAtlas = nullptr;
+	}
+
+	if (m_pCompressVolume)
+	{
+		m_pCompressVolume->destroy();
+		delete m_pCompressVolume;
+		m_pCompressVolume = nullptr;
+	}
+
+	if (m_pCompressShared)
+	{
+		m_pCompressShared->destroy();
+		delete m_pCompressShared;
+		m_pCompressShared = nullptr;
+	}
+
+	if (m_pBrickTimestepMins)
+	{
+		cudaSafeCall(cudaFreeHost(m_pBrickTimestepMins));
+		m_pBrickTimestepMins = nullptr;
+	}
+	if (m_pBrickRequestCounts)
+	{
+		cudaSafeCall(cudaFreeHost(m_pBrickRequestCounts));
+		m_pBrickRequestCounts = nullptr;
+	}
+
+	if (m_pSlotTimestepMax)
+	{
+		cudaSafeCall(cudaFreeHost(m_pSlotTimestepMax));
+		m_pSlotTimestepMax = nullptr;
+	}
+
+	if (m_pSlotTimestepMin)
+	{
+		cudaSafeCall(cudaFreeHost(m_pSlotTimestepMin));
+		m_pSlotTimestepMin = nullptr;
+	}
+
+	if (m_pBrickToSlot)
+	{
+		cudaSafeCall(cudaFreeHost(m_pBrickToSlot));
+		m_pBrickToSlot = nullptr;
+	}
 
 	for (size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
 	{
@@ -263,25 +335,41 @@ void TraceableVolume::ReleaseVolumeDependentResources()
 	}
 	m_dpChannelBuffer.clear();
 	m_pChannelBufferCPU.clear();
+
+	m_timerUploadDecompress.ReleaseTimers();
+
+	m_brickSlotInfo.clear();
+	m_brickSlotCount.set(0, 0, 0);
+
+	g_volume.data.clear();
+	g_volume.data.shrink_to_fit();
+	g_volume.size = make_uint3(0, 0, 0);
+
+	m_bricksOnGPU.clear();
+	m_bricksToLoad.clear();
+	m_bricksToDo.clear();
+	m_bricksLoaded.clear();
+
+	m_bricksUploadedTotal = 0;
+
+	m_bricksToDoPrioritiesDirty = true;
+	m_bricksToDoDirty = true;
+
+	m_isCreated = false;
 }
 
-void TraceableVolume::SetVolume(const TimeVolume& volume, bool cpuTracing)
+bool TraceableVolume::IsCreated()
 {
-	// probably no need to sync on the previous upload here..?
-	m_volumeInfoGPU.Fill(m_pVolume->GetInfo());
-	m_volumeInfoGPU.Upload(cpuTracing);
-
-	m_brickIndexGPU.Upload(cpuTracing);
-	m_brickRequestsGPU.Upload(cpuTracing);
+	return m_isCreated;
 }
 
-bool TraceableVolume::TryToKickBricksFromGPU(bool isTimeDependent, bool cpuTracing, int timeStepMax)
+bool TraceableVolume::TryToKickBricksFromGPU(bool timeDependent, bool cpuTracing, int timeStepMax)
 {
 	// check if there's still anything to do with the bricks we have on the GPU
 	bool anythingToDo = false;
 	// in time-dependent case, provide at least 3 consecutive timesteps [n,n+2] to properly handle edge cases..
 	//uint timestepInterpolation = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? 2 : 0;
-	uint timestepInterpolation = isTimeDependent ? 2 : 0;
+	uint timestepInterpolation = timeDependent ? 2 : 0;
 	if (!cpuTracing)
 		cudaSafeCall(cudaEventSynchronize(m_brickRequestsDownloadEvent));
 	for (size_t i = 0; i < m_brickSlotInfo.size(); i++)
@@ -347,9 +435,9 @@ void TraceableVolume::ClearRequestsAndIndices(bool cpuTracing)
 	uint slotCount = (uint)m_brickSlotInfo.size();
 
 	// clear all brick requests
-	m_brickRequestsGPU.Clear(cpuTracing, brickCount);
+	m_brickRequestsGPU->Clear(cpuTracing, brickCount);
 	// update brick index. TODO only if something changed
-	m_brickIndexGPU.Update(cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
+	m_brickIndexGPU->Update(cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
 	cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
 }
 
@@ -359,7 +447,7 @@ void TraceableVolume::DownloadRequests(bool cpuTracing, bool timeDependent)
 
 	// start download of brick requests. for stream lines, do *not* download timestep indices (not filled by the kernel!)
 	uint* pBrickTimestepMins = timeDependent ? m_pBrickTimestepMins : nullptr;
-	m_brickRequestsGPU.Download(cpuTracing, m_pBrickRequestCounts, pBrickTimestepMins, brickCount);
+	m_brickRequestsGPU->Download(cpuTracing, m_pBrickRequestCounts, pBrickTimestepMins, brickCount);
 
 	if (!cpuTracing)
 		cudaSafeCall(cudaEventRecord(m_brickRequestsDownloadEvent));
@@ -438,11 +526,11 @@ bool TraceableVolume::BrickIsOnGPU(uint linearIndex, int timestepFrom, int times
 	return (timestepAvailableFirst <= timestepFrom) && (timestepAvailableLast >= timestepTo);
 }
 
-int TraceableVolume::FindAvailableBrickSlot(uint purgeTimeoutInRounds, bool forcePurgeFinished, bool timedependent, int currentTimestamp) const
+int TraceableVolume::FindAvailableBrickSlot(uint purgeTimeoutInRounds, bool forcePurgeFinished, bool timeDependent, int currentTimestamp) const
 {
 	// in time-dependent case, provide at least 3 consecutive timesteps [n,n+2] to properly handle edge cases..
 	//uint timestepInterpolation = LineModeIsTimeDependent(m_traceParams.m_lineMode) ? 2 : 0;
-	uint timestepInterpolation = timedependent ? 2 : 0;
+	uint timestepInterpolation = timeDependent ? 2 : 0;
 
 	int oldestFinishedSlotIndex = -1;
 	int oldestFinishedTimestamp = std::numeric_limits<int>::max();
@@ -475,13 +563,13 @@ int TraceableVolume::FindAvailableBrickSlot(uint purgeTimeoutInRounds, bool forc
 	return oldestFinishedSlotIndex;
 }
 
-bool TraceableVolume::UploadBricks(bool cpuTracing, bool waitForDisk, uint& uploadBudget, bool forcePurgeFinished, int currentTimestamp, int timestepMax, bool timedependent, uint purgeTimeoutInRounds, const TraceableVolumeHeuristics& heuristics)
+bool TraceableVolume::UploadBricks(bool cpuTracing, bool waitForDisk, uint& uploadBudget, bool forcePurgeFinished, int currentTimestamp, int timestepMax, bool timeDependent, uint purgeTimeoutInRounds, const TraceableVolumeHeuristics& heuristics)
 {
 	uint uploadedCount;
-	return UploadBricks(cpuTracing, waitForDisk, uploadBudget, forcePurgeFinished, uploadedCount, currentTimestamp, timestepMax, timedependent, purgeTimeoutInRounds, heuristics);
+	return UploadBricks(cpuTracing, waitForDisk, uploadBudget, forcePurgeFinished, uploadedCount, currentTimestamp, timestepMax, timeDependent, purgeTimeoutInRounds, heuristics);
 }
 
-bool TraceableVolume::UploadBricks(bool cpuTracing, bool waitForDisk, uint& uploadBudget, bool forcePurgeFinished, uint& uploadedCount, int currentTimestamp, int timestepMax, bool timedependent, uint purgeTimeoutInRounds, const TraceableVolumeHeuristics& heuristics)
+bool TraceableVolume::UploadBricks(bool cpuTracing, bool waitForDisk, uint& uploadBudget, bool forcePurgeFinished, uint& uploadedCount, int currentTimestamp, int timestepMax, bool timeDependent, uint purgeTimeoutInRounds, const TraceableVolumeHeuristics& heuristics)
 {
 	if (m_verbose)
 	{
@@ -544,7 +632,7 @@ bool TraceableVolume::UploadBricks(bool cpuTracing, bool waitForDisk, uint& uplo
 				}
 				else
 				{
-					slotIndex = FindAvailableBrickSlot(purgeTimeoutInRounds, forcePurgeFinished, timedependent, currentTimestamp);
+					slotIndex = FindAvailableBrickSlot(purgeTimeoutInRounds, forcePurgeFinished, timeDependent, currentTimestamp);
 				}
 				// if there is no available slot, we're good for now
 				if (slotIndex == -1)
@@ -618,7 +706,7 @@ bool TraceableVolume::UpdateBrickSlot(bool cpuTracing, uint& uploadBudget, uint 
 				timeSlotFirstToUpload = min(timeSlotCount + timeSlotShift, timeSlotLastToUpload + 1);
 				for (int timeSlot = 0; timeSlot < timeSlotFirstToUpload; timeSlot++)
 				{
-					m_brickAtlas.CopySlot(Vec3ui(timeSlot - timeSlotShift, brickSlotIndexGPU), Vec3ui(timeSlot, brickSlotIndexGPU));
+					m_brickAtlas->CopySlot(Vec3ui(timeSlot - timeSlotShift, brickSlotIndexGPU), Vec3ui(timeSlot, brickSlotIndexGPU));
 				}
 			}
 			else if (timeSlotShift > 0)
@@ -630,7 +718,7 @@ bool TraceableVolume::UpdateBrickSlot(bool cpuTracing, uint& uploadBudget, uint 
 				timeSlotLastToUpload = min(timeSlotMax, max(timeSlotShift - 1, timeSlotFirstToUpload - 1));
 				for (int timeSlot = timeSlotLastToUpload + 1; timeSlot < timeSlotMax; timeSlot++)
 				{
-					m_brickAtlas.CopySlot(Vec3ui(timeSlot - timeSlotShift, brickSlotIndexGPU), Vec3ui(timeSlot, brickSlotIndexGPU));
+					m_brickAtlas->CopySlot(Vec3ui(timeSlot - timeSlotShift, brickSlotIndexGPU), Vec3ui(timeSlot, brickSlotIndexGPU));
 				}
 			}
 			else
@@ -732,7 +820,7 @@ bool TraceableVolume::UpdateBrickSlot(bool cpuTracing, uint& uploadBudget, uint 
 		}
 		else
 		{
-			UploadBrick(m_pCompressShared, m_pCompressVolume, m_pVolume->GetInfo(), brick, m_dpChannelBuffer.data(), &m_brickAtlas, slotIndex, &m_timerUploadDecompress);
+			UploadBrick(m_pCompressShared, m_pCompressVolume, m_pVolume->GetInfo(), brick, m_dpChannelBuffer.data(), m_brickAtlas, slotIndex, &m_timerUploadDecompress);
 		}
 		//cudaSafeCall(cudaDeviceSynchronize());
 
@@ -765,7 +853,7 @@ bool TraceableVolume::UpdateBrickSlot(bool cpuTracing, uint& uploadBudget, uint 
 	return result;
 }
 
-bool TraceableVolume::UploadWholeTimestep(bool cpuTracing, bool waitForDisk, int timestep, bool forcePurgeFinished, int currentTimestamp, bool timedependent, uint purgeTimeoutInRounds)
+bool TraceableVolume::UploadWholeTimestep(bool cpuTracing, bool waitForDisk, int timestep, bool forcePurgeFinished, int currentTimestamp, bool timeDependent, uint purgeTimeoutInRounds)
 {
 	m_bricksToLoad.clear();
 
@@ -836,7 +924,7 @@ bool TraceableVolume::UploadWholeTimestep(bool cpuTracing, bool waitForDisk, int
 			}
 			else
 			{
-				slotIndex = FindAvailableBrickSlot(purgeTimeoutInRounds, forcePurgeFinished, timedependent, currentTimestamp);
+				slotIndex = FindAvailableBrickSlot(purgeTimeoutInRounds, forcePurgeFinished, timeDependent, currentTimestamp);
 			}
 			// if there is no available slot, we're good for now
 			if (slotIndex == -1)
@@ -860,10 +948,11 @@ bool TraceableVolume::UploadWholeTimestep(bool cpuTracing, bool waitForDisk, int
 		}
 	}
 
-	if (finished) {
+	if (finished) 
+	{
 		// update brick index
 		//m_brickIndexGPU.Update(m_traceParams.m_cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
-		m_brickIndexGPU.Update(cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
+		m_brickIndexGPU->Update(cpuTracing, m_pBrickToSlot, m_pSlotTimestepMin, m_pSlotTimestepMax);
 		cudaSafeCall(cudaEventRecord(m_brickIndexUploadEvent));
 		printf("TracingManager::UploadWholeTimestep: update brick index\n");
 	}
@@ -871,7 +960,7 @@ bool TraceableVolume::UploadWholeTimestep(bool cpuTracing, bool waitForDisk, int
 	return finished;
 }
 
-void TraceableVolume::UpdateBricksToLoad(bool cpuTracing, bool enablePrefetching, bool timedependent, int floorTimestepIndex, int maxTimestep, const TraceableVolumeHeuristics& heuristics)
+void TraceableVolume::UpdateBricksToLoad(bool cpuTracing, bool enablePrefetching, bool timeDependent, int floorTimestepIndex, int maxTimestep, const TraceableVolumeHeuristics& heuristics)
 {
 	m_bricksToLoad.clear();
 
@@ -898,7 +987,7 @@ void TraceableVolume::UpdateBricksToLoad(bool cpuTracing, bool enablePrefetching
 	if (enablePrefetching)
 	{
 		//if (LineModeIsTimeDependent(m_traceParams.m_lineMode))
-		if (timedependent)
+		if (timeDependent)
 		{
 			// for path lines, add later timesteps of bricks in todo list
 			for (auto it = m_bricksToDo.cbegin(); it != m_bricksToDo.cend(); it++)

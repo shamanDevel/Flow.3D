@@ -13,8 +13,8 @@
 #include "Range.h"
 #include "LineBuffers.h"
 #include "VolumeInfoGPU.h"
-#include "GPUResources.h"
-#include "CompressVolume.h"
+//#include "GPUResources.h"
+//#include "CompressVolume.h"
 #include "TimeVolume.h"
 #include "ViewParams.h"
 
@@ -28,7 +28,7 @@ public:
 	HeatMapManager();
 	~HeatMapManager();
 
-	bool Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice);
+	bool Create(ID3D11Device* pDevice);
 	void Release();
 	bool IsCreated() const { return m_isCreated; }
 
@@ -61,8 +61,6 @@ private:
 	bool                     m_seedTexChanged;
 
 	// valid between create/release
-	GPUResources*            m_pCompressShared;
-	CompressVolumeResources* m_pCompressVolume;
 	ID3D11Device*            m_pDevice;
 
 	// only valid while tracing

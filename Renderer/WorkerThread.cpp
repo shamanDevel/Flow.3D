@@ -256,7 +256,7 @@ void WorkerThread::TaskCreateVolumeDependentResources()
 		m_private.compressShared.create(CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits));
 		m_private.compressVolume.create(m_private.compressShared.getConfig());
 	}
-	m_private.renderingManager.Create(&m_private.compressShared, &m_private.compressVolume, nullptr);
+	m_private.renderingManager.Create(nullptr);
 }
 
 void WorkerThread::TaskReleaseVolumeDependentResources()

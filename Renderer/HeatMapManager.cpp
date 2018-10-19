@@ -16,9 +16,7 @@ using namespace tum3D;
 
 
 HeatMapManager::HeatMapManager()
-	: m_pCompressShared(NULL)
-	, m_pCompressVolume(NULL)
-	, m_pDevice(NULL)
+	: m_pDevice(NULL)
 	, m_pVolume(NULL)
 	, m_pHeatMap(NULL)
 	, m_isCreated(false)
@@ -42,12 +40,10 @@ HeatMapManager::~HeatMapManager()
 	delete m_pShader;
 }
 
-bool HeatMapManager::Create(GPUResources * pCompressShared, CompressVolumeResources * pCompressVolume, ID3D11Device * pDevice)
+bool HeatMapManager::Create(ID3D11Device * pDevice)
 {
 	std::cout << "Creating HeatMapManager..." << std::endl;
 
-	m_pCompressShared = pCompressShared;
-	m_pCompressVolume = pCompressVolume;
 	m_pDevice = pDevice;
 
 	//create shader
