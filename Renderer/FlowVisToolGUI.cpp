@@ -395,7 +395,7 @@ void TimeVolGUI(TimeVolume& volume)
 
 
 
-	ImGui::Text(volume.GetFilename().c_str());
+	ImGui::Text(volume.GetName().c_str());
 
 	const TimeVolumeInfo& volInfo = volume.GetInfo();
 
@@ -558,13 +558,16 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 			if (!g_flowVisTool.g_volumes.empty())
 			{
 				static int selected = 0;
+
+				selected = std::min(selected, (int)g_flowVisTool.g_volumes.size() - 1);
+
 				for (size_t i = 0; i < g_flowVisTool.g_volumes.size(); i++)
-					ImGui::RadioButton(std::to_string(i).c_str(), &selected, i);
+					ImGui::RadioButton(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str(), &selected, i);
 
 				ParticleTraceParams& traceParams = g_flowVisTool.g_volumes[selected]->m_traceParams;
 
 				if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.m_retrace = true;
+					g_flowVisTool.g_volumes[selected]->m_retrace = true;
 
 				{
 					bool wasPaused = g_flowVisTool.g_particleTracingPaused;

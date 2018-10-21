@@ -539,7 +539,7 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	ReleaseResources();
 	ReleaseResultResources();
 
-	printf("\n----------------------------------------------------------------------\nTracingManager::StartTracing\n");
+	printf("\n----------------------------------------------------------------------\nTracingManager::StartTracing: %s\n", volume.GetName().c_str());
 
 	m_traceableVol = new TraceableVolume(&volume);
 
@@ -552,13 +552,13 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	//TODO recreate only if something relevant changed
 	if (FAILED(CreateParamDependentResources()))
 	{
-		MessageBoxA(nullptr, "TracingManager::StartRendering: Failed creating param-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
+		MessageBoxA(nullptr, "TracingManager::StartTracing: Failed creating param-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
 		CancelTracing();
 		return false;
 	}
 	if (FAILED(CreateResultResources()))
 	{
-		MessageBoxA(nullptr, "TracingManager::StartRendering: Failed creating result resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
+		MessageBoxA(nullptr, "TracingManager::StartTracing: Failed creating result resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
 		CancelTracing();
 		return false;
 	}
@@ -569,7 +569,7 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 	//if (FAILED(CreateVolumeDependentResources()))
 	if (!m_traceableVol->CreateResources(timestepMinInit, m_traceParams.m_cpuTracing, LineModeIsTimeDependent(m_traceParams.m_lineMode)))
 	{
-		MessageBoxA(nullptr, "TracingManager::StartRendering: Failed creating volume-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
+		MessageBoxA(nullptr, "TracingManager::StartTracing: Failed creating volume-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
 		CancelTracing();
 		return false;
 	}

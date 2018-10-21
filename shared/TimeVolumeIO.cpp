@@ -9,6 +9,22 @@
 
 using namespace tum3D;
 
+/*
+* Get File Name from a Path with or without extension
+*/
+std::string getFileName(std::string filePath, bool withExtension = true, char seperator = '/')
+{
+	// Get last dot position
+	std::size_t dotPos = filePath.rfind('.');
+	std::size_t sepPos = filePath.rfind(seperator);
+
+	if (sepPos != std::string::npos)
+	{
+		return filePath.substr(sepPos + 1, filePath.size() - (withExtension || dotPos != std::string::npos ? 1 : dotPos));
+	}
+	return "";
+}
+
 
 //#define DONT_USE_LOADING_THREAD
 
@@ -63,6 +79,7 @@ bool TimeVolumeIO::Open(const string& indexFileName, bool writeAccess)
 
 	m_strBaseFilePath = tum3d::GetPath(indexFileName);
 	m_strFilename = indexFileName;
+	m_strName = getFileName(m_strFilename, false, '\\');
 	FILE* indexFile = nullptr;
 
 	fopen_s(&indexFile, indexFileName.c_str(), "rb");
@@ -223,6 +240,7 @@ void TimeVolumeIO::Close()
 	m_strTimestepFileNamePrefix = "";
 
 	m_strFilename = "";
+	m_strName = "";
 
 	m_iCurrentOutputTimestep = -1;
 	m_hCurrentOutputFile = INVALID_HANDLE_VALUE;

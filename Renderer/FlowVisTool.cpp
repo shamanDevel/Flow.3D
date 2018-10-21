@@ -355,7 +355,7 @@ void FlowVisTool::OnFrame(float deltatime)
 		b = s_isTracing; ImGui::Checkbox("IsTracing", &b);
 		b = s_isRaycasting; ImGui::Checkbox("IsRaycasting", &b);
 		b = m_redraw; ImGui::Checkbox("Redraw", &b);
-		b = m_retrace; ImGui::Checkbox("Retrace", &b);
+		//b = m_retrace; ImGui::Checkbox("Retrace", &b);
 		b = g_showPreview; ImGui::Checkbox("ShowPreview", &b);
 	}
 	ImGui::End();
@@ -1224,6 +1224,7 @@ bool FlowVisTool::CheckForChanges()
 	return m_redraw;
 }
 
+#ifdef Single
 void FlowVisTool::Filtering()
 {
 	// start filtering if required
@@ -1598,6 +1599,7 @@ bool FlowVisTool::Rendering()
 	}
 #endif
 }
+#endif
 
 void FlowVisTool::BlitRenderingResults()
 {
@@ -1652,6 +1654,7 @@ void FlowVisTool::BlitRenderingResults()
 		// restore viewport
 		m_d3dDeviceContex->RSSetViewports(1, &viewportOld);
 	}
+#ifdef Single
 	else
 	{
 		// multi-GPU case - copy all raycast textures together
@@ -1698,6 +1701,7 @@ void FlowVisTool::BlitRenderingResults()
 			}
 		}
 	}
+#endif
 
 	// blit over into "raycast finished" tex
 	//g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());

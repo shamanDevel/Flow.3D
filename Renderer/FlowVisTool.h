@@ -146,7 +146,7 @@ public:
 
 	TimerCPU	g_timerTracing;
 
-	bool m_retrace = false;
+	//bool m_retrace = false;
 	bool s_isFiltering = false;
 	bool s_isTracing = false;
 	bool s_isRaycasting = false;

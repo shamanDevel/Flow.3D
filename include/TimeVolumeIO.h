@@ -140,6 +140,7 @@ public:
 		int32 channels, const std::string& timestepFileNamePrefix = "");
 
 	const std::string& GetFilename() const { return m_strFilename; }
+	const std::string& GetName() const { return m_strName; }
 
 	void Close();
 
@@ -349,6 +350,7 @@ private:
 
 	std::string			m_strBaseFilePath;
 	std::string			m_strFilename;
+	std::string			m_strName;
 	std::string			m_strTimestepFileNamePrefix;
 	int32				m_iPadding;
 
