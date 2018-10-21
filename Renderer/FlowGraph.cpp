@@ -66,12 +66,26 @@ void FlowGraph::Shutdown()
 }
 
 
-void FlowGraph::Build(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, uint particleCountPerBrick, const ParticleTraceParams& params, const std::string& filenameOut)
+void FlowGraph::Build(uint particleCountPerBrick, const ParticleTraceParams& params, const std::string& filenameOut)
 {
 	if(m_pVolume == nullptr)
 	{
 		printf("FlowGraph::Build: don't have volume\n");
 		return;
+	}
+
+	GPUResources* pCompressShared = new GPUResources();
+	CompressVolumeResources* pCompressVolume = new CompressVolumeResources();
+
+	if (m_pVolume->IsCompressed())
+	{
+		uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
+		// do multi-channel decoding only for small bricks; for large bricks, mem usage gets too high
+		uint channelCount = (brickSize <= 128) ? m_pVolume->GetChannelCount() : 1;
+		uint huffmanBits = m_pVolume->GetHuffmanBitsMax();
+
+		pCompressShared->create(CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits));
+		pCompressVolume->create(pCompressShared->getConfig());
 	}
 
 	Clear();
@@ -312,6 +326,13 @@ void FlowGraph::Build(GPUResources* pCompressShared, CompressVolumeResources* pC
 	cudaSafeCall(cudaFreeHost(pBrickToSlot));
 	pBrickToSlot = nullptr;
 
+	pCompressVolume->destroy();
+	delete pCompressVolume;
+	pCompressVolume = nullptr;
+
+	pCompressShared->destroy();
+	delete pCompressShared;
+	pCompressShared = nullptr;
 
 	timer.Stop();
 	printf("FlowGraph::Build: Done in %.2f s.\n\n", timer.GetElapsedTimeMS() / 1000.0f);

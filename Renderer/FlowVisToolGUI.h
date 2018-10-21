@@ -6,7 +6,7 @@
 class FlowVisToolGUI
 {
 public:
-	static const float buttonWidth;
+	//static const float buttonWidth;
 
 	static bool g_showRenderingOptionsWindow;
 	static bool g_showTracingOptionsWindow;
@@ -23,7 +23,7 @@ public:
 	static int g_lineIDOverride;
 
 #pragma region Dialogs
-	static void SaveLinesDialog(FlowVisTool& g_flowVisTool);
+	//static void SaveLinesDialog(FlowVisTool& g_flowVisTool);
 
 	static void LoadLinesDialog(FlowVisTool& g_flowVisTool);
 
@@ -37,7 +37,7 @@ public:
 
 	static void LoadColorTexture(FlowVisTool& g_flowVisTool);
 
-	static void LoadSeedTexture(FlowVisTool& g_flowVisTool);
+	//static void LoadSeedTexture(FlowVisTool& g_flowVisTool);
 #pragma endregion
 
 	static void RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
@@ -52,7 +52,7 @@ public:
 
 	static void ExtraWindow(FlowVisTool& g_flowVisTool);
 
-	static void FTLEWindow(FlowVisTool& g_flowVisTool);
+	//static void FTLEWindow(FlowVisTool& g_flowVisTool);
 
 	static void HeatmapWindow(FlowVisTool& g_flowVisTool);
 

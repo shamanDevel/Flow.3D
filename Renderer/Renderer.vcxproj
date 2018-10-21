@@ -288,6 +288,7 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
     <ClInclude Include="FlowGraph.h" />
     <ClInclude Include="FlowVisTool.h" />
     <ClInclude Include="FlowVisToolGUI.h" />
+    <ClInclude Include="FlowVisToolVolumeData.h" />
     <ClInclude Include="HeatCurrent.cuh" />
     <ClInclude Include="HeatMap.h" />
     <ClInclude Include="HeatMapKernel.h" />

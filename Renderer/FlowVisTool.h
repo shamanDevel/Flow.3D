@@ -28,6 +28,7 @@
 #include <ScreenEffect.h>
 #include <RenderingManager.h>
 #include <RaycasterManager.h>
+#include <FlowVisToolVolumeData.h>
 
 #include <Vec.h>
 
@@ -99,6 +100,8 @@ struct ImageSequence
 #pragma endregion
 
 
+
+
 class FlowVisTool
 {
 public:
@@ -128,41 +131,43 @@ public:
 	cudaGraphicsResource*		g_pTfEdtSRVCuda = nullptr;
 
 	
-
 	bool g_showPreview = true;
-	bool m_redraw = false;
-	bool m_retrace = false;
 	bool g_particleTracingPaused = false;
-	//FIXME have to reset these on destroy/create device...
-	bool s_isFiltering = false;
-	bool s_isTracing = false;
-	bool s_isRaycasting = false;
-
+	bool m_redraw = false;
 	
 	ProjectionParams		g_projParams;
 	StereoParams			g_stereoParams;
 	ViewParams				g_viewParams;
 
 
-
 #pragma region VolumeDependent
+	clock_t	g_lastRenderParamsUpdate = 0;
+	clock_t	g_lastTraceParamsUpdate = 0;
+
+	TimerCPU	g_timerTracing;
+
+	bool m_retrace = false;
+	bool s_isFiltering = false;
+	bool s_isTracing = false;
+	bool s_isRaycasting = false;
+
 	FilterParams			g_filterParams;
 	RaycastParams			g_raycastParams;
-	ParticleTraceParams		g_particleTraceParams;
+	//ParticleTraceParams		g_particleTraceParams;
 	ParticleRenderParams	g_particleRenderParams;
 	HeatMapParams			g_heatMapParams;
 	
-	TimeVolume				g_volume;
-	GPUResources            g_compressShared;
-	CompressVolumeResources g_compressVolume;
-	FlowGraph				g_flowGraph;
+	std::vector<FlowVisToolVolumeData*>	g_volumes;
+	//GPUResources				g_compressShared;
+	//CompressVolumeResources	g_compressVolume;
 
 	// resources on primary GPU
-	FilteringManager g_filteringManager;
-	TracingManager   g_tracingManager;
-	HeatMapManager   g_heatMapManager;
-	RenderingManager g_renderingManager;
-	RaycasterManager g_raycasterManager;
+	FlowGraph			g_flowGraph;
+	FilteringManager	g_filteringManager;
+	//TracingManager		g_tracingManager;
+	HeatMapManager		g_heatMapManager;
+	RenderingManager	g_renderingManager;
+	RaycasterManager	g_raycasterManager;
 #pragma endregion
 
 
@@ -177,11 +182,6 @@ public:
 	std::vector<BallBuffers*> g_ballBuffers;
 	float                     g_ballRadius = 0.011718750051f;
 
-	clock_t	g_lastRenderParamsUpdate = 0;
-	clock_t	g_lastTraceParamsUpdate = 0;
-	float	g_startWorkingDelay = 0.1f;
-
-	TimerCPU	g_timerTracing;
 	TimerCPU	g_timerRendering;
 
 	ScreenEffect	g_screenEffect;
@@ -200,31 +200,34 @@ public:
 	void ReleaseLineBuffers();
 	void ReleaseBallBuffers();
 
-	void CloseVolumeFile();
+	void CloseVolumeFile(int idx);
 	bool OpenVolumeFile(const std::string& filename);
 
 	bool ResizeViewport(int width, int height);
 
 	void BuildFlowGraph(const std::string& filenameTxt = "");
 	bool SaveFlowGraph();
-	bool LoadFlowGraph();
-	void LoadOrBuildFlowGraph();
-
-	void SetBoundingBoxToDomainSize();
+	bool LoadFlowGraph(FlowVisToolVolumeData* volumeData);
+	//void LoadOrBuildFlowGraph();
 	
 private:
 	void ReleaseVolumeDependentResources();
-	bool CreateVolumeDependentResources();
+	bool CreateVolumeDependentResources(FlowVisToolVolumeData* volumeData);
 
 	bool InitCudaDevices();
 	void ShutdownCudaDevices();
 
 	bool ResizeRenderBuffer();
 
-	void CheckForChanges();
+	bool CheckForChanges();
 	void Filtering();
 	void Tracing();
-	void Rendering();
+	bool Rendering();
+	void BlitRenderingResults();
+
+	static bool CheckForChanges(FlowVisToolVolumeData* volumeData);
+	static bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph, bool particleTracingPaused);
+	bool RenderMulti();
 
 private:
 	// disable copy and assignment

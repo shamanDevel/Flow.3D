@@ -576,6 +576,7 @@
       <Filter>TimeVol</Filter>
     </ClInclude>
     <ClInclude Include="TraceableVolume.h" />
+    <ClInclude Include="FlowVisToolVolumeData.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />

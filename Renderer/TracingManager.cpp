@@ -233,6 +233,7 @@ TracingManager::TracingManager()
 	, m_engine(std::chrono::system_clock::now().time_since_epoch().count())
 	, m_numRejections(20)
 	, m_seedManyParticles(false)
+	, m_traceableVol(nullptr)
 {
 }
 
@@ -526,7 +527,7 @@ void TracingManager::CreateInitialCheckpointsFTLE(float3 seedBoxMin, float3 seed
 #pragma endregion
 
 
-bool TracingManager::StartTracing(const TimeVolume& volume, GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph)
+bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph)
 {
 	if (!volume.IsOpen())
 		return false;
@@ -923,6 +924,8 @@ void TracingManager::CancelTracing()
 {
 	if(IsTracing())
 	{
+		assert(m_traceableVol);
+
 		printf("TracingManager::CancelTracing\n");
 		ReleaseResultResources(); //TODO hrm..?
 

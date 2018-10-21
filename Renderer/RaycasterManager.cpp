@@ -48,10 +48,10 @@ RaycasterManager::RaycasterManager()
 
 }
 
-bool RaycasterManager::Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice)
+bool RaycasterManager::Create(ID3D11Device* pDevice)
 {
-	m_pCompressShared = pCompressShared;
-	m_pCompressVolume = pCompressVolume;
+	//m_pCompressShared = pCompressShared;
+	//m_pCompressVolume = pCompressVolume;
 	m_pDevice = pDevice;
 
 	if (!CreateScreenDependentResources())
@@ -82,8 +82,8 @@ void RaycasterManager::Release()
 	m_timerCompressDownload.ReleaseTimers();
 
 	m_pDevice = nullptr;
-	m_pCompressVolume = nullptr;
-	m_pCompressShared = nullptr;
+	//m_pCompressVolume = nullptr;
+	//m_pCompressShared = nullptr;
 }
 
 void RaycasterManager::SetProjectionParams(const ProjectionParams& params, const Range1D& range)
@@ -300,9 +300,9 @@ RaycasterManager::eRenderState RaycasterManager::StartRendering(
 	m_raycaster.SetGridSpacing(m_pVolume->GetGridSpacing());
 	m_raycaster.SetParams(m_projectionParams, m_stereoParams, m_range);
 
-	if (m_pVolume->GetBrickSizeWithOverlap() != m_brickSize ||
-		m_pVolume->GetChannelCount() != m_channelCount ||
-		GetRequiredBrickSlotCount() != m_brickSlots.size())
+	//if (m_pVolume->GetBrickSizeWithOverlap() != m_brickSize ||
+	//	m_pVolume->GetChannelCount() != m_channelCount ||
+	//	GetRequiredBrickSlotCount() != m_brickSlots.size())
 	{
 		if (FAILED(CreateVolumeDependentResources()))
 		{
@@ -460,6 +460,20 @@ bool RaycasterManager::CreateVolumeDependentResources()
 
 	ReleaseVolumeDependentResources();
 
+	m_pCompressShared = new GPUResources();
+	m_pCompressVolume = new CompressVolumeResources();
+
+	if (m_pVolume->IsCompressed())
+	{
+		uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
+		// do multi-channel decoding only for small bricks; for large bricks, mem usage gets too high
+		uint channelCount = (brickSize <= 128) ? m_pVolume->GetChannelCount() : 1;
+		uint huffmanBits = m_pVolume->GetHuffmanBitsMax();
+
+		m_pCompressShared->create(CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits));
+		m_pCompressVolume->create(m_pCompressShared->getConfig());
+	}
+
 
 	m_brickSize = m_pVolume->GetBrickSizeWithOverlap();
 	m_channelCount = m_pVolume->GetChannelCount();
@@ -486,6 +500,20 @@ bool RaycasterManager::CreateVolumeDependentResources()
 
 void RaycasterManager::ReleaseVolumeDependentResources()
 {
+	if (m_pCompressShared)
+	{
+		m_pCompressShared->destroy();
+		delete m_pCompressShared;
+		m_pCompressShared = nullptr;
+	}
+
+	if (m_pCompressVolume)
+	{
+		m_pCompressVolume->destroy();
+		delete m_pCompressVolume;
+		m_pCompressVolume = nullptr;
+	}
+
 	for (size_t i = 0; i < m_brickSlots.size(); ++i)
 		m_brickSlots[i].Release();
 	m_brickSlots.clear();

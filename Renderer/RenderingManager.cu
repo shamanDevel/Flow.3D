@@ -716,7 +716,6 @@ RenderingManager::eRenderState RenderingManager::Render(
 		}
 	}
 #pragma endregion
-
 	
 	// clear rendertargets and depth buffer
 	ClearResult();
@@ -762,6 +761,142 @@ RenderingManager::eRenderState RenderingManager::Render(
 		//render heat map directly
 		if (pHeatMapManager != nullptr) 
 			RenderHeatMap(pHeatMapManager);
+
+		//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
+		//RenderSliceTexture();
+	}
+
+	return STATE_DONE;
+}
+
+
+RenderingManager::eRenderState RenderingManager::Render(
+	std::vector<FlowVisToolVolumeData*>& volumes,
+	const ViewParams& viewParams,
+	const StereoParams& stereoParams,
+	const ParticleRenderParams& particleRenderParams,
+	const RaycastParams& raycastParams,
+	const std::vector<LineBuffers*>& pLineBuffers, // Lines loaded from disk
+	const std::vector<BallBuffers*>& pBallBuffers,
+	float ballRadius,
+	HeatMapManager* pHeatMapManager,
+	cudaArray* pTransferFunction,
+	int transferFunctionDevice)
+{
+	if (m_projectionParams.GetImageWidth(m_range) * m_projectionParams.GetImageHeight(m_range) == 0)
+		return STATE_DONE;
+
+	m_viewParams = viewParams;
+	m_stereoParams = stereoParams;
+
+#pragma region ComputeFrustumPlanes
+	// compute frustum planes in view space
+	Vec4f frustumPlanes[6];
+	Vec4f frustumPlanes2[6];
+	if (m_stereoParams.m_stereoEnabled)
+	{
+		m_projectionParams.GetFrustumPlanes(frustumPlanes, EYE_LEFT, m_stereoParams.m_eyeDistance, m_range);
+		m_projectionParams.GetFrustumPlanes(frustumPlanes2, EYE_RIGHT, m_stereoParams.m_eyeDistance, m_range);
+
+		// we want the inverse transpose of the inverse of view
+		Mat4f viewLeft = m_viewParams.BuildViewMatrix(EYE_LEFT, m_stereoParams.m_eyeDistance);
+		Mat4f viewLeftTrans;
+		viewLeft.transpose(viewLeftTrans);
+		Mat4f viewRight = m_viewParams.BuildViewMatrix(EYE_RIGHT, m_stereoParams.m_eyeDistance);
+		Mat4f viewRightTrans;
+		viewRight.transpose(viewRightTrans);
+
+		for (uint i = 0; i < 6; i++)
+		{
+			frustumPlanes[i] = viewLeftTrans  * frustumPlanes[i];
+			frustumPlanes2[i] = viewRightTrans * frustumPlanes[i];
+		}
+	}
+	else
+	{
+		m_projectionParams.GetFrustumPlanes(frustumPlanes, EYE_CYCLOP, 0.0f, m_range);
+
+		// we want the inverse transpose of the inverse of view
+		Mat4f view = m_viewParams.BuildViewMatrix(EYE_CYCLOP, 0.0f);
+		Mat4f viewTrans;
+		view.transpose(viewTrans);
+
+		for (uint i = 0; i < 6; i++)
+		{
+			frustumPlanes[i] = viewTrans * frustumPlanes[i];
+		}
+	}
+#pragma endregion
+
+	// clear rendertargets and depth buffer
+	ClearResult();
+
+	// render opaque stuff immediately
+	{
+		bool linesRendered = false;
+
+		// Render lines loaded from disk.
+		if (m_particleRenderParams.m_linesEnabled)
+		{
+			for (size_t i = 0; i < pLineBuffers.size(); i++)
+			{
+				RenderLines(*volumes[i]->m_volume, pLineBuffers[i], true, false);
+				if (pLineBuffers[i]->m_indexCountTotal >= 0)
+					linesRendered = true;
+			}
+		}
+
+		// Render lines and boxes for each dataset.
+		for (size_t i = 0; i < volumes.size(); i++)
+		{
+			if (!volumes[i]->m_volume->IsOpen())
+				return STATE_ERROR;
+
+			m_particleTraceParams = volumes[i]->m_traceParams;
+			m_particleRenderParams = particleRenderParams;
+
+			RenderBoxes(*volumes[i]->m_volume, raycastParams, true, false);
+			
+			if (m_particleRenderParams.m_linesEnabled)
+			{
+				LineBuffers* pTracedLines = volumes[i]->m_tracingManager.GetResult().get();
+				if (pTracedLines != nullptr)
+				{
+					RenderLines(*volumes[i]->m_volume, pTracedLines, true, false);
+					if (pTracedLines->m_indexCountTotal >= 0)
+						linesRendered = true;
+				}
+			}
+		}
+		
+		//if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr)
+		//{
+		//	PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, volumes[i].m_volume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
+		//	ExtraRenderSlice();
+		//}
+
+		//if (m_particleTraceParams.m_ftleEnabled)
+		//{
+		//	if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
+		//		CreateFTLETexture();
+
+		//	if (isTracing)
+		//		ComputeFTLE(volume, dpParticles); // g_tracingManager.m_dpParticles
+
+		//	if (m_particleRenderParams.m_ftleShowTexture)
+		//	{
+		//		tum3D::Vec2f center(m_particleTraceParams.m_seedBoxMin.x() + m_particleTraceParams.m_seedBoxSize.x() * 0.5f, m_particleTraceParams.m_seedBoxMin.y() + m_particleTraceParams.m_seedBoxSize.y() * 0.5f);
+		//		PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY, m_particleTraceParams.m_seedBoxSize, center);
+		//		ExtraRenderSlice();
+		//	}
+		//}
+
+		//for (size_t i = 0; i < pBallBuffers.size(); i++)
+		//	RenderBalls(volume, pBallBuffers[i], ballRadius);
+
+		////render heat map directly
+		//if (pHeatMapManager != nullptr)
+		//	RenderHeatMap(pHeatMapManager);
 
 		//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
 		//RenderSliceTexture();

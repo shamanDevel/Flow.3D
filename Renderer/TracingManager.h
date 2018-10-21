@@ -65,7 +65,7 @@ public:
 	//This is needed for particles that allow changes of some parameters (e.g. the seed box) without retracing
 	void SetParams(const ParticleTraceParams& traceParams);
 	//Starts the tracing, performs the first tracing step
-	bool StartTracing(const TimeVolume& volume, GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph);
+	bool StartTracing(const TimeVolume& volume, const ParticleTraceParams& traceParams, const FlowGraph& flowGraph);
 
 	//Performs one tracing step. Is called multiple times (once per frame), until it is done and returns true
 	bool Trace(); // returns true if finished TODO error code

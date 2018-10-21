@@ -40,6 +40,8 @@
 #include "ScreenEffect.h"
 #include "QuadEffect.h"
 
+#include <FlowVisToolVolumeData.h>
+
 //#define WriteVolumeToFileStuff
 
 class RenderingManager
@@ -85,6 +87,19 @@ public:
 		HeatMapManager* pHeatMapManager,
 		cudaArray* pTransferFunction,
 		SimpleParticleVertexDeltaT* dpParticles,
+		int transferFunctionDevice = -1);
+
+	eRenderState Render(
+		std::vector<FlowVisToolVolumeData*>& volumes,
+		const ViewParams& viewParams,
+		const StereoParams& stereoParams,
+		const ParticleRenderParams& particleRenderParams,
+		const RaycastParams& raycastParams,
+		const std::vector<LineBuffers*>& pLineBuffers,
+		const std::vector<BallBuffers*>& pBallBuffers,
+		float ballRadius,
+		HeatMapManager* pHeatMapManager,
+		cudaArray* pTransferFunction,
 		int transferFunctionDevice = -1);
 	
 	ID3D11Texture2D*          GetOpaqueTex()    { return m_pOpaqueTex; }

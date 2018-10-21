@@ -29,7 +29,7 @@ FilteringManager::~FilteringManager()
 }
 
 
-bool FilteringManager::Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume)
+bool FilteringManager::Create()
 {
 	std::cout << "Creating FilteringManager..." << std::endl;
 	//if(!m_volumeFilter.Create())
@@ -38,8 +38,8 @@ bool FilteringManager::Create(GPUResources* pCompressShared, CompressVolumeResou
 	//	return false;
 	//}
 
-	m_pCompressShared = pCompressShared;
-	m_pCompressVolume = pCompressVolume;
+	//m_pCompressShared = pCompressShared;
+	//m_pCompressVolume = pCompressVolume;
 
 	m_isCreated = true;
 
@@ -55,8 +55,8 @@ void FilteringManager::Release()
 
 	ReleaseVolumeDependentResources();
 
-	m_pCompressVolume = nullptr;
-	m_pCompressShared = nullptr;
+	//m_pCompressVolume = nullptr;
+	//m_pCompressShared = nullptr;
 
 	m_isCreated = false;
 }
@@ -72,7 +72,7 @@ bool FilteringManager::StartFiltering(const TimeVolume& volume, const FilterPara
 	m_filterParams = filterParams;
 
 
-	if(m_pVolume->GetBrickSizeWithOverlap() != m_brickSize)
+	//if(m_pVolume->GetBrickSizeWithOverlap() != m_brickSize)
 	{
 		if(FAILED(CreateVolumeDependentResources()))
 		{
@@ -349,6 +349,19 @@ bool FilteringManager::CreateVolumeDependentResources()
 
 	ReleaseVolumeDependentResources();
 
+	m_pCompressShared = new GPUResources();
+	m_pCompressVolume = new CompressVolumeResources();
+
+	if (m_pVolume->IsCompressed())
+	{
+		uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
+		// do multi-channel decoding only for small bricks; for large bricks, mem usage gets too high
+		uint channelCount = (brickSize <= 128) ? m_pVolume->GetChannelCount() : 1;
+		uint huffmanBits = m_pVolume->GetHuffmanBitsMax();
+
+		m_pCompressShared->create(CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits));
+		m_pCompressVolume->create(m_pCompressShared->getConfig());
+	}
 
 	m_brickSize = m_pVolume->GetBrickSizeWithOverlap();
 
@@ -365,6 +378,20 @@ bool FilteringManager::CreateVolumeDependentResources()
 
 void FilteringManager::ReleaseVolumeDependentResources()
 {
+	if (m_pCompressShared)
+	{
+		m_pCompressShared->destroy();
+		delete m_pCompressShared;
+		m_pCompressShared = nullptr;
+	}
+
+	if (m_pCompressVolume)
+	{
+		m_pCompressVolume->destroy();
+		delete m_pCompressVolume;
+		m_pCompressVolume = nullptr;
+	}
+
 	cudaSafeCall(cudaFree(m_dpBufferOut));
 	cudaSafeCall(cudaFree(m_dpBufferRight));
 	cudaSafeCall(cudaFree(m_dpBufferLeft));

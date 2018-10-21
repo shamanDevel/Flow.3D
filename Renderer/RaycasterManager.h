@@ -48,7 +48,7 @@ public:
 
 	void ClearResult();
 
-	bool Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, ID3D11Device* pDevice);
+	bool Create(ID3D11Device* pDevice);
 	void Release();
 	void SetProjectionParams(const ProjectionParams& params, const Range1D& range);
 	bool CreateScreenDependentResources();

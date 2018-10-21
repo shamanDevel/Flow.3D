@@ -25,7 +25,7 @@ public:
 	FilteringManager();
 	~FilteringManager();
 
-	bool Create(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume);
+	bool Create();
 	void Release();
 	bool IsCreated() const { return m_isCreated; }
 

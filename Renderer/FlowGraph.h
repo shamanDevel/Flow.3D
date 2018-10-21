@@ -41,7 +41,7 @@ public:
 	void Init(TimeVolume& volume);
 	void Shutdown();
 
-	void Build(GPUResources* pCompressShared, CompressVolumeResources* pCompressVolume, uint particleCountPerBrick, const ParticleTraceParams& params, const std::string& filenameOut = "");
+	void Build(uint particleCountPerBrick, const ParticleTraceParams& params, const std::string& filenameOut = "");
 	void Clear();
 	bool IsBuilt() const;
 
