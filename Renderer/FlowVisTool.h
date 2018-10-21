@@ -132,7 +132,7 @@ public:
 
 	
 	bool g_showPreview = true;
-	bool g_particleTracingPaused = false;
+	//bool g_particleTracingPaused = false;
 	bool m_redraw = false;
 	
 	ProjectionParams		g_projParams;
@@ -226,7 +226,7 @@ private:
 	void BlitRenderingResults();
 
 	static bool CheckForChanges(FlowVisToolVolumeData* volumeData);
-	static bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph, bool particleTracingPaused);
+	static bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
 	bool RenderMulti();
 
 private:

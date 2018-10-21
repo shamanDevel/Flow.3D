@@ -79,7 +79,7 @@ bool TimeVolumeIO::Open(const string& indexFileName, bool writeAccess)
 
 	m_strBaseFilePath = tum3d::GetPath(indexFileName);
 	m_strFilename = indexFileName;
-	m_strName = getFileName(m_strFilename, false, '\\');
+	m_strName = getFileName(m_strFilename, true, '\\');
 	FILE* indexFile = nullptr;
 
 	fopen_s(&indexFile, indexFileName.c_str(), "rb");

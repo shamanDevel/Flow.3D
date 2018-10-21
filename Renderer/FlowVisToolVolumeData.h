@@ -10,6 +10,7 @@ struct FlowVisToolVolumeData
 	ParticleTraceParams		m_traceParams;
 	TracingManager			m_tracingManager;
 
+	bool m_tracingPaused;
 	bool m_retrace;
 	bool m_isTracing;
 
@@ -19,6 +20,7 @@ struct FlowVisToolVolumeData
 	FlowVisToolVolumeData()
 	{
 		m_volume = nullptr;
+		m_tracingPaused = false;
 		m_retrace = false;
 		m_isTracing = false;
 		m_lastTraceParamsUpdate = 0;

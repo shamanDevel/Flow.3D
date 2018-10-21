@@ -533,7 +533,10 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 		return false;
 
 	if (IsTracing())
+	{
+		std::cout << volume.GetName() << " was tracing. Cancelling current tracing." << std::endl;
 		CancelTracing();
+	}
 
 	//HACK for now, release resources first
 	ReleaseResources();
@@ -926,7 +929,7 @@ void TracingManager::CancelTracing()
 	{
 		assert(m_traceableVol);
 
-		printf("TracingManager::CancelTracing\n");
+		//printf("TracingManager::CancelTracing: %s\n", m_traceableVol->m_pVolume->GetName().c_str());
 		ReleaseResultResources(); //TODO hrm..?
 
 		//m_traceableVol->m_bricksToDo.clear();

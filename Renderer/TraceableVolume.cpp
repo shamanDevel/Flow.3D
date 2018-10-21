@@ -164,7 +164,7 @@ bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bo
 	size_t memBuffer = max(memPerTimeSlot, min(size_t(32) * 1024 * 1024, memTotal / 100));
 	//size_t memAvailable = memFree - min(memBuffer, memFree);
 	//size_t memAvailable = 1024ll * 1024ll * 1024ll;
-	size_t memAvailable = 1024ll * 1024ll * 512ll;
+	size_t memAvailable = 1024ll * 1024ll * 128ll;
 
 	float memAvailableMB = float(memAvailable) / (1024.0f * 1024.0f);
 

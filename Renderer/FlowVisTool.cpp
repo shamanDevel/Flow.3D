@@ -6,8 +6,10 @@
 
 #include <ctime>
 #include <string>
+#include <map>
 
 #include <imgui\imgui.h>
+
 
 #define g_startWorkingDelay 0.1f
 
@@ -379,7 +381,7 @@ void FlowVisTool::OnFrame(float deltatime)
 			CheckForChanges(g_volumes[i]);
 
 		for (size_t i = 0; i < g_volumes.size(); i++)
-			 Tracing(g_volumes[i], g_flowGraph, g_particleTracingPaused);
+			Tracing(g_volumes[i], g_flowGraph);
 
 		RenderMulti();
 
@@ -583,16 +585,18 @@ bool FlowVisTool::CheckForChanges(FlowVisToolVolumeData* volumeData)
 
 	clock_t curTime = clock();
 
-	static std::string volumeFilePrev = "";
-	bool volumeChanged = (volumeData->m_volume->GetFilename() != volumeFilePrev);
-	volumeFilePrev = volumeData->m_volume->GetFilename();
-	redraw = redraw || volumeChanged;
-	volumeData->m_retrace = volumeData->m_retrace || volumeChanged;
+	//static std::string volumeFilePrev = "";
+	//bool volumeChanged = (volumeData->m_volume->GetFilename() != volumeFilePrev);
+	//volumeFilePrev = volumeData->m_volume->GetFilename();
+	//redraw = redraw || volumeChanged;
+	//volumeData->m_retrace = volumeData->m_retrace || volumeChanged;
 
 
-	static int timestepPrev = -1;
-	bool timestepChanged = (volumeData->m_volume->GetCurNearestTimestepIndex() != timestepPrev);
-	timestepPrev = volumeData->m_volume->GetCurNearestTimestepIndex();
+	//static int timestepPrev = -1;
+	static std::map<FlowVisToolVolumeData*, int> timestepPrev;
+
+	bool timestepChanged = (volumeData->m_volume->GetCurNearestTimestepIndex() != timestepPrev[volumeData]);
+	timestepPrev[volumeData] = volumeData->m_volume->GetCurNearestTimestepIndex();
 	redraw = redraw || timestepChanged;
 	volumeData->m_retrace = volumeData->m_retrace || timestepChanged;
 
@@ -704,11 +708,15 @@ bool FlowVisTool::CheckForChanges(FlowVisToolVolumeData* volumeData)
 	//	redraw = true;
 	//}
 
-	static ParticleTraceParams particleTraceParamsPrev;
-	bool particleTraceParamsChanged = volumeData->m_traceParams.hasChangesForRetracing(particleTraceParamsPrev);
+	//static ParticleTraceParams particleTraceParamsPrev;
+	static std::map<FlowVisToolVolumeData*, ParticleTraceParams> traceParamsPrev;
+
+	bool particleTraceParamsChanged = volumeData->m_traceParams.hasChangesForRetracing(traceParamsPrev[volumeData]);
 	//bool particleTraceParamsChanged = (g_particleTraceParams != particleTraceParamsPrev);
-	bool seedBoxChanged = (volumeData->m_traceParams.m_seedBoxMin != particleTraceParamsPrev.m_seedBoxMin || volumeData->m_traceParams.m_seedBoxSize != particleTraceParamsPrev.m_seedBoxSize);
-	particleTraceParamsPrev = volumeData->m_traceParams;
+	bool seedBoxChanged = (volumeData->m_traceParams.m_seedBoxMin != traceParamsPrev[volumeData].m_seedBoxMin || volumeData->m_traceParams.m_seedBoxSize != traceParamsPrev[volumeData].m_seedBoxSize);
+
+	traceParamsPrev[volumeData] = volumeData->m_traceParams;
+
 	volumeData->m_retrace = volumeData->m_retrace || particleTraceParamsChanged;
 	redraw = redraw || seedBoxChanged;
 
@@ -758,6 +766,7 @@ bool FlowVisTool::CheckForChanges(FlowVisToolVolumeData* volumeData)
 	// clear particle tracer if something relevant changed
 	if (volumeData->m_retrace && volumeData->m_isTracing)
 	{
+		std::cout << volumeData->m_volume->GetName() << " should retrace. Cancelling current tracing." << std::endl;
 		volumeData->m_tracingManager.CancelTracing();
 		volumeData->m_isTracing = false;
 		volumeData->m_tracingManager.ClearResult();
@@ -787,7 +796,7 @@ bool FlowVisTool::CheckForChanges(FlowVisToolVolumeData* volumeData)
 	return redraw;
 }
 
-bool FlowVisTool::Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph, bool particleTracingPaused)
+bool FlowVisTool::Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph)
 {
 	assert(volumeData);
 	assert(volumeData->m_volume);
@@ -855,7 +864,7 @@ bool FlowVisTool::Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGrap
 	bool shouldRedraw = false;
 
 	//Check if tracing is done and if so, start rendering
-	if (volumeData->m_isTracing && !particleTracingPaused)
+	if (volumeData->m_isTracing && !volumeData->m_tracingPaused)
 	{
 		//std::cout << "Trace" << std::endl;
 		bool finished = volumeData->m_tracingManager.Trace();

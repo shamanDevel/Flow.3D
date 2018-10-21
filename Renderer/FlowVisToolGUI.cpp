@@ -393,10 +393,6 @@ void TimeVolGUI(TimeVolume& volume)
 	//TwSetParam(g_pTwBarMain, "Time", "step", TW_PARAM_FLOAT, 1, &timeSpacing);
 	//TwSetParam(g_pTwBarMain, "Timestep", "max", TW_PARAM_INT32, 1, &timestepMax);
 
-
-
-	ImGui::Text(volume.GetName().c_str());
-
 	const TimeVolumeInfo& volInfo = volume.GetInfo();
 
 	ImGui::Text("Brick count: %d, %d, %d", volInfo.GetBrickCount().x(), volInfo.GetBrickCount().y(), volInfo.GetBrickCount().z());
@@ -498,7 +494,7 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 	if (g_showDatasetWindow)
 	{
 		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
-		if (ImGui::Begin("Dataset", &g_showDatasetWindow))
+		if (ImGui::Begin("Datasets", &g_showDatasetWindow))
 		{
 			ImGui::PushItemWidth(-150);
 			{
@@ -512,19 +508,30 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 					{
 						assert(g_flowVisTool.g_volumes[i]->m_volume);
 
-						if (g_flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
+						SectionText(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
+
+						ImGui::Spacing();
+						ImGui::Separator();
+
+						//if (g_flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
 						{
-							ImGui::ProgressBar(g_flowVisTool.g_volumes[i]->m_tracingManager.GetTracingProgress(), ImVec2(0.0f, 0.0f));
+							float progress = 0.0f;
+							if (g_flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
+								g_flowVisTool.g_volumes[i]->m_tracingManager.GetTracingProgress();
+							ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
 							ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 							ImGui::Text("Tracing");
 						}
 
-						if (g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() > 0.0f && g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() < 1.0f)
+						//if (g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() > 0.0f && g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() < 1.0f)
 						{
 							ImGui::ProgressBar(g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress(), ImVec2(0.0f, 0.0f));
 							ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 							ImGui::Text("Loading");
 						}
+
+						ImGui::Spacing();
+						ImGui::Separator();
 
 						ImGui::PushID((const void*)g_flowVisTool.g_volumes[i]);
 
@@ -555,27 +562,64 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 		if (ImGui::Begin("Tracing Options", &g_showTracingOptionsWindow))
 		{
 			ImGui::PushItemWidth(-150);
-			if (!g_flowVisTool.g_volumes.empty())
+			if (g_flowVisTool.g_volumes.empty())
 			{
-				static int selected = 0;
+				ImGui::Text("No dataset available.");
+			}
+			else
+			{
+				static FlowVisToolVolumeData* selected = nullptr;
 
-				selected = std::min(selected, (int)g_flowVisTool.g_volumes.size() - 1);
 
+
+				bool currentExists = false;
 				for (size_t i = 0; i < g_flowVisTool.g_volumes.size(); i++)
-					ImGui::RadioButton(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str(), &selected, i);
+					if (selected == g_flowVisTool.g_volumes[i])
+						currentExists = true;
 
-				ParticleTraceParams& traceParams = g_flowVisTool.g_volumes[selected]->m_traceParams;
+				if (selected == nullptr || !currentExists)
+					selected = g_flowVisTool.g_volumes.front();
+
+				ImVec4 originalTextCol = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+
+				ImGui::PushStyleColor(ImGuiCol_Text, sectionTextColor);
+				ImGui::PushItemWidth(-1);
+				if (ImGui::BeginCombo("##combo", selected->m_volume->GetName().c_str())) // The second parameter is the label previewed before opening the combo.
+				{
+					for (int n = 0; n < g_flowVisTool.g_volumes.size(); n++)
+					{
+						bool is_selected = (selected == g_flowVisTool.g_volumes[n]); // You can store your selection however you want, outside or inside your objects
+
+						ImGui::PushStyleColor(ImGuiCol_Text, originalTextCol);
+						ImGui::PushID((const void*)g_flowVisTool.g_volumes[n]);
+						if (ImGui::Selectable(g_flowVisTool.g_volumes[n]->m_volume->GetName().c_str(), is_selected))
+							selected = g_flowVisTool.g_volumes[n];
+						ImGui::PopID();
+						ImGui::PopStyleColor();
+
+						if (is_selected)
+							ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+					}
+					ImGui::EndCombo();
+				}
+				ImGui::PopItemWidth();
+				ImGui::PopStyleColor();
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
+				ParticleTraceParams& traceParams = selected->m_traceParams;
 
 				if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.g_volumes[selected]->m_retrace = true;
+					selected->m_retrace = true;
 
 				{
-					bool wasPaused = g_flowVisTool.g_particleTracingPaused;
+					bool wasPaused = selected->m_tracingPaused;
 					if (wasPaused)
 						ImGui::PushStyleColor(ImGuiCol_::ImGuiCol_Button, sectionTextColor);
 
-					if (ImGui::Button(g_flowVisTool.g_particleTracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
-						g_flowVisTool.g_particleTracingPaused = !g_flowVisTool.g_particleTracingPaused;
+					if (ImGui::Button(selected->m_tracingPaused ? "Continue" : "Pause", ImVec2(buttonWidth, 0)))
+						selected->m_tracingPaused = !selected->m_tracingPaused;
 
 					if (wasPaused)
 						ImGui::PopStyleColor();
@@ -585,7 +629,7 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				ImGui::Checkbox("Verbose", &g_flowVisTool.g_volumes[selected]->m_tracingManager.GetVerbose());
+				ImGui::Checkbox("Verbose", &selected->m_tracingManager.GetVerbose());
 
 				// Seeding options
 				ImGui::Spacing();
@@ -596,7 +640,7 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 						LoadSeedTexture(g_flowVisTool);
 #endif
 					if (ImGui::Button("Set seed box to domain", ImVec2(buttonWidth, 0)))
-						g_flowVisTool.g_volumes[selected]->SetSeedingBoxToDomainSize();
+						selected->SetSeedingBoxToDomainSize();
 
 					ImGui::DragFloat3("Seed box min", (float*)&traceParams.m_seedBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
 					ImGui::DragFloat3("Seed box size", (float*)&traceParams.m_seedBoxSize, 0.005f, 0.0f, 0.0f, "%.3f");
@@ -668,7 +712,7 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 					ImGui::DragFloat("Particles per second", &traceParams.m_particlesPerSecond, 0.01f, 0.0f, 0.0f, "%.2f");
 					ImGui::DragFloat("Advection Delta T", &traceParams.m_advectDeltaT, 0.001f, 0.0f, 0.0f, "%.5f");
 					if (ImGui::Button("Seed many particles", ImVec2(buttonWidth, 0)))
-						g_flowVisTool.g_volumes[selected]->m_tracingManager.SeedManyParticles();
+						selected->m_tracingManager.SeedManyParticles();
 					ImGui::DragFloat("Cell Change Time Threshold", &traceParams.m_cellChangeThreshold, 0.001f, 0.0f, 0.0f, "%.5f");
 				}
 
@@ -1288,7 +1332,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
 {
 	// Scene view window
-	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_WindowPadding, ImVec2(2, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(400, 400), ImGuiCond_FirstUseEver);
 	if (ImGui::Begin("Scene view"))
 	{
