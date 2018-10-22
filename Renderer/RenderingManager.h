@@ -41,6 +41,8 @@
 #include "QuadEffect.h"
 
 #include <FlowVisToolVolumeData.h>
+#include <FlowVisToolUtils.h>
+#include <RenderingParams.h>
 
 //#define WriteVolumeToFileStuff
 
@@ -50,12 +52,12 @@ public:
 	D3D11CudaTexture	m_ftleTexture;
 	float				m_ftleScale = 0.02f;
 
-	float	m_DomainBoxThickness = 0.0004f;
+	float	m_DomainBoxThickness = 0.0008f;
 	bool	m_renderDomainBox;
 	bool	m_renderClipBox;
 	bool	m_renderSeedBox;
 	bool	m_renderBrickBoxes;
-	
+
 	RenderingManager();
 	~RenderingManager();
 
@@ -76,6 +78,7 @@ public:
 	eRenderState Render(
 		bool isTracing,
 		const TimeVolume& volume,
+		const RenderingParameters& renderingParams,
 		const ViewParams& viewParams,
 		const StereoParams& stereoParams,
 		const ParticleTraceParams& particleTraceParams,
@@ -91,9 +94,9 @@ public:
 
 	eRenderState Render(
 		std::vector<FlowVisToolVolumeData*>& volumes,
+		const RenderingParameters& renderingParams,
 		const ViewParams& viewParams,
 		const StereoParams& stereoParams,
-		const ParticleRenderParams& particleRenderParams,
 		const RaycastParams& raycastParams,
 		const std::vector<LineBuffers*>& pLineBuffers,
 		const std::vector<BallBuffers*>& pBallBuffers,
@@ -177,11 +180,12 @@ private:
 	ScreenEffect*             m_pScreenEffect;
 	QuadEffect*               m_pQuadEffect;
 	
-	ProjectionParams	 m_projectionParams;
-	ViewParams           m_viewParams;
-	StereoParams         m_stereoParams;
-	ParticleTraceParams  m_particleTraceParams;
-	ParticleRenderParams m_particleRenderParams;
+	RenderingParameters		m_renderingParams;
+	ProjectionParams		m_projectionParams;
+	ViewParams				m_viewParams;
+	StereoParams			m_stereoParams;
+	ParticleTraceParams		m_particleTraceParams;
+	ParticleRenderParams	m_particleRenderParams;
 
 private:
 	// disallow copy and assignment

@@ -14,42 +14,6 @@
 #include "Measure.h"
 
 
-// Data structure for 2D texture shared between DX11 and CUDA.
-// Source: cuda 9.2 samples.
-struct D3D11CudaTexture
-{
-	DXGI_FORMAT					format = DXGI_FORMAT::DXGI_FORMAT_UNKNOWN;
-	ID3D11Texture2D				*pTexture = nullptr;
-	ID3D11ShaderResourceView	*pSRView = nullptr;
-	cudaGraphicsResource		*cudaResource = nullptr;
-	void						*cudaLinearMemory = nullptr;
-	size_t						pitch = 0;
-	int							width = 0;
-	int							height = 0;
-#ifndef USEEFFECT
-	int							offsetInShader = 0;
-#endif
-
-	bool IsTextureCreated();
-
-	bool IsRegisteredWithCuda();
-
-	bool CreateTexture(ID3D11Device* device, int width, int height, int miplevels, int arraysize, DXGI_FORMAT format);
-
-	void ReleaseResources();
-
-	void RegisterCUDAResources();
-
-	void UnregisterCudaResources();
-
-	bool IsFormatSupported(DXGI_FORMAT format);
-
-	int GetNumberOfComponents(DXGI_FORMAT format);
-
-	int GetNumberOfComponents();
-};
-
-
 struct ParticleRenderParams
 {
 	ParticleRenderParams();
@@ -58,6 +22,11 @@ struct ParticleRenderParams
 
 	void ApplyConfig(const ConfigFile& config);
 	void WriteConfig(ConfigFile& config) const;
+
+
+	// FTLE stuff
+	bool m_ftleShowTexture;
+	float m_ftleTextureAlpha;
 
 	bool m_linesEnabled;
 
@@ -84,6 +53,8 @@ struct ParticleRenderParams
 	float m_transferFunctionRangeMax;
 	ID3D11ShaderResourceView* m_pTransferFunction;
 
+	bool m_sortParticles;
+
 	bool  m_timeStripes;
 	float m_timeStripeLength;
 
@@ -92,17 +63,8 @@ struct ParticleRenderParams
 	float m_slicePosition;
 	float m_sliceAlpha;
 
-	bool m_sortParticles;
-
 	bool operator==(const ParticleRenderParams& rhs) const;
 	bool operator!=(const ParticleRenderParams& rhs) const;
-
-	// FTLE stuff
-	bool m_ftleShowTexture;
-	float m_ftleTextureAlpha;
-
-	bool m_FixedLightDir;
-	tum3D::Vec3f m_lightDir;
 };
 
 

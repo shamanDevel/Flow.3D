@@ -193,6 +193,9 @@
       <Filter>TimeVol</Filter>
     </ClCompile>
     <ClCompile Include="TraceableVolume.cpp" />
+    <ClCompile Include="FlowVisToolUtils.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">
@@ -577,6 +580,12 @@
     </ClInclude>
     <ClInclude Include="TraceableVolume.h" />
     <ClInclude Include="FlowVisToolVolumeData.h" />
+    <ClInclude Include="FlowVisToolUtils.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderingParams.h">
+      <Filter>Params</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />

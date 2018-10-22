@@ -29,6 +29,7 @@
 #include <RenderingManager.h>
 #include <RaycasterManager.h>
 #include <FlowVisToolVolumeData.h>
+#include <RenderingParams.h>
 
 #include <Vec.h>
 
@@ -130,15 +131,11 @@ public:
 
 	cudaGraphicsResource*		g_pTfEdtSRVCuda = nullptr;
 
-	
-	bool g_showPreview = true;
-	//bool g_particleTracingPaused = false;
-	bool m_redraw = false;
-	
+
+	RenderingParameters		g_renderingParams;
 	ProjectionParams		g_projParams;
 	StereoParams			g_stereoParams;
 	ViewParams				g_viewParams;
-
 
 #pragma region VolumeDependent
 	clock_t	g_lastRenderParamsUpdate = 0;
@@ -147,14 +144,14 @@ public:
 	TimerCPU	g_timerTracing;
 
 	//bool m_retrace = false;
+	//bool s_isTracing = false;
 	bool s_isFiltering = false;
-	bool s_isTracing = false;
 	bool s_isRaycasting = false;
 
 	FilterParams			g_filterParams;
 	RaycastParams			g_raycastParams;
-	//ParticleTraceParams		g_particleTraceParams;
-	ParticleRenderParams	g_particleRenderParams;
+	//ParticleTraceParams	g_particleTraceParams;
+	//ParticleRenderParams	g_particleRenderParams;
 	HeatMapParams			g_heatMapParams;
 	
 	std::vector<FlowVisToolVolumeData*>	g_volumes;
@@ -185,10 +182,6 @@ public:
 	TimerCPU	g_timerRendering;
 
 	ScreenEffect	g_screenEffect;
-
-	tum3D::Vec4f	g_backgroundColor = tum3D::Vec4f(0.1f, 0.1f, 0.1f, 1.0f);
-	float			g_renderBufferSizeFactor = 2.0f;
-	tum3D::Vec2i	g_windowSize;
 
 public:
 	FlowVisTool();

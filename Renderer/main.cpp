@@ -580,8 +580,8 @@ void MainLoop()
 			D3D11_VIEWPORT viewport;
 			viewport.TopLeftX = 0;
 			viewport.TopLeftY = 0;
-			viewport.Width = (FLOAT)g_flowVisTool.g_windowSize.x();
-			viewport.Height = (FLOAT)g_flowVisTool.g_windowSize.y();
+			viewport.Width = (FLOAT)g_flowVisTool.g_renderingParams.m_windowSize.x();
+			viewport.Height = (FLOAT)g_flowVisTool.g_renderingParams.m_windowSize.y();
 			viewport.MinDepth = 0.0f;
 			viewport.MaxDepth = 1.0f;
 			g_pd3dDeviceContext->RSSetViewports(1, &viewport);

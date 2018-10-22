@@ -185,7 +185,6 @@ RenderingManager::RenderingManager()
 	, m_pOpaqueTex(nullptr), m_pOpaqueSRV(nullptr), m_pOpaqueRTV(nullptr)
 	, m_pTransparentTex(nullptr), m_pTransparentSRV(nullptr), m_pTransparentRTV(nullptr)
 	, m_pDepthTex(nullptr), m_pDepthDSV(nullptr), m_pDepthSRV(nullptr)
-	, m_renderDomainBox(true), m_renderClipBox(true), m_renderSeedBox(true), m_renderBrickBoxes(false)
 	, m_pScreenEffect(nullptr), m_pQuadEffect(nullptr)
 {
 }
@@ -653,6 +652,7 @@ void RenderingManager::ReleaseScreenDependentResources()
 RenderingManager::eRenderState RenderingManager::Render(
 	bool isTracing, 
 	const TimeVolume& volume, 
+	const RenderingParameters& renderingParams,
 	const ViewParams& viewParams, 
 	const StereoParams& stereoParams,
 	const ParticleTraceParams& particleTraceParams, 
@@ -672,6 +672,7 @@ RenderingManager::eRenderState RenderingManager::Render(
 	if (m_projectionParams.GetImageWidth(m_range) * m_projectionParams.GetImageHeight(m_range) == 0)
 		return STATE_DONE;
 
+	m_renderingParams = renderingParams;
 	m_viewParams = viewParams;
 	m_stereoParams = stereoParams;
 
@@ -772,9 +773,9 @@ RenderingManager::eRenderState RenderingManager::Render(
 
 RenderingManager::eRenderState RenderingManager::Render(
 	std::vector<FlowVisToolVolumeData*>& volumes,
+	const RenderingParameters& renderingParams,
 	const ViewParams& viewParams,
 	const StereoParams& stereoParams,
-	const ParticleRenderParams& particleRenderParams,
 	const RaycastParams& raycastParams,
 	const std::vector<LineBuffers*>& pLineBuffers, // Lines loaded from disk
 	const std::vector<BallBuffers*>& pBallBuffers,
@@ -786,6 +787,7 @@ RenderingManager::eRenderState RenderingManager::Render(
 	if (m_projectionParams.GetImageWidth(m_range) * m_projectionParams.GetImageHeight(m_range) == 0)
 		return STATE_DONE;
 
+	m_renderingParams = renderingParams;
 	m_viewParams = viewParams;
 	m_stereoParams = stereoParams;
 
@@ -836,14 +838,11 @@ RenderingManager::eRenderState RenderingManager::Render(
 		bool linesRendered = false;
 
 		// Render lines loaded from disk.
-		if (m_particleRenderParams.m_linesEnabled)
+		for (size_t i = 0; i < pLineBuffers.size(); i++)
 		{
-			for (size_t i = 0; i < pLineBuffers.size(); i++)
-			{
-				RenderLines(*volumes[i]->m_volume, pLineBuffers[i], true, false);
-				if (pLineBuffers[i]->m_indexCountTotal >= 0)
-					linesRendered = true;
-			}
+			RenderLines(*volumes[i]->m_volume, pLineBuffers[i], true, false);
+			if (pLineBuffers[i]->m_indexCountTotal >= 0)
+				linesRendered = true;
 		}
 
 		// Render lines and boxes for each dataset.
@@ -852,8 +851,12 @@ RenderingManager::eRenderState RenderingManager::Render(
 			if (!volumes[i]->m_volume->IsOpen())
 				return STATE_ERROR;
 
-			m_particleTraceParams = volumes[i]->m_traceParams;
-			m_particleRenderParams = particleRenderParams;
+			m_renderDomainBox =			volumes[i]->m_renderDomainBox;
+			m_renderClipBox =			volumes[i]->m_renderClipBox;
+			m_renderSeedBox =			volumes[i]->m_renderSeedBox;
+			m_renderBrickBoxes =		volumes[i]->m_renderBrickBoxes;
+			m_particleTraceParams =		volumes[i]->m_traceParams;
+			m_particleRenderParams =	volumes[i]->m_renderParams;
 
 			RenderBoxes(*volumes[i]->m_volume, raycastParams, true, false);
 			
@@ -940,8 +943,8 @@ void RenderingManager::RenderBoxes(const TimeVolume& vol, const RaycastParams& r
 
 	Vec3f lightPos;
 
-	if (m_particleRenderParams.m_FixedLightDir)
-		lightPos = normalize(m_particleRenderParams.m_lightDir);
+	if (m_renderingParams.m_FixedLightDir)
+		lightPos = normalize(m_renderingParams.m_lightDir);
 	else
 		lightPos = m_viewParams.GetCameraPosition();
 
@@ -1147,8 +1150,8 @@ void RenderingManager::RenderLines(const TimeVolume& vol, LineBuffers* pLineBuff
 
 	Vec3f lightDir;
 
-	if (m_particleRenderParams.m_FixedLightDir)
-		lightDir = normalize(m_particleRenderParams.m_lightDir);
+	if (m_renderingParams.m_FixedLightDir)
+		lightDir = normalize(m_renderingParams.m_lightDir);
 	else
 		lightDir = m_viewParams.GetViewDir();
 
@@ -1706,8 +1709,8 @@ void RenderingManager::RenderBalls(const TimeVolume& vol, const BallBuffers* pBa
 
 	Vec3f lightDir;
 
-	if (m_particleRenderParams.m_FixedLightDir)
-		lightDir = normalize(m_particleRenderParams.m_lightDir);
+	if (m_renderingParams.m_FixedLightDir)
+		lightDir = normalize(m_renderingParams.m_lightDir);
 	else
 		lightDir = m_viewParams.GetViewDir();
 

@@ -19,7 +19,7 @@ public:
 	static bool g_showStatusWindow;
 	static bool g_show_demo_window;
 
-	static int g_threadCount;
+	//static int g_threadCount;
 	static int g_lineIDOverride;
 
 #pragma region Dialogs
@@ -33,9 +33,9 @@ public:
 
 	static void LoadRenderingParamsDialog(FlowVisTool& g_flowVisTool);
 
-	static void LoadSliceTexture(FlowVisTool& g_flowVisTool);
+	//static void LoadSliceTexture(FlowVisTool& g_flowVisTool);
 
-	static void LoadColorTexture(FlowVisTool& g_flowVisTool);
+	//static void LoadColorTexture(FlowVisTool& g_flowVisTool);
 
 	//static void LoadSeedTexture(FlowVisTool& g_flowVisTool);
 #pragma endregion

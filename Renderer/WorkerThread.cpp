@@ -287,6 +287,7 @@ void WorkerThread::TaskRender()
 	std::vector<BallBuffers*> ballBuffers;
 	RenderingManager::eRenderState state = m_private.renderingManager.Render(false,
 		*m_pVolume, 
+		RenderingParameters(), // FIXME. Sorry :)
 		m_shared.viewParams,
 		m_shared.stereoParams,
 		m_shared.particleTraceParams, 

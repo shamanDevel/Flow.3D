@@ -187,6 +187,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClCompile Include="FlowGraph.cpp" />
     <ClCompile Include="FlowVisToolGUI.cpp" />
     <ClCompile Include="FlowVisTool.cpp" />
+    <ClCompile Include="FlowVisToolUtils.cpp" />
     <ClCompile Include="HeatMap.cpp" />
     <ClCompile Include="HeatMapManager.cpp" />
     <ClCompile Include="HeatMapNormalizationMode.cpp" />
@@ -294,6 +295,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClInclude Include="FlowGraph.h" />
     <ClInclude Include="FlowVisTool.h" />
     <ClInclude Include="FlowVisToolGUI.h" />
+    <ClInclude Include="FlowVisToolUtils.h" />
     <ClInclude Include="FlowVisToolVolumeData.h" />
     <ClInclude Include="HeatCurrent.cuh" />
     <ClInclude Include="HeatMap.h" />
@@ -330,6 +332,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClInclude Include="RaycastMode.h" />
     <ClInclude Include="RaycastParams.h" />
     <ClInclude Include="RenderingManager.h" />
+    <ClInclude Include="RenderingParams.h" />
     <ClInclude Include="RenderTexture.h" />
     <ClInclude Include="ScreenEffect.h" />
     <ClInclude Include="TextureCPU.h" />

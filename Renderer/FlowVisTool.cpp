@@ -82,9 +82,6 @@ void FlowVisTool::Release()
 	g_renderingManager.m_ftleTexture.UnregisterCudaResources();
 	cudaSafeCallNoSync(cudaDeviceReset());
 
-	//release slice texture
-	SAFE_RELEASE(g_particleRenderParams.m_pSliceTexture);
-	SAFE_RELEASE(g_particleRenderParams.m_pColorTexture);
 	g_renderingManager.m_ftleTexture.ReleaseResources();
 }
 
@@ -240,14 +237,16 @@ void FlowVisTool::CloseVolumeFile(int idx)
 	assert(g_volumes[idx]);
 	assert(g_volumes[idx]->m_volume);
 
-	if (idx == 0)
+	if (g_volumes.size() == 1)
 		ReleaseVolumeDependentResources();
 
 	g_volumes[idx]->m_volume->SetPageLockBrickData(false);
 	g_volumes[idx]->m_volume->Close();
 	delete g_volumes[idx]->m_volume;
+	g_volumes[idx]->m_volume = nullptr;
 	g_volumes[idx]->ReleaseResources();
 	delete g_volumes[idx];
+	g_volumes[idx] = nullptr;
 	g_volumes.erase(g_volumes.begin() + idx);
 }
 
@@ -287,15 +286,15 @@ bool FlowVisTool::OpenVolumeFile(const std::string& filename)
 	}
 
 	g_volumes.push_back(volumeData);
-	m_redraw = true;
+	g_renderingParams.m_redraw = true;
 
 	return true;
 }
 
 bool FlowVisTool::ResizeRenderBuffer()
 {
-	g_projParams.m_imageWidth = uint(g_windowSize.x() * g_renderBufferSizeFactor);
-	g_projParams.m_imageHeight = uint(g_windowSize.y() * g_renderBufferSizeFactor);
+	g_projParams.m_imageWidth = uint(g_renderingParams.m_windowSize.x() * g_renderingParams.m_renderBufferSizeFactor);
+	g_projParams.m_imageHeight = uint(g_renderingParams.m_windowSize.y() * g_renderingParams.m_renderBufferSizeFactor);
 	g_projParams.m_aspectRatio = float(g_projParams.m_imageWidth) / float(g_projParams.m_imageHeight);
 
 
@@ -353,12 +352,12 @@ void FlowVisTool::OnFrame(float deltatime)
 	if (ImGui::Begin("Debug"))
 	{
 		bool b;
-		b = s_isFiltering; ImGui::Checkbox("IsFiltering", &b);
-		b = s_isTracing; ImGui::Checkbox("IsTracing", &b);
-		b = s_isRaycasting; ImGui::Checkbox("IsRaycasting", &b);
-		b = m_redraw; ImGui::Checkbox("Redraw", &b);
+		//b = s_isTracing; ImGui::Checkbox("IsTracing", &b);
 		//b = m_retrace; ImGui::Checkbox("Retrace", &b);
-		b = g_showPreview; ImGui::Checkbox("ShowPreview", &b);
+		b = s_isFiltering; ImGui::Checkbox("IsFiltering", &b);
+		b = s_isRaycasting; ImGui::Checkbox("IsRaycasting", &b);
+		b = g_renderingParams.m_redraw; ImGui::Checkbox("Redraw", &b);
+		b = g_renderingParams.m_showPreview; ImGui::Checkbox("ShowPreview", &b);
 	}
 	ImGui::End();
 
@@ -395,7 +394,7 @@ void FlowVisTool::OnFrame(float deltatime)
 	//SAFE_RELEASE(pSwapChainTex);
 	if (g_renderTexture.IsInitialized())
 	{
-		g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_backgroundColor.x(), g_backgroundColor.y(), g_backgroundColor.z(), g_backgroundColor.w());
+		g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_renderingParams.m_backgroundColor.x(), g_renderingParams.m_backgroundColor.y(), g_renderingParams.m_backgroundColor.z(), g_renderingParams.m_backgroundColor.w());
 		g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
 
 		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
@@ -784,9 +783,11 @@ bool FlowVisTool::CheckForChanges(FlowVisToolVolumeData* volumeData)
 	//	g_lastTraceParamsUpdate = curTime;
 
 	//static ParticleRenderParams particleRenderParamsPrev = g_particleRenderParams;
-	//bool particleRenderParamsChanged = (g_particleRenderParams != particleRenderParamsPrev);
-	//particleRenderParamsPrev = g_particleRenderParams;
-	//redraw = redraw || particleRenderParamsChanged;
+	static std::map<FlowVisToolVolumeData*, ParticleRenderParams> renderParamsPrev;
+
+	bool particleRenderParamsChanged = volumeData->m_renderParams != renderParamsPrev[volumeData];
+	renderParamsPrev[volumeData] = volumeData->m_renderParams;
+	redraw = redraw || particleRenderParamsChanged;
 
 	//if(particleRenderParamsChanged)
 	//{
@@ -936,9 +937,9 @@ bool FlowVisTool::RenderMulti()
 
 	RenderingManager::eRenderState stateRenderer = g_renderingManager.Render(
 		g_volumes,
+		g_renderingParams,
 		g_viewParams,
 		g_stereoParams,
-		g_particleRenderParams,
 		g_raycastParams,
 		g_lineBuffers,
 		g_ballBuffers,
@@ -1043,8 +1044,8 @@ bool FlowVisTool::CheckForChanges()
 
 
 	static float renderBufferSizeFactorPrev = 0.0f;
-	bool renderBufferSizeChanged = (g_renderBufferSizeFactor != renderBufferSizeFactorPrev);
-	renderBufferSizeFactorPrev = g_renderBufferSizeFactor;
+	bool renderBufferSizeChanged = (g_renderingParams.m_renderBufferSizeFactor != renderBufferSizeFactorPrev);
+	renderBufferSizeFactorPrev = g_renderingParams.m_renderBufferSizeFactor;
 	if (renderBufferSizeChanged)
 	{
 		ResizeRenderBuffer();
@@ -1062,19 +1063,19 @@ bool FlowVisTool::CheckForChanges()
 		renderBrickBoxesPrev = g_renderingManager.m_renderBrickBoxes;
 		renderClipBoxPrev = g_renderingManager.m_renderClipBox;
 		renderSeedBoxPrev = g_renderingManager.m_renderSeedBox;
-		m_redraw = true;
+		g_renderingParams.m_redraw = true;
 	}
 
 
 	static ProjectionParams projParamsPrev;
 	bool projParamsChanged = (g_projParams != projParamsPrev);
 	projParamsPrev = g_projParams;
-	m_redraw = m_redraw || projParamsChanged;
+	g_renderingParams.m_redraw = g_renderingParams.m_redraw || projParamsChanged;
 
 	static Range1D rangePrev;
 	bool rangeChanged = (g_cudaDevices[g_primaryCudaDeviceIndex].range != rangePrev);
 	rangePrev = g_cudaDevices[g_primaryCudaDeviceIndex].range;
-	m_redraw = m_redraw || rangeChanged;
+	g_renderingParams.m_redraw = g_renderingParams.m_redraw || rangeChanged;
 
 	if (projParamsChanged || rangeChanged)
 	{
@@ -1107,7 +1108,7 @@ bool FlowVisTool::CheckForChanges()
 	static StereoParams stereoParamsPrev;
 	bool stereoParamsChanged = (g_stereoParams != stereoParamsPrev);
 	stereoParamsPrev = g_stereoParams;
-	m_redraw = m_redraw || stereoParamsChanged;
+	g_renderingParams.m_redraw = g_renderingParams.m_redraw || stereoParamsChanged;
 
 	if (stereoParamsChanged)
 		g_lastRenderParamsUpdate = curTime;
@@ -1115,7 +1116,7 @@ bool FlowVisTool::CheckForChanges()
 	static ViewParams viewParamsPrev;
 	bool viewParamsChanged = (g_viewParams != viewParamsPrev);
 	viewParamsPrev = g_viewParams;
-	m_redraw = m_redraw || viewParamsChanged;
+	g_renderingParams.m_redraw = g_renderingParams.m_redraw || viewParamsChanged;
 
 	if (viewParamsChanged)
 		g_lastRenderParamsUpdate = curTime;
@@ -1148,7 +1149,7 @@ bool FlowVisTool::CheckForChanges()
 	{
 		g_filteringManager.ClearResult();
 		s_isFiltering = false;
-		m_redraw = true;
+		g_renderingParams.m_redraw = true;
 	}
 
 	//static ParticleTraceParams particleTraceParamsPrev;
@@ -1215,22 +1216,22 @@ bool FlowVisTool::CheckForChanges()
 	static RaycastParams raycastParamsPrev = g_raycastParams;
 	bool raycastParamsChanged = (g_raycastParams != raycastParamsPrev);
 	raycastParamsPrev = g_raycastParams;
-	m_redraw = m_redraw || raycastParamsChanged;
+	g_renderingParams.m_redraw = g_renderingParams.m_redraw || raycastParamsChanged;
 
 	if (raycastParamsChanged)
 		g_lastTraceParamsUpdate = curTime;
 
-	static ParticleRenderParams particleRenderParamsPrev = g_particleRenderParams;
-	bool particleRenderParamsChanged = (g_particleRenderParams != particleRenderParamsPrev);
-	particleRenderParamsPrev = g_particleRenderParams;
-	m_redraw = m_redraw || particleRenderParamsChanged;
+	//static ParticleRenderParams particleRenderParamsPrev = g_particleRenderParams;
+	//bool particleRenderParamsChanged = (g_particleRenderParams != particleRenderParamsPrev);
+	//particleRenderParamsPrev = g_particleRenderParams;
+	//g_renderingParams.m_redraw = g_renderingParams.m_redraw || particleRenderParamsChanged;
 
 	//if(particleRenderParamsChanged)
 	//{
 	//	g_lastTraceParamsUpdate = curTime;
 	//}
 
-	return m_redraw;
+	return g_renderingParams.m_redraw;
 }
 
 #ifdef Single
@@ -1739,10 +1740,10 @@ bool FlowVisTool::ResizeViewport(int width, int height)
 	g_renderTexture.Release();
 	g_renderTexture.Initialize(m_d3dDevice, width, height);
 
-	m_redraw = true;
+	g_renderingParams.m_redraw = true;
 
-	g_windowSize.x() = width;
-	g_windowSize.y() = height;
+	g_renderingParams.m_windowSize.x() = width;
+	g_renderingParams.m_windowSize.y() = height;
 
 
 	ResizeRenderBuffer();
@@ -1761,8 +1762,8 @@ bool FlowVisTool::ResizeViewport(int width, int height)
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.Width = g_windowSize.x();
-	desc.Height = g_windowSize.y();
+	desc.Width = g_renderingParams.m_windowSize.x();
+	desc.Height = g_renderingParams.m_windowSize.y();
 	// create texture for the last finished image from the raycaster
 	hr = m_d3dDevice->CreateTexture2D(&desc, nullptr, &g_pRaycastFinishedTex);
 	if (FAILED(hr)) return false;
@@ -1780,8 +1781,8 @@ bool FlowVisTool::ResizeViewport(int width, int height)
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_STAGING;
-	desc.Width = g_windowSize.x();
-	desc.Height = g_windowSize.y();
+	desc.Width = g_renderingParams.m_windowSize.x();
+	desc.Height = g_renderingParams.m_windowSize.y();
 	hr = m_d3dDevice->CreateTexture2D(&desc, nullptr, &g_pStagingTex);
 	if (FAILED(hr)) return false;
 
