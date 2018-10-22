@@ -1,6 +1,7 @@
 #ifndef __TUM3D__PARTICLERENDERPARAMS_H__
 #define __TUM3D__PARTICLERENDERPARAMS_H__
 
+#include <string>
 
 #include <global.h>
 
@@ -23,6 +24,7 @@ struct ParticleRenderParams
 	void ApplyConfig(const ConfigFile& config);
 	void WriteConfig(ConfigFile& config) const;
 
+	void LoadColorTexture(std::string filePath, ID3D11Device* device);
 
 	// FTLE stuff
 	bool m_ftleShowTexture;

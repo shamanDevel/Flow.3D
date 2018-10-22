@@ -1,13 +1,15 @@
 #include "ParticleRenderParams.h"
 
 #include <cstring> // for memcmp
-#include <string>
 
 #include <cudaUtil.h>
 #include <cuda_d3d11_interop.h>
 
-using namespace tum3D;
+#include <Utils.h>
+#include <WICTextureLoader.h>
 
+
+using namespace tum3D;
 
 
 ParticleRenderParams::ParticleRenderParams()
@@ -55,6 +57,25 @@ void ParticleRenderParams::Reset()
 	m_ftleShowTexture = true;
 	m_ftleTextureAlpha = 1.0f;
 }
+
+
+void ParticleRenderParams::LoadColorTexture(std::string filePath, ID3D11Device* device)
+{
+	// release old texture
+	SAFE_RELEASE(m_pColorTexture);
+
+	// create new texture
+	std::wstring wfilename(filePath.begin(), filePath.end());
+	ID3D11Resource* tmp = NULL;
+
+	if (!FAILED(DirectX::CreateWICTextureFromFile(device, wfilename.c_str(), &tmp, &m_pColorTexture)))
+		std::cout << "Color texture " << filePath << " loaded." << std::endl;
+	else
+		std::cerr << "Failed to load color texture." << std::endl;
+
+	SAFE_RELEASE(tmp);
+}
+
 
 void ParticleRenderParams::ApplyConfig(const ConfigFile& config)
 {

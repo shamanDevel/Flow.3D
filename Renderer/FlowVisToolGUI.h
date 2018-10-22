@@ -36,8 +36,6 @@ public:
 
 	//static void LoadSliceTexture(FlowVisTool& g_flowVisTool);
 
-	//static void LoadColorTexture(FlowVisTool& g_flowVisTool);
-
 	//static void LoadSeedTexture(FlowVisTool& g_flowVisTool);
 #pragma endregion
 

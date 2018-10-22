@@ -30,7 +30,9 @@ const int max_frames = 150;
 std::vector<float> frameTimes(max_frames);
 int currentFrameTimeIndex = 0;
 
+
 ImVec4 sectionTextColor = ImVec4(0.67f, 0.52f, 0.00f, 1.00f);
+ImVec4 datasetNameTextColor = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
 
 
 #pragma region Utils
@@ -175,28 +177,13 @@ void FlowVisToolGUI::LoadSliceTexture(FlowVisTool& g_flowVisTool)
 		SAFE_RELEASE(tmp);
 	}
 }
-
-void FlowVisToolGUI::LoadColorTexture(FlowVisTool& g_flowVisTool)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-		//release old texture
-		SAFE_RELEASE(g_flowVisTool.g_particleRenderParams.m_pColorTexture);
-		//create new texture
-		std::wstring wfilename(filename.begin(), filename.end());
-		ID3D11Resource* tmp = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFile(g_flowVisTool.m_d3dDevice, wfilename.c_str(), &tmp, &g_flowVisTool.g_particleRenderParams.m_pColorTexture))) {
-			std::cout << "Color texture " << filename << " loaded" << std::endl;
-			g_flowVisTool.g_particleRenderParams.m_lineColorMode = eLineColorMode::TEXTURE;
-			g_flowVisTool.g_renderingParams.m_redraw = true;
-		}
-		else {
-			std::cerr << "Failed to load color texture" << std::endl;
-		}
-		SAFE_RELEASE(tmp);
-	}
-}
 #endif
+
+bool DialogColorTexture(std::string& path)
+{
+	return tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", path, false);
+}
+
 
 #ifdef Single
 void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& g_flowVisTool)
@@ -532,7 +519,7 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 	ImGui::Checkbox("Upsampled Volume Hack", &traceParams.m_upsampledVolumeHack);
 }
 
-void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected)
+void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected, ID3D11Device* device)
 {
 	ParticleRenderParams& renderParams = selected->m_renderParams;
 
@@ -632,8 +619,12 @@ void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected)
 	}
 	case eLineColorMode::TEXTURE:
 	{
-		//if (ImGui::Button("Load Color Texture", ImVec2(buttonWidth, 0)))
-		//	LoadColorTexture(g_flowVisTool);
+		if (ImGui::Button("Load Color Texture", ImVec2(buttonWidth, 0)))
+		{
+			std::string path("");
+			if (DialogColorTexture(path))
+				renderParams.LoadColorTexture(path, device);
+		}
 		break;
 	}
 	case eLineColorMode::MEASURE:
@@ -677,7 +668,7 @@ FlowVisToolVolumeData* VolumeDataSelectionCombo(FlowVisTool& g_flowVisTool, Flow
 
 	ImVec4 originalTextCol = ImGui::GetStyleColorVec4(ImGuiCol_Text);
 
-	ImGui::PushStyleColor(ImGuiCol_Text, sectionTextColor);
+	ImGui::PushStyleColor(ImGuiCol_Text, datasetNameTextColor);
 	ImGui::PushItemWidth(-1);
 	if (ImGui::BeginCombo("##combo", selected->m_volume->GetName().c_str())) // The second parameter is the label previewed before opening the combo.
 	{
@@ -872,7 +863,11 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 					{
 						assert(g_flowVisTool.g_volumes[i]->m_volume);
 
-						SectionText(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
+						//SectionText(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
+
+						ImGui::PushStyleColor(ImGuiCol_Text, datasetNameTextColor);
+						ImGui::Text(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
+						ImGui::PopStyleColor();
 
 						ImGui::Spacing();
 						ImGui::Separator();
@@ -1161,7 +1156,7 @@ void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				TrajectoriesRenderingParamsGUI(selected);
+				TrajectoriesRenderingParamsGUI(selected, g_flowVisTool.m_d3dDevice);
 			}
 			ImGui::PopItemWidth();
 		}
