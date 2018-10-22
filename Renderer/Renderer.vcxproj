@@ -78,7 +78,10 @@
 xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
 
 @echo $(ProjectDir)TransferFunctionEditor\
-xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
+xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"
+
+@echo Copying $(SolutionDir)resources to $(TargetDir)resources
+xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copying .fx and .dll files to output dir</Message>
@@ -132,7 +135,10 @@ xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
 xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
 
 @echo $(ProjectDir)TransferFunctionEditor\
-xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"</Command>
+xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"
+
+@echo Copying $(SolutionDir)resources to $(TargetDir)resources
+xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>Copying .fx and .dll files to output dir</Message>
