@@ -8,7 +8,8 @@
 #include <vector>
 
 
-bool FlowVisToolGUI::g_showRenderingOptionsWindow = true;
+bool FlowVisToolGUI::g_showTrajectoriesRenderingSettingsWindow = true;
+bool FlowVisToolGUI::g_showGeneralRenderingSettingsWindow = true;
 bool FlowVisToolGUI::g_showTracingOptionsWindow = true;
 bool FlowVisToolGUI::g_showFTLEWindow = false;
 bool FlowVisToolGUI::g_showRaycastingWindow = true;
@@ -531,58 +532,15 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 	ImGui::Checkbox("Upsampled Volume Hack", &traceParams.m_upsampledVolumeHack);
 }
 
-void RenderingParamsGUI(FlowVisToolVolumeData* selected)
+void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected)
 {
-	//if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
-	//	g_flowVisTool.g_renderingParams.m_redraw = true;
-
 	ParticleRenderParams& renderParams = selected->m_renderParams;
 
 	ImGui::Checkbox("Enabled", &renderParams.m_linesEnabled);
 
-	//ImGui::Checkbox("Rendering Preview", &g_flowVisTool.g_renderingParams.m_showPreview);
-
 	ImGui::Checkbox("Show Brick Boxes", &selected->m_renderBrickBoxes);
 	ImGui::Checkbox("Show Seed Box", &selected->m_renderSeedBox);
-
 	ImGui::Checkbox("Show Domain Box", &selected->m_renderDomainBox);
-	//ImGui::SameLine();
-	//if (ImGui::DragFloat("Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
-	//{
-	//	g_flowVisTool.g_renderingManager.m_DomainBoxThickness = std::max(0.0f, g_flowVisTool.g_renderingManager.m_DomainBoxThickness);
-	//	g_flowVisTool.g_renderingParams.m_redraw = true;
-	//}
-
-	ImGui::Spacing();
-	ImGui::Separator();
-
-	//if (ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_renderingParams.m_backgroundColor))
-	//	g_flowVisTool.g_renderingParams.m_redraw = true;
-
-	//ImGui::Checkbox("Fixed Light Dir", &g_flowVisTool.g_renderingParams.m_FixedLightDir);
-
-	//ImGui::SliderFloat3("Light Dir", (float*)&g_flowVisTool.g_renderingParams.m_lightDir, -1.0f, 1.0f);
-
-	//int f = g_flowVisTool.g_renderingParams.m_renderBufferSizeFactor;
-	//if (ImGui::SliderInt("SuperSample Factor", &f, 1.0f, 8.0f))
-	//	g_flowVisTool.g_renderingParams.m_renderBufferSizeFactor = f;
-
-	//if (ImGui::Checkbox("Perspective", &g_flowVisTool.g_projParams.m_perspective))
-	//{
-	//	if (g_flowVisTool.g_projParams.m_perspective)
-	//		g_flowVisTool.g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
-	//	else
-	//		g_flowVisTool.g_projParams.m_fovy = 3.1f;
-	//}
-
-	//float degfovy = g_flowVisTool.g_projParams.m_fovy * 180.0f / PI;
-	//if (ImGui::SliderFloat("FoVY", &degfovy, 1.0f, 180.0f, "%.2f deg"))
-	//	g_flowVisTool.g_projParams.m_fovy = degfovy * PI / 180.0f;
-
-	//ImGui::Checkbox("Stereo", &g_flowVisTool.g_stereoParams.m_stereoEnabled);
-
-	//if (ImGui::DragFloat("Eye Distance", &g_flowVisTool.g_stereoParams.m_eyeDistance, 0.001f, 0.0f, FLT_MAX, "%.3f"))
-	//	g_flowVisTool.g_stereoParams.m_eyeDistance = std::max(0.0f, g_flowVisTool.g_stereoParams.m_eyeDistance);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -705,17 +663,6 @@ void RenderingParamsGUI(FlowVisToolVolumeData* selected)
 
 	ImGui::Spacing();
 	ImGui::Separator();
-
-	//SectionText("Slice");
-	//if (ImGui::Button("Load Slice Texture", ImVec2(buttonWidth, 0)))
-	//	LoadSliceTexture(g_flowVisTool);
-
-	ImGui::Checkbox("Show Slice", &renderParams.m_showSlice);
-
-	ImGui::DragFloat("Slice Position", &renderParams.m_slicePosition, 0.001f);
-
-	if (ImGui::DragFloat("Slice Transparency", &renderParams.m_sliceAlpha, 0.001f, 0.0f, 1.0f, "%.3f"))
-		renderParams.m_sliceAlpha = std::min(1.0f, std::max(0.0f, renderParams.m_sliceAlpha));
 }
 
 FlowVisToolVolumeData* VolumeDataSelectionCombo(FlowVisTool& g_flowVisTool, FlowVisToolVolumeData* selected)
@@ -769,7 +716,8 @@ void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame
 	ExtraWindow(g_flowVisTool);
 	//FTLEWindow(g_flowVisTool);
 	HeatmapWindow(g_flowVisTool);
-	RenderingWindow(g_flowVisTool);
+	TrajectoriesRenderingWindow(g_flowVisTool);
+	GeneralRenderingWindow(g_flowVisTool);
 	RaycastingWindow(g_flowVisTool);
 	SceneWindow(g_flowVisTool, resizeNextFrame, sceneWindowSize);
 	ProfilerWindow(g_flowVisTool);
@@ -873,8 +821,10 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
 		}
 		if (ImGui::BeginMenu("View"))
 		{
-			if (ImGui::MenuItem("Rendering Options", nullptr, g_showRenderingOptionsWindow))
-				g_showRenderingOptionsWindow = !g_showRenderingOptionsWindow;
+			if (ImGui::MenuItem("Trajectories Rendering Settings", nullptr, g_showTrajectoriesRenderingSettingsWindow))
+				g_showTrajectoriesRenderingSettingsWindow = !g_showTrajectoriesRenderingSettingsWindow;
+			if (ImGui::MenuItem("General Rendering Settings", nullptr, g_showGeneralRenderingSettingsWindow))
+				g_showGeneralRenderingSettingsWindow = !g_showGeneralRenderingSettingsWindow;
 			if (ImGui::MenuItem("Tracing Options", nullptr, g_showTracingOptionsWindow))
 				g_showTracingOptionsWindow = !g_showTracingOptionsWindow;
 			if (ImGui::MenuItem("Dataset", nullptr, g_showDatasetWindow))
@@ -1189,19 +1139,13 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool)
 {
-	ImGui::Begin("Debug");
-
-	ImGui::ColorEdit4("SectionTextColor", (float*)&sectionTextColor);
-
-	ImGui::End();
-
 	// Rendering config window
-	if (g_showRenderingOptionsWindow)
+	if (g_showTrajectoriesRenderingSettingsWindow)
 	{
 		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
-		if (ImGui::Begin("Rendering Options", &g_showRenderingOptionsWindow))
+		if (ImGui::Begin("Trajectories Rendering Settings", &g_showTrajectoriesRenderingSettingsWindow))
 		{
 			ImGui::PushItemWidth(-150);
 			if (g_flowVisTool.g_volumes.empty())
@@ -1217,7 +1161,75 @@ void FlowVisToolGUI::RenderingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				RenderingParamsGUI(selected);
+				TrajectoriesRenderingParamsGUI(selected);
+			}
+			ImGui::PopItemWidth();
+		}
+		ImGui::End();
+	}
+}
+
+void FlowVisToolGUI::GeneralRenderingWindow(FlowVisTool& g_flowVisTool)
+{
+	// Rendering config window
+	if (g_showGeneralRenderingSettingsWindow)
+	{
+		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+		if (ImGui::Begin("General Rendering Settings", &g_showGeneralRenderingSettingsWindow))
+		{
+			ImGui::PushItemWidth(-150);
+			{
+				if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
+					g_flowVisTool.g_renderingParams.m_redraw = true;
+
+				ImGui::Checkbox("Rendering Preview", &g_flowVisTool.g_renderingParams.m_showPreview);
+
+				if (ImGui::DragFloat("Domain Box Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
+				{
+					g_flowVisTool.g_renderingManager.m_DomainBoxThickness = std::max(0.0f, g_flowVisTool.g_renderingManager.m_DomainBoxThickness);
+					g_flowVisTool.g_renderingParams.m_redraw = true;
+				}
+
+				if (ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_renderingParams.m_backgroundColor))
+					g_flowVisTool.g_renderingParams.m_redraw = true;
+
+				ImGui::Checkbox("Fixed Light Dir", &g_flowVisTool.g_renderingParams.m_FixedLightDir);
+
+				ImGui::SliderFloat3("Light Dir", (float*)&g_flowVisTool.g_renderingParams.m_lightDir, -1.0f, 1.0f);
+
+				int f = g_flowVisTool.g_renderingParams.m_renderBufferSizeFactor;
+				if (ImGui::SliderInt("SuperSample Factor", &f, 1.0f, 8.0f))
+					g_flowVisTool.g_renderingParams.m_renderBufferSizeFactor = f;
+
+				if (ImGui::Checkbox("Perspective", &g_flowVisTool.g_projParams.m_perspective))
+				{
+					if (g_flowVisTool.g_projParams.m_perspective)
+						g_flowVisTool.g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
+					else
+						g_flowVisTool.g_projParams.m_fovy = 3.1f;
+				}
+
+				float degfovy = g_flowVisTool.g_projParams.m_fovy * 180.0f / PI;
+				if (ImGui::SliderFloat("FoVY", &degfovy, 1.0f, 180.0f, "%.2f deg"))
+					g_flowVisTool.g_projParams.m_fovy = degfovy * PI / 180.0f;
+
+				ImGui::Checkbox("Stereo", &g_flowVisTool.g_stereoParams.m_stereoEnabled);
+
+				if (ImGui::DragFloat("Eye Distance", &g_flowVisTool.g_stereoParams.m_eyeDistance, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+					g_flowVisTool.g_stereoParams.m_eyeDistance = std::max(0.0f, g_flowVisTool.g_stereoParams.m_eyeDistance);
+
+#ifdef Si
+				SectionText("Slice");
+				if (ImGui::Button("Load Slice Texture", ImVec2(buttonWidth, 0)))
+					LoadSliceTexture(g_flowVisTool);
+
+				ImGui::Checkbox("Show Slice", &renderParams.m_showSlice);
+
+				ImGui::DragFloat("Slice Position", &renderParams.m_slicePosition, 0.001f);
+
+				if (ImGui::DragFloat("Slice Transparency", &renderParams.m_sliceAlpha, 0.001f, 0.0f, 1.0f, "%.3f"))
+					renderParams.m_sliceAlpha = std::min(1.0f, std::max(0.0f, renderParams.m_sliceAlpha));
+#endif
 			}
 			ImGui::PopItemWidth();
 		}

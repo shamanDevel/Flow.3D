@@ -8,7 +8,8 @@ class FlowVisToolGUI
 public:
 	//static const float buttonWidth;
 
-	static bool g_showRenderingOptionsWindow;
+	static bool g_showTrajectoriesRenderingSettingsWindow;
+	static bool g_showGeneralRenderingSettingsWindow;
 	static bool g_showTracingOptionsWindow;
 	static bool g_showFTLEWindow;
 	static bool g_showRaycastingWindow;
@@ -56,7 +57,9 @@ public:
 
 	static void HeatmapWindow(FlowVisTool& g_flowVisTool);
 
-	static void RenderingWindow(FlowVisTool& g_flowVisTool);
+	static void TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool);
+
+	static void GeneralRenderingWindow(FlowVisTool& g_flowVisTool);
 
 	static void RaycastingWindow(FlowVisTool& g_flowVisTool);
 
