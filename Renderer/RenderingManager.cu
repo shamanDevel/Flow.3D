@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <numeric>
+#include <algorithm>
 
 #include <cudaUtil.h>
 #include <thrust/device_ptr.h>
@@ -772,7 +773,7 @@ RenderingManager::eRenderState RenderingManager::Render(
 
 
 RenderingManager::eRenderState RenderingManager::Render(
-	std::vector<FlowVisToolVolumeData*>& volumes,
+	std::vector<FlowVisToolVolumeData*> volumes,
 	const RenderingParameters& renderingParams,
 	const ViewParams& viewParams,
 	const StereoParams& stereoParams,
@@ -833,77 +834,93 @@ RenderingManager::eRenderState RenderingManager::Render(
 	// clear rendertargets and depth buffer
 	ClearResult();
 
-	// render opaque stuff immediately
+	bool linesRendered = false;
+
+	// Render lines loaded from disk.
+	// FIXME: should either expose rendering settings for these lines on the GUI or have default settings for them.
+	for (size_t i = 0; i < pLineBuffers.size(); i++)
 	{
-		bool linesRendered = false;
+		RenderLines(*volumes[i]->m_volume, pLineBuffers[i], true, false);
+		if (pLineBuffers[i]->m_indexCountTotal >= 0)
+			linesRendered = true;
+	}
 
-		// Render lines loaded from disk.
-		for (size_t i = 0; i < pLineBuffers.size(); i++)
-		{
-			RenderLines(*volumes[i]->m_volume, pLineBuffers[i], true, false);
-			if (pLineBuffers[i]->m_indexCountTotal >= 0)
-				linesRendered = true;
-		}
+	// Sort volumes so that transparent objects (particles) are drawn last.
+	std::sort(volumes.begin(), volumes.end(), [](FlowVisToolVolumeData* a, FlowVisToolVolumeData* b) 
+	{
+		return a->m_renderParams.m_lineRenderMode < b->m_renderParams.m_lineRenderMode;
+	});
 
-		// Render lines and boxes for each dataset.
-		for (size_t i = 0; i < volumes.size(); i++)
-		{
-			if (!volumes[i]->m_volume->IsOpen())
-				return STATE_ERROR;
+	// Render boxes for each dataset (opaque).
+	for (size_t i = 0; i < volumes.size(); i++)
+	{
+		if (!volumes[i]->m_volume->IsOpen())
+			return STATE_ERROR;
 
-			m_renderDomainBox =			volumes[i]->m_renderDomainBox;
-			m_renderClipBox =			volumes[i]->m_renderClipBox;
-			m_renderSeedBox =			volumes[i]->m_renderSeedBox;
-			m_renderBrickBoxes =		volumes[i]->m_renderBrickBoxes;
-			m_particleTraceParams =		volumes[i]->m_traceParams;
-			m_particleRenderParams =	volumes[i]->m_renderParams;
+		m_renderDomainBox = volumes[i]->m_renderDomainBox;
+		m_renderClipBox = volumes[i]->m_renderClipBox;
+		m_renderSeedBox = volumes[i]->m_renderSeedBox;
+		m_renderBrickBoxes = volumes[i]->m_renderBrickBoxes;
 
-			RenderBoxes(*volumes[i]->m_volume, raycastParams, true, false);
+		m_particleTraceParams = volumes[i]->m_traceParams;
+		m_particleRenderParams = volumes[i]->m_renderParams;
+
+		RenderBoxes(*volumes[i]->m_volume, raycastParams, true, false);
+	}
+
+	// Render line for each dataset. The array should be sorted so that opaque line are drawn first.
+	for (size_t i = 0; i < volumes.size(); i++)
+	{
+		if (!volumes[i]->m_volume->IsOpen())
+			return STATE_ERROR;
+
+		m_particleTraceParams =		volumes[i]->m_traceParams;
+		m_particleRenderParams =	volumes[i]->m_renderParams;
 			
-			if (m_particleRenderParams.m_linesEnabled)
+		if (m_particleRenderParams.m_linesEnabled)
+		{
+			LineBuffers* pTracedLines = volumes[i]->m_tracingManager.GetResult().get();
+			if (pTracedLines != nullptr)
 			{
-				LineBuffers* pTracedLines = volumes[i]->m_tracingManager.GetResult().get();
-				if (pTracedLines != nullptr)
-				{
-					RenderLines(*volumes[i]->m_volume, pTracedLines, true, false);
-					if (pTracedLines->m_indexCountTotal >= 0)
-						linesRendered = true;
-				}
+				RenderLines(*volumes[i]->m_volume, pTracedLines, true, false);
+				if (pTracedLines->m_indexCountTotal >= 0)
+					linesRendered = true;
 			}
 		}
-		
-		//if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr)
-		//{
-		//	PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, volumes[i].m_volume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
-		//	ExtraRenderSlice();
-		//}
-
-		//if (m_particleTraceParams.m_ftleEnabled)
-		//{
-		//	if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
-		//		CreateFTLETexture();
-
-		//	if (isTracing)
-		//		ComputeFTLE(volume, dpParticles); // g_tracingManager.m_dpParticles
-
-		//	if (m_particleRenderParams.m_ftleShowTexture)
-		//	{
-		//		tum3D::Vec2f center(m_particleTraceParams.m_seedBoxMin.x() + m_particleTraceParams.m_seedBoxSize.x() * 0.5f, m_particleTraceParams.m_seedBoxMin.y() + m_particleTraceParams.m_seedBoxSize.y() * 0.5f);
-		//		PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY, m_particleTraceParams.m_seedBoxSize, center);
-		//		ExtraRenderSlice();
-		//	}
-		//}
-
-		//for (size_t i = 0; i < pBallBuffers.size(); i++)
-		//	RenderBalls(volume, pBallBuffers[i], ballRadius);
-
-		////render heat map directly
-		//if (pHeatMapManager != nullptr)
-		//	RenderHeatMap(pHeatMapManager);
-
-		//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
-		//RenderSliceTexture();
 	}
+		
+	//if (!linesRendered && m_particleRenderParams.m_showSlice && m_particleRenderParams.m_pSliceTexture != nullptr)
+	//{
+	//	PrepareRenderSlice(m_particleRenderParams.m_pSliceTexture, m_particleRenderParams.m_sliceAlpha, m_particleRenderParams.m_slicePosition, volumes[i].m_volume->GetVolumeHalfSizeWorld() * 2, tum3D::Vec2f(0, 0));
+	//	ExtraRenderSlice();
+	//}
+
+	//if (m_particleTraceParams.m_ftleEnabled)
+	//{
+	//	if (!m_ftleTexture.IsTextureCreated() || m_particleTraceParams.m_ftleResolution != m_ftleTexture.width)
+	//		CreateFTLETexture();
+
+	//	if (isTracing)
+	//		ComputeFTLE(volume, dpParticles); // g_tracingManager.m_dpParticles
+
+	//	if (m_particleRenderParams.m_ftleShowTexture)
+	//	{
+	//		tum3D::Vec2f center(m_particleTraceParams.m_seedBoxMin.x() + m_particleTraceParams.m_seedBoxSize.x() * 0.5f, m_particleTraceParams.m_seedBoxMin.y() + m_particleTraceParams.m_seedBoxSize.y() * 0.5f);
+	//		PrepareRenderSlice(m_ftleTexture.pSRView, m_particleRenderParams.m_ftleTextureAlpha, m_particleTraceParams.m_ftleSliceY, m_particleTraceParams.m_seedBoxSize, center);
+	//		ExtraRenderSlice();
+	//	}
+	//}
+
+	//for (size_t i = 0; i < pBallBuffers.size(); i++)
+	//	RenderBalls(volume, pBallBuffers[i], ballRadius);
+
+	////render heat map directly
+	//if (pHeatMapManager != nullptr)
+	//	RenderHeatMap(pHeatMapManager);
+
+	//Don't do it here. It is now in RenderLines, so that the particles are drawn correctly including the transparency
+	//RenderSliceTexture();
+
 
 	return STATE_DONE;
 }

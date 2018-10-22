@@ -49,7 +49,7 @@ struct MyCudaDevice
 	WorkerThread* pThread;
 };
 
-#if defined(BATCH_IMAGE_SEQUENCE)
+#ifdef BATCH_IMAGE_SEQUENCE
 struct BatchTrace
 {
 	BatchTrace()
@@ -179,7 +179,7 @@ public:
 	std::vector<BallBuffers*> g_ballBuffers;
 	float                     g_ballRadius = 0.011718750051f;
 
-	TimerCPU	g_timerRendering;
+	TimerCPU		g_timerRendering;
 
 	ScreenEffect	g_screenEffect;
 

@@ -93,7 +93,7 @@ public:
 		int transferFunctionDevice = -1);
 
 	eRenderState Render(
-		std::vector<FlowVisToolVolumeData*>& volumes,
+		std::vector<FlowVisToolVolumeData*> volumes,
 		const RenderingParameters& renderingParams,
 		const ViewParams& viewParams,
 		const StereoParams& stereoParams,

@@ -418,7 +418,7 @@ void FlowVisTool::OnFrame(float deltatime)
 	//g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 	//m_d3dDeviceContex->Draw(4, 0);
 
-#if defined(BATCH_IMAGE_SEQUENCE)
+#ifdef BATCH_IMAGE_SEQUENCE
 	if (g_imageSequence.Running) {
 		if (!m_redraw && !s_isFiltering && !s_isRendering) {
 			// current frame is finished, save (if specified) and advance
