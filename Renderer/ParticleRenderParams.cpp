@@ -40,10 +40,6 @@ void ParticleRenderParams::Reset()
 	m_measure = eMeasure::MEASURE_VELOCITY;
 	m_measureScale = 1.0;
 
-	m_transferFunctionRangeMin = 0.0f;
-	m_transferFunctionRangeMax = 1.0f;
-	m_pTransferFunction = NULL;
-
 	m_timeStripes = false;
 	m_timeStripeLength = 0.03f;
 

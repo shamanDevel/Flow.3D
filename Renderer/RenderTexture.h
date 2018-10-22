@@ -9,6 +9,7 @@
 // INCLUDES //
 //////////////
 #include <d3d11.h>
+#include <Vec.h>
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,7 +28,7 @@ public:
 	float GetAspectRatio();
 
 	void SetRenderTarget(ID3D11DeviceContext*, ID3D11DepthStencilView*);
-	void ClearRenderTarget(ID3D11DeviceContext*, ID3D11DepthStencilView*, float, float, float, float);
+	void ClearRenderTarget(ID3D11DeviceContext*, ID3D11DepthStencilView*, tum3D::Vec4f color);
 	ID3D11ShaderResourceView* GetShaderResourceView();
 
 	void CopyFromTexture(ID3D11DeviceContext*, ID3D11Texture2D* tex);

@@ -294,32 +294,13 @@ bool FlowVisTool::OpenVolumeFile(const std::string& filename)
 
 void FlowVisTool::OnFrame(float deltatime)
 {
-	if (ImGui::Begin("Debug"))
-	{
-		bool b;
-		b = m_isFiltering; ImGui::Checkbox("IsFiltering", &b);
-		b = m_isRaycasting; ImGui::Checkbox("IsRaycasting", &b);
-		b = g_raycastParams.m_redraw; ImGui::Checkbox("Raycast Redraw", &b);
-	}
-	ImGui::End();
-
-
 	if (g_volumes.empty())
-		return;
+	{
+		if (g_renderTexture.IsInitialized())
+			g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_renderingParams.m_backgroundColor);
+	}
 
-#ifdef OLD
-	CheckForChanges();
-
-	for (size_t i = 0; i < g_volumes.size(); i++)
-		CheckForChanges(g_volumes[i]);
-
-	for (size_t i = 0; i < g_volumes.size(); i++)
-		Tracing(g_volumes[i], g_flowGraph);
-
-	RenderMulti();
-#endif
-
-	// Check for changes
+	// Check if stuff changed
 	CheckForChanges();
 
 	for (size_t i = 0; i < g_volumes.size(); i++)
@@ -340,29 +321,30 @@ void FlowVisTool::OnFrame(float deltatime)
 	if (m_isFiltering)
 		UpdateFiltering();
 
-	{
-		for (size_t i = 0; i < g_volumes.size(); i++)
-			if (g_volumes[i]->m_isTracing)
-				UpdateTracing(g_volumes[i]);
-
-		RenderTracingResults();
-	}
+	for (size_t i = 0; i < g_volumes.size(); i++)
+		if (g_volumes[i]->m_isTracing)
+			UpdateTracing(g_volumes[i]);
 
 	if (m_isRaycasting)
 		UpdateRaycasting();
 
-	BlitRenderingResults();
+	// Render stuff
+	RenderTracingResults();
 
-	// Present results
+	BlitRaycastingResults();
+
+	// Present stuff
 	if (g_renderTexture.IsInitialized())
 	{
-		g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_renderingParams.m_backgroundColor.x(), g_renderingParams.m_backgroundColor.y(), g_renderingParams.m_backgroundColor.z(), g_renderingParams.m_backgroundColor.w());
+		g_renderTexture.ClearRenderTarget(m_d3dDeviceContex, nullptr, g_renderingParams.m_backgroundColor);
 		g_renderTexture.SetRenderTarget(m_d3dDeviceContex, nullptr);
 
 		g_screenEffect.m_pTexVariable->SetResource(g_pRenderBufferTempSRV);
 		g_screenEffect.m_pTechnique->GetPassByIndex(ScreenEffect::BlitBlendOver)->Apply(0, m_d3dDeviceContex);
 		m_d3dDeviceContex->Draw(4, 0);
 		//g_renderTexture.CopyFromTexture(m_d3dDeviceContex, g_pRaycastFinishedTex);
+
+		m_d3dDeviceContex->GenerateMips(g_renderTexture.GetShaderResourceView());
 	}
 
 #ifdef BATCH_IMAGE_SEQUENCE
@@ -853,18 +835,11 @@ bool FlowVisTool::CheckForChanges()
 	raycastParamsPrev = g_raycastParams;
 	g_raycastParams.m_redraw = g_raycastParams.m_redraw || raycastParamsChanged;
 
-	//if (raycastParamsChanged)
-	//	g_lastTraceParamsUpdate = curTime;
-
-	//static ParticleRenderParams particleRenderParamsPrev = g_particleRenderParams;
-	//bool particleRenderParamsChanged = (g_particleRenderParams != particleRenderParamsPrev);
-	//particleRenderParamsPrev = g_particleRenderParams;
-	//g_renderingParams.m_redraw = g_renderingParams.m_redraw || particleRenderParamsChanged;
-
-	//if(particleRenderParamsChanged)
-	//{
-	//	g_lastTraceParamsUpdate = curTime;
-	//}
+	if (!g_raycastParams.m_raycastingEnabled)
+	{
+		g_raycastParams.m_redraw = false;
+		StopRaycasting();
+	}
 
 	return g_raycastParams.m_redraw;
 }
@@ -1349,7 +1324,7 @@ bool FlowVisTool::InitCudaDevices()
 }
 
 
-void FlowVisTool::BlitRenderingResults()
+void FlowVisTool::BlitRaycastingResults()
 {
 	//-----------------------------------------------------------
 	// COMBINE RESULTS AND DRAW ON SCREEN
@@ -1476,10 +1451,7 @@ bool FlowVisTool::ShouldStartFiltering()
 {
 	bool needFilteredBricks = g_filterParams.HasNonZeroRadius();
 
-	return	CanFilter() &&
-			needFilteredBricks &&
-			//(!m_isFiltering && g_filteringManager.GetResultCount() == 0 || m_restartFiltering);
-			m_restartFiltering;
+	return	CanFilter() && needFilteredBricks && m_restartFiltering;
 }
 
 bool FlowVisTool::ShouldStartTracing(FlowVisToolVolumeData* volumeData)
@@ -1518,32 +1490,21 @@ void FlowVisTool::StartFiltering()
 {
 	assert(CanFilter());
 	assert(g_filteringManager.IsCreated());
-	assert(!g_volumes.empty());
 	assert(m_selectedVolume >= 0 && m_selectedVolume < g_volumes.size());
 
-	// Cancel raycasting.
-	if (m_isRaycasting)
-	{
-		g_raycasterManager.CancelRendering();
-		// FIXME: cancel raycasting here for g_useAllGPUs.
-	}
+	StopRaycasting();
 
-	// Cancel tracing.
-	for (size_t i = 0; i < g_volumes.size(); i++)
-	{
-		if (g_volumes[i]->m_isTracing)
-			g_volumes[i]->m_tracingManager.CancelTracing();
-	}
+	StopTracing();
 	
+	StopFiltering();
+
 	// Release resources - we'll need a lot of memory for filtering.
 	g_raycasterManager.ReleaseResources();
 
 	for (size_t i = 0; i < g_volumes.size(); i++)
 		g_volumes[i]->m_tracingManager.ReleaseResources();
 
-	// Clear and start
-	g_filteringManager.ClearResult();
-
+	// Go!
 	m_isFiltering = g_filteringManager.StartFiltering(*g_volumes[m_selectedVolume]->m_volume, g_filterParams);
 
 	m_restartFiltering = false;
@@ -1556,12 +1517,7 @@ void FlowVisTool::StartTracing(FlowVisToolVolumeData* volumeData, FlowGraph& flo
 	assert(volumeData->m_volume);
 	assert(volumeData->m_tracingManager.IsCreated());
 
-	// Cancel raycasting.
-	if (m_isRaycasting)
-	{
-		g_raycasterManager.CancelRendering();
-		// FIXME: cancel raycasting here for g_useAllGPUs.
-	}
+	StopRaycasting();
 
 	// release other resources - we're gonna need a lot of memory
 	g_raycasterManager.ReleaseResources();
@@ -1573,8 +1529,7 @@ void FlowVisTool::StartTracing(FlowVisToolVolumeData* volumeData, FlowGraph& flo
 	volumeData->m_isTracing = volumeData->m_tracingManager.StartTracing(*volumeData->m_volume, volumeData->m_traceParams, flowGraph);
 	volumeData->m_timerTracing.Start();
 
-	//notify the heat map manager
-	//g_heatMapManager.SetVolumeAndReset(*g_volumes[0]);
+	//g_heatMapManager.SetVolumeAndReset(*g_volumes[0]); //notify the heat map manager
 
 	volumeData->m_retrace = false;
 }
@@ -1585,12 +1540,7 @@ void FlowVisTool::StartRaycasting()
 	assert(!g_volumes.empty());
 	assert(m_selectedVolume >= 0 && m_selectedVolume < g_volumes.size());
 
-	// Cancel raycasting.
-	if (m_isRaycasting)
-	{
-		g_raycasterManager.CancelRendering();
-		// FIXME: cancel raycasting here for g_useAllGPUs.
-	}
+	StopRaycasting();
 
 	//// Release other resources if possible
 	//if (!m_isFiltering)
@@ -1599,10 +1549,11 @@ void FlowVisTool::StartRaycasting()
 	//	if (!g_volumes[i]->m_isTracing)
 	//		g_volumes[i]->m_tracingManager.ReleaseResources();
 	
+	g_renderingManager.CopyDepthTexture(m_d3dDeviceContex, g_raycasterManager.m_pDepthTexCopy);
+
 	cudaArray* pTfArray = nullptr;
 	RaycasterManager::eRenderState stateRaycaster = RaycasterManager::STATE_DONE;
 
-	g_renderingManager.CopyDepthTexture(m_d3dDeviceContex, g_raycasterManager.m_pDepthTexCopy);
 	stateRaycaster = g_raycasterManager.StartRendering(*g_volumes[m_selectedVolume]->m_volume, g_viewParams, g_stereoParams, g_raycastParams, g_filteringManager.GetResults(), pTfArray);
 
 	if (stateRaycaster == RaycasterManager::STATE_ERROR)
@@ -1633,6 +1584,30 @@ void FlowVisTool::StartRaycasting()
 	}
 
 	g_raycastParams.m_redraw = false;
+}
+
+
+void FlowVisTool::StopFiltering()
+{
+	g_filteringManager.ClearResult();
+	m_isFiltering = false;
+}
+
+void FlowVisTool::StopTracing()
+{
+	for (size_t i = 0; i < g_volumes.size(); i++)
+	{
+		if (g_volumes[i]->m_isTracing)
+			g_volumes[i]->m_tracingManager.CancelTracing();
+		g_volumes[i]->m_isTracing = false;
+	}
+}
+
+void FlowVisTool::StopRaycasting()
+{
+	g_raycasterManager.CancelRendering();
+	// FIXME: cancel raycasting here for g_useAllGPUs.
+	m_isRaycasting = false;
 }
 
 

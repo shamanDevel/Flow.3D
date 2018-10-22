@@ -221,6 +221,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClCompile Include="ScreenEffect.cpp" />
     <ClCompile Include="TraceableVolume.cpp" />
     <ClCompile Include="TracingTestData.cpp" />
+    <ClCompile Include="TransferFunction.cpp" />
     <ClCompile Include="TransferFunctionEditor\TransferFunctionEditor.cpp" />
     <ClCompile Include="TransferFunctionEditor\TransferFunctionLine.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
@@ -339,6 +340,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClInclude Include="TextureFilterCPU.h" />
     <ClInclude Include="TraceableVolume.h" />
     <ClInclude Include="TracingTestData.h" />
+    <ClInclude Include="TransferFunction.h" />
     <ClInclude Include="TransferFunctionEditor\TransferFunctionEditor.h" />
     <ClInclude Include="TransferFunctionEditor\TransferFunctionLine.h" />
     <ClInclude Include="VolumeInfoGPU.h" />

@@ -48,6 +48,12 @@ struct FlowVisToolVolumeData
 	{
 		if (!m_tracingManager.Create(pDevice))
 			return false;
+
+		if (!m_renderParams.m_transferFunction.CreateResources(pDevice))
+			return false;
+
+		m_renderParams.m_transferFunction.UpdateTexture();
+
 		return true;
 	}
 
@@ -55,6 +61,8 @@ struct FlowVisToolVolumeData
 	{
 		m_tracingManager.ClearResult();
 		m_tracingManager.Release();
+
+		m_renderParams.m_transferFunction.ReleaseResources();
 
 		SAFE_RELEASE(m_renderParams.m_pSliceTexture);
 		SAFE_RELEASE(m_renderParams.m_pColorTexture);

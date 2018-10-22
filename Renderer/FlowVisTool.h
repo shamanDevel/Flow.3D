@@ -215,7 +215,7 @@ private:
 	void Filtering();
 	void Tracing();
 	bool Rendering();
-	void BlitRenderingResults();
+	void BlitRaycastingResults();
 
 	static bool CheckForChanges(FlowVisToolVolumeData* volumeData);
 	bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
@@ -232,6 +232,10 @@ private:
 	void StartFiltering();
 	void StartTracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
 	void StartRaycasting();
+
+	void StopFiltering();
+	void StopTracing();
+	void StopRaycasting();
 	
 	void UpdateBricks(TimeVolume* volume, const std::vector<const TimeVolumeIO::Brick*>& bricks);
 	void UpdateFiltering();

@@ -1204,10 +1204,10 @@ void RenderingManager::RenderLines(const TimeVolume& vol, LineBuffers* pLineBuff
 
 	m_lineEffect.m_piMeasureMode->SetInt((int)m_particleRenderParams.m_measure);
 	m_lineEffect.m_pfMeasureScale->SetFloat(m_particleRenderParams.m_measureScale);
-	if (m_particleRenderParams.m_pTransferFunction != nullptr) {
-		m_lineEffect.m_ptransferFunction->SetResource(m_particleRenderParams.m_pTransferFunction);
+	if (m_particleRenderParams.m_transferFunction.m_srv != nullptr) {
+		m_lineEffect.m_ptransferFunction->SetResource(m_particleRenderParams.m_transferFunction.m_srv);
 	}
-	Vec2f tfRange(m_particleRenderParams.m_transferFunctionRangeMin, m_particleRenderParams.m_transferFunctionRangeMax);
+	Vec2f tfRange(m_particleRenderParams.m_transferFunction.m_rangeMin, m_particleRenderParams.m_transferFunction.m_rangeMax);
 	m_lineEffect.m_pvTfRange->SetFloatVector(tfRange);
 
 	// common slice texture parameters

@@ -41,7 +41,7 @@ bool RenderTexture::Initialize(ID3D11Device* device, int textureWidth, int textu
 	// Setup the render target texture description.
 	textureDesc.Width = textureWidth;
 	textureDesc.Height = textureHeight;
-	textureDesc.MipLevels = 1;
+	textureDesc.MipLevels = 4;
 	textureDesc.ArraySize = 1;
 	textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	textureDesc.SampleDesc.Count = 1;
@@ -128,20 +128,10 @@ void RenderTexture::SetRenderTarget(ID3D11DeviceContext* deviceContext, ID3D11De
 }
 
 
-void RenderTexture::ClearRenderTarget(ID3D11DeviceContext* deviceContext, ID3D11DepthStencilView* depthStencilView,
-										   float red, float green, float blue, float alpha)
+void RenderTexture::ClearRenderTarget(ID3D11DeviceContext* deviceContext, ID3D11DepthStencilView* depthStencilView, tum3D::Vec4f color)
 {
-	float color[4];
-
-
-	// Setup the color to clear the buffer to.
-	color[0] = red;
-	color[1] = green;
-	color[2] = blue;
-	color[3] = alpha;
-
 	// Clear the back buffer.
-	deviceContext->ClearRenderTargetView(m_renderTargetView, color);
+	deviceContext->ClearRenderTargetView(m_renderTargetView, (float*)&color);
     
 	// Clear the depth buffer.
 	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);

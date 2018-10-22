@@ -6,8 +6,6 @@
 class FlowVisToolGUI
 {
 public:
-	//static const float buttonWidth;
-
 	static bool g_showTrajectoriesRenderingSettingsWindow;
 	static bool g_showGeneralRenderingSettingsWindow;
 	static bool g_showTracingOptionsWindow;
@@ -20,50 +18,49 @@ public:
 	static bool g_showStatusWindow;
 	static bool g_show_demo_window;
 
-	//static int g_threadCount;
 	static int g_lineIDOverride;
 
 #pragma region Dialogs
-	//static void SaveLinesDialog(FlowVisTool& g_flowVisTool);
+	//static void SaveLinesDialog(FlowVisTool& flowVisTool);
 
-	static void LoadLinesDialog(FlowVisTool& g_flowVisTool);
+	static void LoadLinesDialog(FlowVisTool& flowVisTool);
 
-	static void LoadBallsDialog(FlowVisTool& g_flowVisTool);
+	static void LoadBallsDialog(FlowVisTool& flowVisTool);
 
-	static void SaveRenderingParamsDialog(FlowVisTool& g_flowVisTool);
+	static void SaveRenderingParamsDialog(FlowVisTool& flowVisTool);
 
-	static void LoadRenderingParamsDialog(FlowVisTool& g_flowVisTool);
+	static void LoadRenderingParamsDialog(FlowVisTool& flowVisTool);
 
-	//static void LoadSliceTexture(FlowVisTool& g_flowVisTool);
+	//static void LoadSliceTexture(FlowVisTool& flowVisTool);
 
-	//static void LoadSeedTexture(FlowVisTool& g_flowVisTool);
+	//static void LoadSeedTexture(FlowVisTool& flowVisTool);
 #pragma endregion
 
-	static void RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
+	static void RenderGUI(FlowVisTool& flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
 
 	static void DockSpace();
 
-	static void MainMenu(FlowVisTool& g_flowVisTool);
+	static void MainMenu(FlowVisTool& flowVisTool);
 
-	static void DatasetWindow(FlowVisTool& g_flowVisTool);
+	static void DatasetWindow(FlowVisTool& flowVisTool);
 
-	static void TracingWindow(FlowVisTool& g_flowVisTool);
+	static void TracingWindow(FlowVisTool& flowVisTool);
 
-	static void ExtraWindow(FlowVisTool& g_flowVisTool);
+	static void ExtraWindow(FlowVisTool& flowVisTool);
 
-	//static void FTLEWindow(FlowVisTool& g_flowVisTool);
+	//static void FTLEWindow(FlowVisTool& flowVisTool);
 
-	static void HeatmapWindow(FlowVisTool& g_flowVisTool);
+	static void HeatmapWindow(FlowVisTool& flowVisTool);
 
-	static void TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool);
+	static void TrajectoriesRenderingWindow(FlowVisTool& flowVisTool);
 
-	static void GeneralRenderingWindow(FlowVisTool& g_flowVisTool);
+	static void GeneralRenderingWindow(FlowVisTool& flowVisTool);
 
-	static void RaycastingWindow(FlowVisTool& g_flowVisTool);
+	static void RaycastingWindow(FlowVisTool& flowVisTool);
 
-	static void SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
+	static void SceneWindow(FlowVisTool& flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
 
-	static void ProfilerWindow(FlowVisTool& g_flowVisTool);
+	static void ProfilerWindow(FlowVisTool& flowVisTool);
 
-	static void StatusWindow(FlowVisTool& g_flowVisTool);
+	static void StatusWindow(FlowVisTool& flowVisTool);
 };

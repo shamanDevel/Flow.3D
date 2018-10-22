@@ -48,7 +48,7 @@ void SectionText(const char* str)
 #pragma region Dialogs
 
 #ifdef Single
-void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& flowVisTool)
 {
 	//bool bFullscreen = (!DXUTIsWindowed());
 
@@ -59,13 +59,13 @@ void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& g_flowVisTool)
 	{
 		filename = tum3d::RemoveExt(filename) + ".linebuf";
 		float posOffset = 0.0f;
-		if (g_flowVisTool.g_particleTraceParams.m_upsampledVolumeHack)
+		if (flowVisTool.g_particleTraceParams.m_upsampledVolumeHack)
 		{
 			// upsampled volume is offset by half a grid spacing...
-			float gridSpacingWorld = 2.0f / float(g_flowVisTool.g_volumes[0]->GetVolumeSize().maximum());
+			float gridSpacingWorld = 2.0f / float(flowVisTool.g_volumes[0]->GetVolumeSize().maximum());
 			posOffset = 0.5f * gridSpacingWorld;
 		}
-		if (!g_flowVisTool.g_tracingManager.GetResult()->Write(filename, posOffset))
+		if (!flowVisTool.g_tracingManager.GetResult()->Write(filename, posOffset))
 		{
 			printf("Saving lines to file %s failed!\n", filename.c_str());
 		}
@@ -75,7 +75,7 @@ void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& g_flowVisTool)
 }
 #endif
 
-void FlowVisToolGUI::LoadLinesDialog(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::LoadLinesDialog(FlowVisTool& flowVisTool)
 {
 	//bool bFullscreen = (!DXUTIsWindowed());
 
@@ -84,7 +84,7 @@ void FlowVisToolGUI::LoadLinesDialog(FlowVisTool& g_flowVisTool)
 	std::string filename;
 	if (tum3d::GetFilenameDialog("Load Lines", "*.linebuf\0*.linebuf", filename, false))
 	{
-		LineBuffers* pBuffers = new LineBuffers(g_flowVisTool.m_d3dDevice);
+		LineBuffers* pBuffers = new LineBuffers(flowVisTool.m_d3dDevice);
 		if (!pBuffers->Read(filename, g_lineIDOverride))
 		{
 			printf("Loading lines from file %s failed!\n", filename.c_str());
@@ -92,16 +92,16 @@ void FlowVisToolGUI::LoadLinesDialog(FlowVisTool& g_flowVisTool)
 		}
 		else
 		{
-			g_flowVisTool.g_lineBuffers.push_back(pBuffers);
+			flowVisTool.g_lineBuffers.push_back(pBuffers);
 		}
 	}
 
 	//if( bFullscreen ) DXUTToggleFullScreen();
 
-	g_flowVisTool.g_raycastParams.m_redraw = true;
+	flowVisTool.g_raycastParams.m_redraw = true;
 }
 
-void FlowVisToolGUI::LoadBallsDialog(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::LoadBallsDialog(FlowVisTool& flowVisTool)
 {
 	//bool bFullscreen = (!DXUTIsWindowed());
 
@@ -110,7 +110,7 @@ void FlowVisToolGUI::LoadBallsDialog(FlowVisTool& g_flowVisTool)
 	std::string filename;
 	if (tum3d::GetFilenameDialog("Load Balls", "*.*\0*.*", filename, false))
 	{
-		BallBuffers* pBuffers = new BallBuffers(g_flowVisTool.m_d3dDevice);
+		BallBuffers* pBuffers = new BallBuffers(flowVisTool.m_d3dDevice);
 		if (!pBuffers->Read(filename))
 		{
 			printf("Loading balls from file %s failed!\n", filename.c_str());
@@ -118,16 +118,16 @@ void FlowVisToolGUI::LoadBallsDialog(FlowVisTool& g_flowVisTool)
 		}
 		else
 		{
-			g_flowVisTool.g_ballBuffers.push_back(pBuffers);
+			flowVisTool.g_ballBuffers.push_back(pBuffers);
 		}
 	}
 
 	//if( bFullscreen ) DXUTToggleFullScreen();
 
-	g_flowVisTool.g_raycastParams.m_redraw = true;
+	flowVisTool.g_raycastParams.m_redraw = true;
 }
 
-void FlowVisToolGUI::SaveRenderingParamsDialog(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::SaveRenderingParamsDialog(FlowVisTool& flowVisTool)
 {
 	//bool bFullscreen = (!DXUTIsWindowed());
 
@@ -143,7 +143,7 @@ void FlowVisToolGUI::SaveRenderingParamsDialog(FlowVisTool& g_flowVisTool)
 	//if( bFullscreen ) DXUTToggleFullScreen();
 }
 
-void FlowVisToolGUI::LoadRenderingParamsDialog(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::LoadRenderingParamsDialog(FlowVisTool& flowVisTool)
 {
 	//bool bFullscreen = (!DXUTIsWindowed());
 
@@ -157,19 +157,19 @@ void FlowVisToolGUI::LoadRenderingParamsDialog(FlowVisTool& g_flowVisTool)
 }
 
 #ifdef Single
-void FlowVisToolGUI::LoadSliceTexture(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::LoadSliceTexture(FlowVisTool& flowVisTool)
 {
 	std::string filename;
 	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
 		//release old texture
-		SAFE_RELEASE(g_flowVisTool.g_particleRenderParams.m_pSliceTexture);
+		SAFE_RELEASE(flowVisTool.g_particleRenderParams.m_pSliceTexture);
 		//create new texture
 		std::wstring wfilename(filename.begin(), filename.end());
 		ID3D11Resource* tmp = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFile(g_flowVisTool.m_d3dDevice, wfilename.c_str(), &tmp, &g_flowVisTool.g_particleRenderParams.m_pSliceTexture))) {
+		if (!FAILED(DirectX::CreateWICTextureFromFile(flowVisTool.m_d3dDevice, wfilename.c_str(), &tmp, &flowVisTool.g_particleRenderParams.m_pSliceTexture))) {
 			std::cout << "Slice texture " << filename << " loaded" << std::endl;
-			g_flowVisTool.g_particleRenderParams.m_showSlice = true;
-			g_flowVisTool.g_renderingParams.m_redraw = true;
+			flowVisTool.g_particleRenderParams.m_showSlice = true;
+			flowVisTool.g_renderingParams.m_redraw = true;
 		}
 		else {
 			std::cerr << "Failed to load slice texture" << std::endl;
@@ -186,7 +186,7 @@ bool DialogColorTexture(std::string& path)
 
 
 #ifdef Single
-void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& flowVisTool)
 {
 	std::string filename;
 	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
@@ -194,34 +194,34 @@ void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& g_flowVisTool)
 		std::wstring wfilename(filename.begin(), filename.end());
 		ID3D11Resource* res = NULL;
 		//ID3D11ShaderResourceView* srv = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFileEx(g_flowVisTool.m_d3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
+		if (!FAILED(DirectX::CreateWICTextureFromFileEx(flowVisTool.m_d3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
 			std::cout << "Seed texture " << filename << " loaded" << std::endl;
 			//delete old data
-			delete[] g_flowVisTool.g_particleTraceParams.m_seedTexture.m_colors;
-			g_flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = NULL;
+			delete[] flowVisTool.g_particleTraceParams.m_seedTexture.m_colors;
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = NULL;
 			//Copy to cpu memory
 			ID3D11Texture2D* tex = NULL;
 			res->QueryInterface(&tex);
 			D3D11_TEXTURE2D_DESC desc;
 			tex->GetDesc(&desc);
-			g_flowVisTool.g_particleTraceParams.m_seedTexture.m_width = desc.Width;
-			g_flowVisTool.g_particleTraceParams.m_seedTexture.m_height = desc.Height;
-			g_flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_width = desc.Width;
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_height = desc.Height;
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
 			D3D11_MAPPED_SUBRESOURCE mappedResource;
 			ID3D11DeviceContext* context = NULL;
-			g_flowVisTool.m_d3dDevice->GetImmediateContext(&context);
+			flowVisTool.m_d3dDevice->GetImmediateContext(&context);
 			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
 				for (int y = 0; y < desc.Width; ++y) {
-					memcpy(&g_flowVisTool.g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
+					memcpy(&flowVisTool.g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
 				}
 				context->Unmap(tex, 0);
 			}
 			SAFE_RELEASE(context);
 			SAFE_RELEASE(tex);
 			//reset color
-			g_flowVisTool.g_particleTraceParams.m_seedTexture.m_picked.clear();
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_picked.clear();
 			//set seed box to domain
-			g_flowVisTool.SetBoundingBoxToDomainSize();
+			flowVisTool.SetBoundingBoxToDomainSize();
 			std::cout << "Seed texture copied to cpu memory" << std::endl;
 		}
 		else {
@@ -312,7 +312,7 @@ void TimeVolGUI(TimeVolume& volume)
 
 			std::cout << "Not implemented." << std::endl;
 
-			//g_flowVisTool.g_renderingManager.WriteCurTimestepToRaws(g_flowVisTool.g_volume, filenames);
+			//flowVisTool.g_renderingManager.WriteCurTimestepToRaws(flowVisTool.g_volume, filenames);
 		}
 	}
 
@@ -334,7 +334,7 @@ void TimeVolGUI(TimeVolume& volume)
 			}
 			std::cout << "Not implemented." << std::endl;
 
-			//g_flowVisTool.g_renderingManager.WriteCurTimestepToLA3Ds(g_flowVisTool.g_volume, filenames);
+			//flowVisTool.g_renderingManager.WriteCurTimestepToLA3Ds(flowVisTool.g_volume, filenames);
 		}
 	}
 }
@@ -370,7 +370,7 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 	{
 #ifdef Single
 		if (ImGui::Button("Load seed texture", ImVec2(buttonWidth, 0)))
-			LoadSeedTexture(g_flowVisTool);
+			LoadSeedTexture(flowVisTool);
 #endif
 		if (ImGui::Button("Set seed box to domain", ImVec2(buttonWidth, 0)))
 			selected->SetSeedingBoxToDomainSize();
@@ -461,13 +461,13 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 	ImGui::Separator();
 
 	int v;
-	//v = g_flowVisTool.g_tracingManager.GetBrickSlotCountMax();
+	//v = flowVisTool.g_tracingManager.GetBrickSlotCountMax();
 	//if (ImGui::DragInt("Max Brick Slot Count", &v, 1, 0, INT_MAX))
-	//	g_flowVisTool.g_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
+	//	flowVisTool.g_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
 
-	//v = g_flowVisTool.g_tracingManager.GetTimeSlotCountMax();
+	//v = flowVisTool.g_tracingManager.GetTimeSlotCountMax();
 	//if (ImGui::DragInt("Max Time Slot Count", &v, 1, 0, INT_MAX))
-	//	g_flowVisTool.g_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
+	//	flowVisTool.g_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
 
 	ImGui::Spacing();
 	ImGui::Separator();
@@ -517,6 +517,19 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 	ImGui::Checkbox("Wait for Disk", &traceParams.m_waitForDisk);
 	ImGui::Checkbox("Prefetching", &traceParams.m_enablePrefetching);
 	ImGui::Checkbox("Upsampled Volume Hack", &traceParams.m_upsampledVolumeHack);
+}
+
+void TransferFunctionGUI(TransferFunction* tf)
+{
+	if (ImGui::ColorEdit4("color0", tf->m_color0, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_AlphaPreviewHalf))
+		tf->UpdateTexture();
+	ImGui::SameLine();
+	ImGui::DragFloat("Min", &tf->m_rangeMin, 0.01f);
+	
+	if (ImGui::ColorEdit4("color1", tf->m_color1, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_AlphaPreviewHalf))
+		tf->UpdateTexture();
+	ImGui::SameLine();
+	ImGui::DragFloat("Max", &tf->m_rangeMax, 0.01f);
 }
 
 void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected, ID3D11Device* device)
@@ -637,8 +650,9 @@ void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected, ID3D11Devic
 		};
 		ImGui::Combo("Measure", (int*)&renderParams.m_measure, getterMeasureMode, nullptr, MEASURE_COUNT);
 
-		if (ImGui::DragFloat("Measure scale", &renderParams.m_measureScale, 0.001f, 0.0f, 1.0f, "%.3f"))
-			renderParams.m_measureScale = std::min(1.0f, std::max(0.0f, renderParams.m_measureScale));
+		ImGui::DragFloat("Scale", &renderParams.m_measureScale, 0.001f);
+
+		TransferFunctionGUI(&renderParams.m_transferFunction);
 		break;
 	}
 	}
@@ -656,15 +670,15 @@ void TrajectoriesRenderingParamsGUI(FlowVisToolVolumeData* selected, ID3D11Devic
 	ImGui::Separator();
 }
 
-FlowVisToolVolumeData* VolumeDataSelectionCombo(FlowVisTool& g_flowVisTool, FlowVisToolVolumeData* selected)
+FlowVisToolVolumeData* VolumeDataSelectionCombo(FlowVisTool& flowVisTool, FlowVisToolVolumeData* selected)
 {
 	bool currentExists = false;
-	for (size_t i = 0; i < g_flowVisTool.g_volumes.size(); i++)
-		if (selected == g_flowVisTool.g_volumes[i])
+	for (size_t i = 0; i < flowVisTool.g_volumes.size(); i++)
+		if (selected == flowVisTool.g_volumes[i])
 			currentExists = true;
 
 	if (selected == nullptr || !currentExists)
-		selected = g_flowVisTool.g_volumes.front();
+		selected = flowVisTool.g_volumes.front();
 
 	ImVec4 originalTextCol = ImGui::GetStyleColorVec4(ImGuiCol_Text);
 
@@ -672,14 +686,14 @@ FlowVisToolVolumeData* VolumeDataSelectionCombo(FlowVisTool& g_flowVisTool, Flow
 	ImGui::PushItemWidth(-1);
 	if (ImGui::BeginCombo("##combo", selected->m_volume->GetName().c_str())) // The second parameter is the label previewed before opening the combo.
 	{
-		for (int n = 0; n < g_flowVisTool.g_volumes.size(); n++)
+		for (int n = 0; n < flowVisTool.g_volumes.size(); n++)
 		{
-			bool is_selected = (selected == g_flowVisTool.g_volumes[n]); // You can store your selection however you want, outside or inside your objects
+			bool is_selected = (selected == flowVisTool.g_volumes[n]); // You can store your selection however you want, outside or inside your objects
 
 			ImGui::PushStyleColor(ImGuiCol_Text, originalTextCol);
-			ImGui::PushID((const void*)g_flowVisTool.g_volumes[n]);
-			if (ImGui::Selectable(g_flowVisTool.g_volumes[n]->m_volume->GetName().c_str(), is_selected))
-				selected = g_flowVisTool.g_volumes[n];
+			ImGui::PushID((const void*)flowVisTool.g_volumes[n]);
+			if (ImGui::Selectable(flowVisTool.g_volumes[n]->m_volume->GetName().c_str(), is_selected))
+				selected = flowVisTool.g_volumes[n];
 			ImGui::PopID();
 			ImGui::PopStyleColor();
 
@@ -695,24 +709,24 @@ FlowVisToolVolumeData* VolumeDataSelectionCombo(FlowVisTool& g_flowVisTool, Flow
 }
 
 
-void FlowVisToolGUI::RenderGUI(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
+void FlowVisToolGUI::RenderGUI(FlowVisTool& flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
 {
 	if (g_show_demo_window)
 		ImGui::ShowDemoWindow(&g_show_demo_window);
 
-	MainMenu(g_flowVisTool);
+	MainMenu(flowVisTool);
 
-	DatasetWindow(g_flowVisTool);
-	TracingWindow(g_flowVisTool);
-	ExtraWindow(g_flowVisTool);
-	//FTLEWindow(g_flowVisTool);
-	HeatmapWindow(g_flowVisTool);
-	TrajectoriesRenderingWindow(g_flowVisTool);
-	GeneralRenderingWindow(g_flowVisTool);
-	RaycastingWindow(g_flowVisTool);
-	SceneWindow(g_flowVisTool, resizeNextFrame, sceneWindowSize);
-	ProfilerWindow(g_flowVisTool);
-	StatusWindow(g_flowVisTool);
+	DatasetWindow(flowVisTool);
+	TracingWindow(flowVisTool);
+	ExtraWindow(flowVisTool);
+	//FTLEWindow(flowVisTool);
+	HeatmapWindow(flowVisTool);
+	TrajectoriesRenderingWindow(flowVisTool);
+	GeneralRenderingWindow(flowVisTool);
+	RaycastingWindow(flowVisTool);
+	SceneWindow(flowVisTool, resizeNextFrame, sceneWindowSize);
+	ProfilerWindow(flowVisTool);
+	StatusWindow(flowVisTool);
 
 	ImGui::Begin("Debug");
 	{
@@ -791,7 +805,7 @@ void FlowVisToolGUI::DockSpace()
 	ImGui::End();
 }
 
-void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::MainMenu(FlowVisTool& flowVisTool)
 {
 	if (ImGui::BeginMainMenuBar())
 	{
@@ -802,8 +816,8 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
 				std::string filename;
 				if (tum3d::GetFilenameDialog("Select TimeVolume file", "TimeVolume (*.timevol)\0*.timevol\0", filename, false))
 				{
-					//g_flowVisTool.CloseVolumeFile();
-					g_flowVisTool.OpenVolumeFile(filename);
+					//flowVisTool.CloseVolumeFile();
+					flowVisTool.OpenVolumeFile(filename);
 				}
 			}
 			ImGui::Separator();
@@ -843,7 +857,7 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& g_flowVisTool)
 }
 
 #pragma region Windows
-void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::DatasetWindow(FlowVisTool& flowVisTool)
 {
 	// Dataset window
 	if (g_showDatasetWindow)
@@ -853,51 +867,53 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
-				if (g_flowVisTool.g_volumes.empty())
+				if (flowVisTool.g_volumes.empty())
 				{
 					ImGui::Text("No dataset available.");
 				}
 				else
 				{
-					for (size_t i = 0; i < g_flowVisTool.g_volumes.size(); i++)
+					for (size_t i = 0; i < flowVisTool.g_volumes.size(); i++)
 					{
-						assert(g_flowVisTool.g_volumes[i]->m_volume);
+						assert(flowVisTool.g_volumes[i]->m_volume);
 
-						//SectionText(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
+						//SectionText(flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
 
 						ImGui::PushStyleColor(ImGuiCol_Text, datasetNameTextColor);
-						ImGui::Text(g_flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
+						ImGui::Text(flowVisTool.g_volumes[i]->m_volume->GetName().c_str());
 						ImGui::PopStyleColor();
 
 						ImGui::Spacing();
 						ImGui::Separator();
 
-						//if (g_flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
+						ImGui::PushItemWidth(0);
+						//if (flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
 						{
 							float progress = 0.0f;
-							if (g_flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
-								g_flowVisTool.g_volumes[i]->m_tracingManager.GetTracingProgress();
+							if (flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
+								flowVisTool.g_volumes[i]->m_tracingManager.GetTracingProgress();
 							ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
 							ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 							ImGui::Text("Tracing");
 						}
 
-						//if (g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() > 0.0f && g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() < 1.0f)
+						//if (flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() > 0.0f && flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() < 1.0f)
 						{
-							ImGui::ProgressBar(g_flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress(), ImVec2(0.0f, 0.0f));
+							ImGui::ProgressBar(flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress(), ImVec2(0.0f, 0.0f));
 							ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 							ImGui::Text("Loading");
 						}
+						ImGui::PopItemWidth();
 
 						ImGui::Spacing();
 						ImGui::Separator();
 
-						ImGui::PushID((const void*)g_flowVisTool.g_volumes[i]);
+						ImGui::PushID((const void*)flowVisTool.g_volumes[i]);
 
-						TimeVolGUI(*g_flowVisTool.g_volumes[i]->m_volume);
+						TimeVolGUI(*flowVisTool.g_volumes[i]->m_volume);
 
 						if (ImGui::Button("Close", ImVec2(buttonWidth, 0)))
-							g_flowVisTool.CloseVolumeFile(i);
+							flowVisTool.CloseVolumeFile(i);
 
 						ImGui::PopID();
 
@@ -912,7 +928,7 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::ExtraWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::ExtraWindow(FlowVisTool& flowVisTool)
 {
 	// Extra window
 	if (g_showExtraWindow)
@@ -923,75 +939,75 @@ void FlowVisToolGUI::ExtraWindow(FlowVisTool& g_flowVisTool)
 			ImGui::PushItemWidth(-150);
 			{
 #ifdef Single
-				float v = g_flowVisTool.g_volumes[0]->GetSystemMemoryUsage().GetSystemMemoryLimitMBytes();
+				float v = flowVisTool.g_volumes[0]->GetSystemMemoryUsage().GetSystemMemoryLimitMBytes();
 				if (ImGui::DragFloat("Mem Usage Limit", &v, 10.0f, 0.0f, FLT_MAX, "%.1f MB"))
-					g_flowVisTool.g_volumes[0]->GetSystemMemoryUsage().SetSystemMemoryLimitMBytes(std::max(0.0f, v));
+					flowVisTool.g_volumes[0]->GetSystemMemoryUsage().SetSystemMemoryLimitMBytes(std::max(0.0f, v));
 #endif
 				ImGui::Spacing();
 				ImGui::Separator();
 
 #ifdef Single
 				if (ImGui::Button("Save Traced Lines", ImVec2(buttonWidth, 0)))
-					SaveLinesDialog(g_flowVisTool);
+					SaveLinesDialog(flowVisTool);
 #endif				
 				if (ImGui::Button("Load Lines", ImVec2(buttonWidth, 0)))
-					LoadLinesDialog(g_flowVisTool);
+					LoadLinesDialog(flowVisTool);
 
 				if (ImGui::DragInt("Line ID Override", &g_lineIDOverride, 1, -1, INT_MAX))
 					g_lineIDOverride = std::max(-1, g_lineIDOverride);
 
 				if (ImGui::Button("Clear Loaded Lines", ImVec2(buttonWidth, 0)))
 				{
-					g_flowVisTool.ReleaseLineBuffers();
-					g_flowVisTool.g_raycastParams.m_redraw = true;
+					flowVisTool.ReleaseLineBuffers();
+					flowVisTool.g_raycastParams.m_redraw = true;
 				}
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
 				if (ImGui::Button("Load Balls", ImVec2(buttonWidth, 0)))
-					LoadBallsDialog(g_flowVisTool);
+					LoadBallsDialog(flowVisTool);
 
-				if (ImGui::DragFloat("Ball Radius", &g_flowVisTool.g_ballRadius, 0.001f, 0.0f, FLT_MAX, "%.3f"))
-					g_flowVisTool.g_ballRadius = std::max(0.0f, g_flowVisTool.g_ballRadius);
+				if (ImGui::DragFloat("Ball Radius", &flowVisTool.g_ballRadius, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+					flowVisTool.g_ballRadius = std::max(0.0f, flowVisTool.g_ballRadius);
 
 				if (ImGui::Button("Clear Loaded Balls", ImVec2(buttonWidth, 0)))
 				{
-					g_flowVisTool.ReleaseBallBuffers();
-					g_flowVisTool.g_raycastParams.m_redraw = true;
+					flowVisTool.ReleaseBallBuffers();
+					flowVisTool.g_raycastParams.m_redraw = true;
 				}
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
 				if (ImGui::Button("Build Flow Graph", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.BuildFlowGraph("flowgraph.txt");
+					flowVisTool.BuildFlowGraph("flowgraph.txt");
 
 				if (ImGui::Button("Save Flow Graph", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.SaveFlowGraph();
+					flowVisTool.SaveFlowGraph();
 
 #ifdef Single
 				if (ImGui::Button("Load Flow Graph", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.LoadFlowGraph();
+					flowVisTool.LoadFlowGraph();
 #endif
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
 				if (ImGui::Button("Save Settings", ImVec2(buttonWidth, 0)))
-					SaveRenderingParamsDialog(g_flowVisTool);
+					SaveRenderingParamsDialog(flowVisTool);
 
 				if (ImGui::Button("Load Settings", ImVec2(buttonWidth, 0)))
-					LoadRenderingParamsDialog(g_flowVisTool);
+					LoadRenderingParamsDialog(flowVisTool);
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
 				//if (ImGui::Button("Save Screenshot", ImVec2(buttonWidth, 0)))
-				//	g_flowVisTool.g_saveScreenshot = true;
+				//	flowVisTool.g_saveScreenshot = true;
 
 				//if (ImGui::Button("Save Renderbuffer", ImVec2(buttonWidth, 0)))
-				//	g_flowVisTool.g_saveRenderBufferScreenshot = true;
+				//	flowVisTool.g_saveRenderBufferScreenshot = true;
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1000,7 +1016,7 @@ void FlowVisToolGUI::ExtraWindow(FlowVisTool& g_flowVisTool)
 }
 
 #ifdef Single
-void FlowVisToolGUI::FTLEWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::FTLEWindow(FlowVisTool& flowVisTool)
 {
 	// FTLE window
 	if (g_showFTLEWindow)
@@ -1010,45 +1026,45 @@ void FlowVisToolGUI::FTLEWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
-				if (ImGui::Checkbox("Enabled", &g_flowVisTool.g_particleTraceParams.m_ftleEnabled))
+				if (ImGui::Checkbox("Enabled", &flowVisTool.g_particleTraceParams.m_ftleEnabled))
 				{
-					if (g_flowVisTool.g_particleTraceParams.m_ftleEnabled)
+					if (flowVisTool.g_particleTraceParams.m_ftleEnabled)
 					{
 						//TwDefine("Main/LineCount readonly=true");
 						//TwDefine("Main/LineMode readonly=true");
 						//TwDefine("Main/LineLengthMax readonly=true");
 						//TwDefine("Main/LineLengthMax readonly=true");
 						//TwDefine("Main/SeedingPattern readonly=true"); 
-						g_flowVisTool.g_particleTraceParams.m_lineMode = eLineMode::LINE_PATH_FTLE;
-						g_flowVisTool.g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
-						g_flowVisTool.g_particleTraceParams.m_lineLengthMax = 2;
-						g_flowVisTool.g_particleTraceParams.m_lineAgeMax = 0.1f;
-						g_flowVisTool.g_particleTraceParams.m_lineCount = g_flowVisTool.g_particleTraceParams.m_ftleResolution * g_flowVisTool.g_particleTraceParams.m_ftleResolution * 6;
+						flowVisTool.g_particleTraceParams.m_lineMode = eLineMode::LINE_PATH_FTLE;
+						flowVisTool.g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::FTLE;
+						flowVisTool.g_particleTraceParams.m_lineLengthMax = 2;
+						flowVisTool.g_particleTraceParams.m_lineAgeMax = 0.1f;
+						flowVisTool.g_particleTraceParams.m_lineCount = flowVisTool.g_particleTraceParams.m_ftleResolution * flowVisTool.g_particleTraceParams.m_ftleResolution * 6;
 					}
 					else
 					{
-						g_flowVisTool.g_particleTraceParams.m_lineMode = eLineMode::LINE_STREAM;
-						g_flowVisTool.g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
+						flowVisTool.g_particleTraceParams.m_lineMode = eLineMode::LINE_STREAM;
+						flowVisTool.g_particleTraceParams.m_seedPattern = ParticleTraceParams::eSeedPattern::RANDOM;
 					}
 				}
 
-				ImGui::DragFloat("Scale", &g_flowVisTool.g_renderingManager.m_ftleScale, 0.001f);
+				ImGui::DragFloat("Scale", &flowVisTool.g_renderingManager.m_ftleScale, 0.001f);
 
-				ImGui::Checkbox("Invert velocity", &g_flowVisTool.g_particleTraceParams.m_ftleInvertVelocity);
+				ImGui::Checkbox("Invert velocity", &flowVisTool.g_particleTraceParams.m_ftleInvertVelocity);
 
-				int u = g_flowVisTool.g_particleTraceParams.m_ftleResolution;
+				int u = flowVisTool.g_particleTraceParams.m_ftleResolution;
 				if (ImGui::DragInt("Resolution", &u, 1, 64, INT_MAX))
 				{
-					g_flowVisTool.g_particleTraceParams.m_ftleResolution = std::max(64, u);
-					if (g_flowVisTool.g_particleTraceParams.m_ftleEnabled)
-						g_flowVisTool.g_particleTraceParams.m_lineCount = g_flowVisTool.g_particleTraceParams.m_ftleResolution * g_flowVisTool.g_particleTraceParams.m_ftleResolution * 6;
+					flowVisTool.g_particleTraceParams.m_ftleResolution = std::max(64, u);
+					if (flowVisTool.g_particleTraceParams.m_ftleEnabled)
+						flowVisTool.g_particleTraceParams.m_lineCount = flowVisTool.g_particleTraceParams.m_ftleResolution * flowVisTool.g_particleTraceParams.m_ftleResolution * 6;
 				}
 
-				ImGui::DragFloat("Slice (Y)", &g_flowVisTool.g_particleTraceParams.m_ftleSliceY, 0.001f);
+				ImGui::DragFloat("Slice (Y)", &flowVisTool.g_particleTraceParams.m_ftleSliceY, 0.001f);
 
-				ImGui::SliderFloat("Slice Alpha", &g_flowVisTool.g_particleRenderParams.m_ftleTextureAlpha, 0.0f, 1.0f);
+				ImGui::SliderFloat("Slice Alpha", &flowVisTool.g_particleRenderParams.m_ftleTextureAlpha, 0.0f, 1.0f);
 
-				ImGui::DragFloat3("Separation Dist", (float*)&g_flowVisTool.g_particleTraceParams.m_ftleSeparationDistance, 0.0000001f, 0.0f, FLT_MAX, "%.7f");
+				ImGui::DragFloat3("Separation Dist", (float*)&flowVisTool.g_particleTraceParams.m_ftleSeparationDistance, 0.0000001f, 0.0f, FLT_MAX, "%.7f");
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1057,7 +1073,7 @@ void FlowVisToolGUI::FTLEWindow(FlowVisTool& g_flowVisTool)
 }
 #endif
 
-void FlowVisToolGUI::HeatmapWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::HeatmapWindow(FlowVisTool& flowVisTool)
 {
 	// Heatmap window
 	if (g_showHeatmapWindow)
@@ -1067,14 +1083,14 @@ void FlowVisToolGUI::HeatmapWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
-				ImGui::Checkbox("Enable Recording", &g_flowVisTool.g_heatMapParams.m_enableRecording);
-				ImGui::Checkbox("Enable Rendering", &g_flowVisTool.g_heatMapParams.m_enableRendering);
-				ImGui::Checkbox("Auto Reset", &g_flowVisTool.g_heatMapParams.m_autoReset);
+				ImGui::Checkbox("Enable Recording", &flowVisTool.g_heatMapParams.m_enableRecording);
+				ImGui::Checkbox("Enable Rendering", &flowVisTool.g_heatMapParams.m_enableRendering);
+				ImGui::Checkbox("Auto Reset", &flowVisTool.g_heatMapParams.m_autoReset);
 
 				if (ImGui::Button("Reset", ImVec2(buttonWidth, 0)))
 				{
-					g_flowVisTool.g_heatMapManager.ClearChannels();
-					g_flowVisTool.g_raycastParams.m_redraw = true;
+					flowVisTool.g_heatMapManager.ClearChannels();
+					flowVisTool.g_raycastParams.m_redraw = true;
 				}
 
 				static auto getterNormalizationMode = [](void* data, int idx, const char** out_str)
@@ -1083,20 +1099,20 @@ void FlowVisToolGUI::HeatmapWindow(FlowVisTool& g_flowVisTool)
 					*out_str = GetHeatMapNormalizationModeName(eHeatMapNormalizationMode(idx));
 					return true;
 				};
-				ImGui::Combo("Normalization", (int*)&g_flowVisTool.g_heatMapParams.m_normalizationMode, getterNormalizationMode, nullptr, HEAT_MAP_NORMALIZATION_MODE_COUNT);
+				ImGui::Combo("Normalization", (int*)&flowVisTool.g_heatMapParams.m_normalizationMode, getterNormalizationMode, nullptr, HEAT_MAP_NORMALIZATION_MODE_COUNT);
 
-				if (ImGui::DragFloat("Step Size", &g_flowVisTool.g_heatMapParams.m_stepSize, 0.001f, 0.001f, FLT_MAX))
-					g_flowVisTool.g_heatMapParams.m_stepSize = std::max(0.001f, g_flowVisTool.g_heatMapParams.m_stepSize);
+				if (ImGui::DragFloat("Step Size", &flowVisTool.g_heatMapParams.m_stepSize, 0.001f, 0.001f, FLT_MAX))
+					flowVisTool.g_heatMapParams.m_stepSize = std::max(0.001f, flowVisTool.g_heatMapParams.m_stepSize);
 
-				if (ImGui::DragFloat("Density Scale", &g_flowVisTool.g_heatMapParams.m_densityScale, 0.01f, 0.0f, FLT_MAX))
-					g_flowVisTool.g_heatMapParams.m_densityScale = std::max(0.0f, g_flowVisTool.g_heatMapParams.m_densityScale);
+				if (ImGui::DragFloat("Density Scale", &flowVisTool.g_heatMapParams.m_densityScale, 0.01f, 0.0f, FLT_MAX))
+					flowVisTool.g_heatMapParams.m_densityScale = std::max(0.0f, flowVisTool.g_heatMapParams.m_densityScale);
 
-				ImGui::ColorEdit3("First displayed channel (1)", (float*)&g_flowVisTool.g_heatMapParams.m_renderedChannels[0]);
-				ImGui::ColorEdit3("Second displayed channel (2)", (float*)&g_flowVisTool.g_heatMapParams.m_renderedChannels[1]);
+				ImGui::ColorEdit3("First displayed channel (1)", (float*)&flowVisTool.g_heatMapParams.m_renderedChannels[0]);
+				ImGui::ColorEdit3("Second displayed channel (2)", (float*)&flowVisTool.g_heatMapParams.m_renderedChannels[1]);
 
-				ImGui::Checkbox("Isosurface Rendering", &g_flowVisTool.g_heatMapParams.m_isosurface);
+				ImGui::Checkbox("Isosurface Rendering", &flowVisTool.g_heatMapParams.m_isosurface);
 
-				ImGui::SliderFloat("Isovalue", &g_flowVisTool.g_heatMapParams.m_isovalue, 0.0f, 1.0f);
+				ImGui::SliderFloat("Isovalue", &flowVisTool.g_heatMapParams.m_isovalue, 0.0f, 1.0f);
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1104,7 +1120,7 @@ void FlowVisToolGUI::HeatmapWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::TracingWindow(FlowVisTool& flowVisTool)
 {
 	// Particle tracing config window
 	if (g_showTracingOptionsWindow)
@@ -1113,7 +1129,7 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 		if (ImGui::Begin("Tracing Options", &g_showTracingOptionsWindow))
 		{
 			ImGui::PushItemWidth(-150);
-			if (g_flowVisTool.g_volumes.empty())
+			if (flowVisTool.g_volumes.empty())
 			{
 				ImGui::Text("No dataset available.");
 			}
@@ -1121,7 +1137,7 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 			{
 				static FlowVisToolVolumeData* selected = nullptr;
 
-				selected = VolumeDataSelectionCombo(g_flowVisTool, selected);
+				selected = VolumeDataSelectionCombo(flowVisTool, selected);
 
 				ImGui::Spacing();
 				ImGui::Separator();
@@ -1134,7 +1150,7 @@ void FlowVisToolGUI::TracingWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& flowVisTool)
 {
 	// Rendering config window
 	if (g_showTrajectoriesRenderingSettingsWindow)
@@ -1143,7 +1159,7 @@ void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool)
 		if (ImGui::Begin("Trajectories Rendering Settings", &g_showTrajectoriesRenderingSettingsWindow))
 		{
 			ImGui::PushItemWidth(-150);
-			if (g_flowVisTool.g_volumes.empty())
+			if (flowVisTool.g_volumes.empty())
 			{
 				ImGui::Text("No dataset available.");
 			}
@@ -1151,12 +1167,12 @@ void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool)
 			{
 				static FlowVisToolVolumeData* selected = nullptr;
 
-				selected = VolumeDataSelectionCombo(g_flowVisTool, selected);
+				selected = VolumeDataSelectionCombo(flowVisTool, selected);
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				TrajectoriesRenderingParamsGUI(selected, g_flowVisTool.m_d3dDevice);
+				TrajectoriesRenderingParamsGUI(selected, flowVisTool.m_d3dDevice);
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1164,7 +1180,7 @@ void FlowVisToolGUI::TrajectoriesRenderingWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::GeneralRenderingWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::GeneralRenderingWindow(FlowVisTool& flowVisTool)
 {
 	// Rendering config window
 	if (g_showGeneralRenderingSettingsWindow)
@@ -1174,42 +1190,42 @@ void FlowVisToolGUI::GeneralRenderingWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
-				if (ImGui::DragFloat("Domain Box Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
+				if (ImGui::DragFloat("Domain Box Thickness", &flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
 				{
-					g_flowVisTool.g_renderingManager.m_DomainBoxThickness = std::max(0.0f, g_flowVisTool.g_renderingManager.m_DomainBoxThickness);
+					flowVisTool.g_renderingManager.m_DomainBoxThickness = std::max(0.0f, flowVisTool.g_renderingManager.m_DomainBoxThickness);
 				}
 
-				ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_renderingParams.m_backgroundColor);
+				ImGui::ColorEdit4("Background color", (float*)&flowVisTool.g_renderingParams.m_backgroundColor);
 
-				ImGui::Checkbox("Fixed Light Dir", &g_flowVisTool.g_renderingParams.m_FixedLightDir);
+				ImGui::Checkbox("Fixed Light Dir", &flowVisTool.g_renderingParams.m_FixedLightDir);
 
-				ImGui::SliderFloat3("Light Dir", (float*)&g_flowVisTool.g_renderingParams.m_lightDir, -1.0f, 1.0f);
+				ImGui::SliderFloat3("Light Dir", (float*)&flowVisTool.g_renderingParams.m_lightDir, -1.0f, 1.0f);
 
-				int f = g_flowVisTool.g_renderingParams.m_renderBufferSizeFactor;
+				int f = flowVisTool.g_renderingParams.m_renderBufferSizeFactor;
 				if (ImGui::SliderInt("SuperSample Factor", &f, 1.0f, 8.0f))
-					g_flowVisTool.g_renderingParams.m_renderBufferSizeFactor = f;
+					flowVisTool.g_renderingParams.m_renderBufferSizeFactor = f;
 
-				if (ImGui::Checkbox("Perspective", &g_flowVisTool.g_projParams.m_perspective))
+				if (ImGui::Checkbox("Perspective", &flowVisTool.g_projParams.m_perspective))
 				{
-					if (g_flowVisTool.g_projParams.m_perspective)
-						g_flowVisTool.g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
+					if (flowVisTool.g_projParams.m_perspective)
+						flowVisTool.g_projParams.m_fovy = 30.0f * PI / 180.0f; // this should be 24 deg, but a bit larger fov looks better...
 					else
-						g_flowVisTool.g_projParams.m_fovy = 3.1f;
+						flowVisTool.g_projParams.m_fovy = 3.1f;
 				}
 
-				float degfovy = g_flowVisTool.g_projParams.m_fovy * 180.0f / PI;
+				float degfovy = flowVisTool.g_projParams.m_fovy * 180.0f / PI;
 				if (ImGui::SliderFloat("FoVY", &degfovy, 1.0f, 180.0f, "%.2f deg"))
-					g_flowVisTool.g_projParams.m_fovy = degfovy * PI / 180.0f;
+					flowVisTool.g_projParams.m_fovy = degfovy * PI / 180.0f;
 
-				ImGui::Checkbox("Stereo", &g_flowVisTool.g_stereoParams.m_stereoEnabled);
+				ImGui::Checkbox("Stereo", &flowVisTool.g_stereoParams.m_stereoEnabled);
 
-				if (ImGui::DragFloat("Eye Distance", &g_flowVisTool.g_stereoParams.m_eyeDistance, 0.001f, 0.0f, FLT_MAX, "%.3f"))
-					g_flowVisTool.g_stereoParams.m_eyeDistance = std::max(0.0f, g_flowVisTool.g_stereoParams.m_eyeDistance);
+				if (ImGui::DragFloat("Eye Distance", &flowVisTool.g_stereoParams.m_eyeDistance, 0.001f, 0.0f, FLT_MAX, "%.3f"))
+					flowVisTool.g_stereoParams.m_eyeDistance = std::max(0.0f, flowVisTool.g_stereoParams.m_eyeDistance);
 
 #ifdef Si
 				SectionText("Slice");
 				if (ImGui::Button("Load Slice Texture", ImVec2(buttonWidth, 0)))
-					LoadSliceTexture(g_flowVisTool);
+					LoadSliceTexture(flowVisTool);
 
 				ImGui::Checkbox("Show Slice", &renderParams.m_showSlice);
 
@@ -1225,7 +1241,7 @@ void FlowVisToolGUI::GeneralRenderingWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::RaycastingWindow(FlowVisTool& flowVisTool)
 {
 	if (g_showRaycastingWindow)
 	{
@@ -1233,7 +1249,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 		if (ImGui::Begin("Raycasting", &g_showRaycastingWindow))
 		{
 			ImGui::PushItemWidth(-150);
-			if (g_flowVisTool.g_volumes.empty())
+			if (flowVisTool.g_volumes.empty())
 			{
 				ImGui::Text("No dataset available.");
 			}
@@ -1241,32 +1257,40 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 			{
 				FlowVisToolVolumeData* current = nullptr;
 
-				if (g_flowVisTool.GetSelectedvolume() >= 0 && g_flowVisTool.GetSelectedvolume() < g_flowVisTool.g_volumes.size())
-					current = g_flowVisTool.g_volumes[g_flowVisTool.GetSelectedvolume()];
+				if (flowVisTool.GetSelectedvolume() >= 0 && flowVisTool.GetSelectedvolume() < flowVisTool.g_volumes.size())
+					current = flowVisTool.g_volumes[flowVisTool.GetSelectedvolume()];
 
-				FlowVisToolVolumeData* selected = VolumeDataSelectionCombo(g_flowVisTool, current);
+				FlowVisToolVolumeData* selected = VolumeDataSelectionCombo(flowVisTool, current);
 
 				if (current != selected)
 				{
-					for (size_t i = 0; i < g_flowVisTool.g_volumes.size(); i++)
+					for (size_t i = 0; i < flowVisTool.g_volumes.size(); i++)
 					{
-						if (g_flowVisTool.g_volumes[i] == selected)
-							g_flowVisTool.SetSelectedVolume(i);
+						if (flowVisTool.g_volumes[i] == selected)
+							flowVisTool.SetSelectedVolume(i);
 					}
 				}
-
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				ImGui::Checkbox("Enabled", &g_flowVisTool.g_raycastParams.m_raycastingEnabled);
+				ImGui::PushItemWidth(0);
+				if (flowVisTool.g_raycasterManager.IsRendering())
+				{
+					ImGui::ProgressBar(flowVisTool.g_raycasterManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
+					ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+					ImGui::Text("Raycasting");
+				}
+				ImGui::PopItemWidth();
+
+				ImGui::Checkbox("Enabled", &flowVisTool.g_raycastParams.m_raycastingEnabled);
 
 				if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.g_raycastParams.m_redraw = true;
+					flowVisTool.g_raycastParams.m_redraw = true;
 
-				int v = g_flowVisTool.g_raycasterManager.m_bricksPerFrame;
+				int v = flowVisTool.g_raycasterManager.m_bricksPerFrame;
 				if (ImGui::SliderInt("Bricks per frame", &v, 1, 20))
-					g_flowVisTool.g_raycasterManager.m_bricksPerFrame = (unsigned int)v;
+					flowVisTool.g_raycasterManager.m_bricksPerFrame = (unsigned int)v;
 
 				static auto getterMeasureComputeMode = [](void* data, int idx, const char** out_str)
 				{
@@ -1274,7 +1298,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 					*out_str = GetMeasureComputeModeName(eMeasureComputeMode(idx));
 					return true;
 				};
-				ImGui::Combo("Measure Computation", (int*)&g_flowVisTool.g_raycastParams.m_measureComputeMode, getterMeasureComputeMode, nullptr, MEASURE_COMPUTE_COUNT);
+				ImGui::Combo("Measure Computation", (int*)&flowVisTool.g_raycastParams.m_measureComputeMode, getterMeasureComputeMode, nullptr, MEASURE_COMPUTE_COUNT);
 
 				static auto getterFilterModeRayCaster = [](void* data, int idx, const char** out_str)
 				{
@@ -1283,7 +1307,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 					*out_str = GetTextureFilterModeName(eTextureFilterMode(idx));
 					return true;
 				};
-				ImGui::Combo("Interpolation", (int*)&g_flowVisTool.g_raycastParams.m_textureFilterMode, getterFilterModeRayCaster, nullptr, 2);
+				ImGui::Combo("Interpolation", (int*)&flowVisTool.g_raycastParams.m_textureFilterMode, getterFilterModeRayCaster, nullptr, 2);
 
 				static auto getterRaycastMode = [](void* data, int idx, const char** out_str)
 				{
@@ -1291,7 +1315,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 					*out_str = GetRaycastModeName(eRaycastMode(idx));
 					return true;
 				};
-				ImGui::Combo("Raycast Mode", (int*)&g_flowVisTool.g_raycastParams.m_raycastMode, getterRaycastMode, nullptr, RAYCAST_MODE_COUNT);
+				ImGui::Combo("Raycast Mode", (int*)&flowVisTool.g_raycastParams.m_raycastMode, getterRaycastMode, nullptr, RAYCAST_MODE_COUNT);
 
 				static auto getterMeasureMode = [](void* data, int idx, const char** out_str)
 				{
@@ -1300,11 +1324,11 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 					return true;
 				};
 
-				if (ImGui::DragFloat("Sample Rate", &g_flowVisTool.g_raycastParams.m_sampleRate, 0.01f, 0.01f, 20.0f, "%.2f"))
-					g_flowVisTool.g_raycastParams.m_sampleRate = std::min(20.0f, std::max(0.01f, g_flowVisTool.g_raycastParams.m_sampleRate));
+				if (ImGui::DragFloat("Sample Rate", &flowVisTool.g_raycastParams.m_sampleRate, 0.01f, 0.01f, 20.0f, "%.2f"))
+					flowVisTool.g_raycastParams.m_sampleRate = std::min(20.0f, std::max(0.01f, flowVisTool.g_raycastParams.m_sampleRate));
 
-				if (ImGui::DragFloat("Density", &g_flowVisTool.g_raycastParams.m_density, 0.1f, 0.01f, 1000.0f, "%.1f"))
-					g_flowVisTool.g_raycastParams.m_density = std::min(1000.0f, std::max(0.1f, g_flowVisTool.g_raycastParams.m_density));
+				if (ImGui::DragFloat("Density", &flowVisTool.g_raycastParams.m_density, 0.1f, 0.01f, 1000.0f, "%.1f"))
+					flowVisTool.g_raycastParams.m_density = std::min(1000.0f, std::max(0.1f, flowVisTool.g_raycastParams.m_density));
 
 				
 				ImGui::Spacing();
@@ -1313,41 +1337,41 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 
 				ImGui::PushItemWidth(45);
 				ImGui::PushID(1);
-				ImGui::DragFloat("", &g_flowVisTool.g_raycastParams.m_measureScale1, 0.001f, 0.0f, 0.0f, "%.3f");
+				ImGui::DragFloat("", &flowVisTool.g_raycastParams.m_measureScale1, 0.001f, 0.0f, 0.0f, "%.3f");
 				ImGui::PopID();
 				ImGui::PopItemWidth();
 
 				ImGui::SameLine();
-				if (ImGui::Combo("Measure 1", (int*)&g_flowVisTool.g_raycastParams.m_measure1, getterMeasureMode, nullptr, MEASURE_COUNT))
-					g_flowVisTool.g_raycastParams.m_measureScale1 = GetDefaultMeasureScale(g_flowVisTool.g_raycastParams.m_measure1);
+				if (ImGui::Combo("Measure 1", (int*)&flowVisTool.g_raycastParams.m_measure1, getterMeasureMode, nullptr, MEASURE_COUNT))
+					flowVisTool.g_raycastParams.m_measureScale1 = GetDefaultMeasureScale(flowVisTool.g_raycastParams.m_measure1);
 				
 	
 				ImGui::PushItemWidth(45);
 				ImGui::PushID(3);
-				ImGui::DragFloat("", &g_flowVisTool.g_raycastParams.m_measureScale2, 0.001f, 0.0f, 0.0f, "%.3f");
+				ImGui::DragFloat("", &flowVisTool.g_raycastParams.m_measureScale2, 0.001f, 0.0f, 0.0f, "%.3f");
 				ImGui::PopID();
 				ImGui::PopItemWidth();
 
 				ImGui::SameLine();
-				if (ImGui::Combo("Measure 2", (int*)&g_flowVisTool.g_raycastParams.m_measure2, getterMeasureMode, nullptr, MEASURE_COUNT))
-					g_flowVisTool.g_raycastParams.m_measureScale2 = GetDefaultMeasureScale(g_flowVisTool.g_raycastParams.m_measure2);
+				if (ImGui::Combo("Measure 2", (int*)&flowVisTool.g_raycastParams.m_measure2, getterMeasureMode, nullptr, MEASURE_COUNT))
+					flowVisTool.g_raycastParams.m_measureScale2 = GetDefaultMeasureScale(flowVisTool.g_raycastParams.m_measure2);
 				
 
 				ImGui::Spacing();
 				ImGui::Separator();
 				ImGui::Text("Iso Settings");
 
-				ImGui::ColorEdit4("Color1", (float*)&g_flowVisTool.g_raycastParams.m_isoColor1, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+				ImGui::ColorEdit4("Color1", (float*)&flowVisTool.g_raycastParams.m_isoColor1, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
 				ImGui::SameLine();
-				ImGui::DragFloat("IsoValue 1", &g_flowVisTool.g_raycastParams.m_isoValue1, 0.001f, 0.0f, 0.0f, "%.4f");
+				ImGui::DragFloat("IsoValue 1", &flowVisTool.g_raycastParams.m_isoValue1, 0.001f, 0.0f, 0.0f, "%.4f");
 				
-				ImGui::ColorEdit4("Color2", (float*)&g_flowVisTool.g_raycastParams.m_isoColor2, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+				ImGui::ColorEdit4("Color2", (float*)&flowVisTool.g_raycastParams.m_isoColor2, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
 				ImGui::SameLine();
-				ImGui::DragFloat("IsoValue 2", &g_flowVisTool.g_raycastParams.m_isoValue2, 0.001f, 0.0f, 0.0f, "%.4f");
+				ImGui::DragFloat("IsoValue 2", &flowVisTool.g_raycastParams.m_isoValue2, 0.001f, 0.0f, 0.0f, "%.4f");
 				
-				ImGui::ColorEdit4("Color3", (float*)&g_flowVisTool.g_raycastParams.m_isoColor3, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
+				ImGui::ColorEdit4("Color3", (float*)&flowVisTool.g_raycastParams.m_isoColor3, ImGuiColorEditFlags_::ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_::ImGuiColorEditFlags_NoLabel);
 				ImGui::SameLine();
-				ImGui::DragFloat("IsoValue 3", &g_flowVisTool.g_raycastParams.m_isoValue3, 0.001f, 0.0f, 0.0f, "%.4f");
+				ImGui::DragFloat("IsoValue 3", &flowVisTool.g_raycastParams.m_isoValue3, 0.001f, 0.0f, 0.0f, "%.4f");
 				
 				ImGui::Spacing();
 
@@ -1357,37 +1381,37 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 					*out_str = GetColorModeName(eColorMode(idx));
 					return true;
 				};
-				ImGui::Combo("Color Mode", (int*)&g_flowVisTool.g_raycastParams.m_colorMode, getterColorMode, nullptr, COLOR_MODE_COUNT);
+				ImGui::Combo("Color Mode", (int*)&flowVisTool.g_raycastParams.m_colorMode, getterColorMode, nullptr, COLOR_MODE_COUNT);
 
 				ImGui::Spacing();
 				ImGui::Separator();
 				ImGui::Text("Filter");
 
-				v = g_flowVisTool.g_filterParams.m_radius[0];
+				v = flowVisTool.g_filterParams.m_radius[0];
 				if (ImGui::SliderInt("Radius 1", &v, 0, 64))
-					g_flowVisTool.g_filterParams.m_radius[0] = (unsigned int)v;
+					flowVisTool.g_filterParams.m_radius[0] = (unsigned int)v;
 
-				v = g_flowVisTool.g_filterParams.m_radius[1];
+				v = flowVisTool.g_filterParams.m_radius[1];
 				if (ImGui::SliderInt("Radius 2", &v, 0, 64))
-					g_flowVisTool.g_filterParams.m_radius[1] = (unsigned int)v;
+					flowVisTool.g_filterParams.m_radius[1] = (unsigned int)v;
 
-				v = g_flowVisTool.g_filterParams.m_radius[2];
+				v = flowVisTool.g_filterParams.m_radius[2];
 				if (ImGui::SliderInt("Radius 3", &v, 0, 64))
-					g_flowVisTool.g_filterParams.m_radius[2] = (unsigned int)v;
+					flowVisTool.g_filterParams.m_radius[2] = (unsigned int)v;
 
 				ImGui::Spacing();
 
-				v = g_flowVisTool.g_raycastParams.m_filterOffset;
+				v = flowVisTool.g_raycastParams.m_filterOffset;
 				if (ImGui::SliderInt("Offset (Scale)", &v, 0, 2))
-					g_flowVisTool.g_raycastParams.m_filterOffset = (unsigned int)v;
+					flowVisTool.g_raycastParams.m_filterOffset = (unsigned int)v;
 
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				//ImGui::Checkbox("Show Clip Box", &g_flowVisTool.g_renderingManager.m_renderClipBox);
+				//ImGui::Checkbox("Show Clip Box", &flowVisTool.g_renderingManager.m_renderClipBox);
 
-				ImGui::DragFloat3("ClipBoxMin", (float*)&g_flowVisTool.g_raycastParams.m_clipBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
-				ImGui::DragFloat3("ClipBoxMax", (float*)&g_flowVisTool.g_raycastParams.m_clipBoxMax, 0.005f, 0.0f, 0.0f, "%.3f");
+				ImGui::DragFloat3("ClipBoxMin", (float*)&flowVisTool.g_raycastParams.m_clipBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
+				ImGui::DragFloat3("ClipBoxMax", (float*)&flowVisTool.g_raycastParams.m_clipBoxMax, 0.005f, 0.0f, 0.0f, "%.3f");
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1395,7 +1419,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 	}
 }
 
-void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
+void FlowVisToolGUI::SceneWindow(FlowVisTool& flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize)
 {
 	// Scene view window
 	ImGui::PushStyleVar(ImGuiStyleVar_::ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -1420,16 +1444,16 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 		}
 		float windowAspectRatio = availableRegion.x / (float)availableRegion.y;
 
-		if (windowAspectRatio < g_flowVisTool.g_renderTexture.GetAspectRatio())
+		if (windowAspectRatio < flowVisTool.g_renderTexture.GetAspectRatio())
 		{
 			width = availableRegion.x - 2;
-			height = width * 1.0f / g_flowVisTool.g_renderTexture.GetAspectRatio();
+			height = width * 1.0f / flowVisTool.g_renderTexture.GetAspectRatio();
 			ImGui::SetCursorPosY(ImGui::GetCursorPos().y + (availableRegion.y - height) / 2.0f);
 		}
 		else
 		{
 			height = availableRegion.y - 2;
-			width = height * g_flowVisTool.g_renderTexture.GetAspectRatio();
+			width = height * flowVisTool.g_renderTexture.GetAspectRatio();
 			ImGui::SetCursorPosX(ImGui::GetCursorPos().x + (availableRegion.x - width) / 2.0f);
 		}
 
@@ -1449,15 +1473,15 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 		bool userInteraction = false;
 
 		// ImageButton prevents mouse dragging from moving the window as well.
-		ImGui::ImageButton((void *)(intptr_t)g_flowVisTool.g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), 0, ImColor(0, 0, 0, 255), ImColor(255, 255, 255, 255));
+		ImGui::ImageButton((void *)(intptr_t)flowVisTool.g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), 0, ImColor(0, 0, 0, 255), ImColor(255, 255, 255, 255));
 		//ImGui::Image((void *)(intptr_t)g_renderTexture.GetShaderResourceView(), ImVec2(width, height), ImVec2(0, 0), ImVec2(1, 1), ImColor(255, 255, 255, 255), ImColor(255, 255, 255, 25));
 
 		if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
 			//if (ImGui::IsWindowHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
 		{
 			// Zoom
-			g_flowVisTool.g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * g_flowVisTool.g_viewParams.m_viewDistance;
-			g_flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, g_flowVisTool.g_viewParams.m_viewDistance);
+			flowVisTool.g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * flowVisTool.g_viewParams.m_viewDistance;
+			flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, flowVisTool.g_viewParams.m_viewDistance);
 
 			// Orbit
 			if (ImGui::IsMouseDragging(0))
@@ -1466,7 +1490,7 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 				{
 					userInteraction = true;
 
-					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)g_flowVisTool.g_renderingParams.m_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)g_flowVisTool.g_renderingParams.m_windowSize.y());
+					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)flowVisTool.g_renderingParams.m_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
 
 					tum3D::Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)orbitSens;
 
@@ -1474,7 +1498,7 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 					tum3D::Vec4f rotationX;
 
 					tum3D::Vec3f up;
-					tum3D::rotateVecByQuaternion(tum3D::Vec3f(0.0f, 0.0f, 1.0f), g_flowVisTool.g_viewParams.m_rotationQuat, up);
+					tum3D::rotateVecByQuaternion(tum3D::Vec3f(0.0f, 0.0f, 1.0f), flowVisTool.g_viewParams.m_rotationQuat, up);
 					up = tum3D::normalize(up);
 
 					tum3D::rotationQuaternion((float)(up.y() < 0.0f ? -delta.x() : delta.x()) * PI, up, rotationX);
@@ -1482,12 +1506,12 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 
 					tum3D::Vec4f rotation = tum3D::Vec4f(1, 0, 0, 0);
 
-					tum3D::multQuaternion(rotationX, g_flowVisTool.g_viewParams.m_rotationQuat, rotation); g_flowVisTool.g_viewParams.m_rotationQuat = rotation;
+					tum3D::multQuaternion(rotationX, flowVisTool.g_viewParams.m_rotationQuat, rotation); flowVisTool.g_viewParams.m_rotationQuat = rotation;
 
 					tum3D::Vec4f rotationY;
 					tum3D::rotationQuaternion((float)delta.y() * PI, tum3D::Vec3f(1.0f, 0.0f, 0.0f), rotationY);
 
-					tum3D::multQuaternion(rotationY, g_flowVisTool.g_viewParams.m_rotationQuat, rotation); g_flowVisTool.g_viewParams.m_rotationQuat = rotation;
+					tum3D::multQuaternion(rotationY, flowVisTool.g_viewParams.m_rotationQuat, rotation); flowVisTool.g_viewParams.m_rotationQuat = rotation;
 				}
 			}
 
@@ -1498,28 +1522,28 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 				{
 					userInteraction = true;
 
-					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)g_flowVisTool.g_renderingParams.m_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)g_flowVisTool.g_renderingParams.m_windowSize.y());
+					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)flowVisTool.g_renderingParams.m_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
 
-					tum3D::Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)g_flowVisTool.g_viewParams.m_viewDistance * (double)panSens;
+					tum3D::Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)flowVisTool.g_viewParams.m_viewDistance * (double)panSens;
 
-					tum3D::Vec2f target = g_flowVisTool.g_viewParams.m_lookAt.xy();
+					tum3D::Vec2f target = flowVisTool.g_viewParams.m_lookAt.xy();
 
-					tum3D::Vec2f right = g_flowVisTool.g_viewParams.GetRightVector().xy(); right = tum3D::normalize(right);
+					tum3D::Vec2f right = flowVisTool.g_viewParams.GetRightVector().xy(); right = tum3D::normalize(right);
 					target = target - right * delta.x();
 
-					tum3D::Vec2f forward = g_flowVisTool.g_viewParams.GetViewDir().xy(); forward = tum3D::normalize(forward);
+					tum3D::Vec2f forward = flowVisTool.g_viewParams.GetViewDir().xy(); forward = tum3D::normalize(forward);
 
 					if (forward.x() == 0.0f && forward.y() == 0.0f)
 					{
 						tum3D::Vec3f for3d;
-						tum3D::crossProd(tum3D::Vec3f(0.0f, 0.0f, -g_flowVisTool.g_viewParams.GetViewDir().z()), tum3D::Vec3f(right.x(), right.y(), 0.0f), for3d);
+						tum3D::crossProd(tum3D::Vec3f(0.0f, 0.0f, -flowVisTool.g_viewParams.GetViewDir().z()), tum3D::Vec3f(right.x(), right.y(), 0.0f), for3d);
 						forward = for3d.xy();
 					}
 
 					target = target - forward * delta.y();
 
-					g_flowVisTool.g_viewParams.m_lookAt.x() = target.x();
-					g_flowVisTool.g_viewParams.m_lookAt.y() = target.y();
+					flowVisTool.g_viewParams.m_lookAt.x() = target.x();
+					flowVisTool.g_viewParams.m_lookAt.y() = target.y();
 				}
 			}
 		}
@@ -1640,29 +1664,29 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 				ImGui::SameLine();
 				ImGui::PushID(0);
 				if (ImGui::Button("Reset", bsize))
-					tum3D::convertRotMatToQuaternion(makeRotationFromDir(tum3D::normalize(tum3D::Vec3f(0.5f, 0.5f, 0.5f))), g_flowVisTool.g_viewParams.m_rotationQuat);
+					tum3D::convertRotMatToQuaternion(makeRotationFromDir(tum3D::normalize(tum3D::Vec3f(0.5f, 0.5f, 0.5f))), flowVisTool.g_viewParams.m_rotationQuat);
 				ImGui::PopID();
 
 				ImGui::Separator();
 
 				ImGui::PushItemWidth(100);
-				ImGui::DragFloat3("Pivot", (float*)&g_flowVisTool.g_viewParams.m_lookAt, 0.01f, 0.0f, 0.0f, "%.2f");
+				ImGui::DragFloat3("Pivot", (float*)&flowVisTool.g_viewParams.m_lookAt, 0.01f, 0.0f, 0.0f, "%.2f");
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushID(1);
 				if (ImGui::Button("Reset", ImVec2(-1, 0)))
-					g_flowVisTool.g_viewParams.m_lookAt = tum3D::Vec3f(0.0f, 0.0f, 0.0f);
+					flowVisTool.g_viewParams.m_lookAt = tum3D::Vec3f(0.0f, 0.0f, 0.0f);
 				ImGui::PopID();
 
 				ImGui::Separator();
 				ImGui::PushItemWidth(100);
-				if (ImGui::DragFloat("Dist  ", &g_flowVisTool.g_viewParams.m_viewDistance, 0.1f))
-					g_flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, g_flowVisTool.g_viewParams.m_viewDistance);
+				if (ImGui::DragFloat("Dist  ", &flowVisTool.g_viewParams.m_viewDistance, 0.1f))
+					flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, flowVisTool.g_viewParams.m_viewDistance);
 				ImGui::PopItemWidth();
 				ImGui::SameLine();
 				ImGui::PushID(2);
 				if (ImGui::Button("Reset", ImVec2(-1, 0)))
-					g_flowVisTool.g_viewParams.m_viewDistance = 5.0f;
+					flowVisTool.g_viewParams.m_viewDistance = 5.0f;
 				ImGui::PopID();
 			}
 			ImGui::PopStyleColor(4);
@@ -1684,9 +1708,9 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 			if (interp)
 			{
 				tum3D::Vec4f res;
-				g_flowVisTool.g_viewParams.m_rotationQuat = tum3D::slerpQuaternion(rotInterpSpeed * ImGui::GetIO().DeltaTime, g_flowVisTool.g_viewParams.m_rotationQuat, targetQuat, res);
+				flowVisTool.g_viewParams.m_rotationQuat = tum3D::slerpQuaternion(rotInterpSpeed * ImGui::GetIO().DeltaTime, flowVisTool.g_viewParams.m_rotationQuat, targetQuat, res);
 
-				if (std::abs(tum3D::dotProd(targetQuat, g_flowVisTool.g_viewParams.m_rotationQuat)) > 1.0f - 0.000001f) // Epsilon
+				if (std::abs(tum3D::dotProd(targetQuat, flowVisTool.g_viewParams.m_rotationQuat)) > 1.0f - 0.000001f) // Epsilon
 					interp = false;
 			}
 
@@ -1708,7 +1732,7 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& g_flowVisTool, bool& resizeNextFra
 	ImGui::PopStyleVar(ImGuiStyleVar_::ImGuiStyleVar_WindowPadding);
 }
 
-void FlowVisToolGUI::ProfilerWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::ProfilerWindow(FlowVisTool& flowVisTool)
 {
 	currentFrameTimeIndex = (currentFrameTimeIndex + 1) % frameTimes.size();
 	frameTimes[currentFrameTimeIndex] = ImGui::GetIO().DeltaTime * 1000.0f;
@@ -1746,32 +1770,32 @@ void FlowVisToolGUI::ProfilerWindow(FlowVisTool& g_flowVisTool)
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::Text("Window resolution: %dx%d", g_flowVisTool.g_renderingParams.m_windowSize.x(), g_flowVisTool.g_renderingParams.m_windowSize.y());
-			ImGui::Text("Viewport resolution: %dx%d", g_flowVisTool.g_projParams.m_imageWidth, g_flowVisTool.g_projParams.m_imageHeight);
-			ImGui::Text("Trace Time: %.2f ms", g_flowVisTool.g_timerTracing.GetElapsedTimeMS());
-			ImGui::Text("Render Time: %.2f ms", g_flowVisTool.g_timerRendering.GetElapsedTimeMS());
+			ImGui::Text("Window resolution: %dx%d", flowVisTool.g_renderingParams.m_windowSize.x(), flowVisTool.g_renderingParams.m_windowSize.y());
+			ImGui::Text("Viewport resolution: %dx%d", flowVisTool.g_projParams.m_imageWidth, flowVisTool.g_projParams.m_imageHeight);
+			ImGui::Text("Trace Time: %.2f ms", flowVisTool.g_timerTracing.GetElapsedTimeMS());
+			ImGui::Text("Render Time: %.2f ms", flowVisTool.g_timerRendering.GetElapsedTimeMS());
 		}
 		ImGui::End();
 	}
 }
 
-void FlowVisToolGUI::StatusWindow(FlowVisTool& g_flowVisTool)
+void FlowVisToolGUI::StatusWindow(FlowVisTool& flowVisTool)
 {
 	if (g_showStatusWindow)
 	{
 		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Status"))
 		{
-			if (g_flowVisTool.g_filteringManager.IsFiltering())
+			if (flowVisTool.g_filteringManager.IsFiltering())
 			{
-				ImGui::ProgressBar(g_flowVisTool.g_filteringManager.GetFilteringProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::ProgressBar(flowVisTool.g_filteringManager.GetFilteringProgress(), ImVec2(0.0f, 0.0f));
 				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 				ImGui::Text("Filtering");
 			}
 
-			if (g_flowVisTool.g_raycasterManager.IsRendering())
+			if (flowVisTool.g_raycasterManager.IsRendering())
 			{
-				ImGui::ProgressBar(g_flowVisTool.g_raycasterManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
+				ImGui::ProgressBar(flowVisTool.g_raycasterManager.GetRenderingProgress(), ImVec2(0.0f, 0.0f));
 				ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
 				ImGui::Text("Raycasting");
 			}
