@@ -25,6 +25,8 @@ struct RaycastParams
 
 	bool				m_raycastingEnabled;
 
+	bool				m_redraw;
+
 	eMeasure			m_measure1;
 	eMeasure			m_measure2;
 	float				m_measureScale1;

@@ -98,7 +98,7 @@ void FlowVisToolGUI::LoadLinesDialog(FlowVisTool& g_flowVisTool)
 
 	//if( bFullscreen ) DXUTToggleFullScreen();
 
-	g_flowVisTool.g_renderingParams.m_redraw = true;
+	g_flowVisTool.g_raycastParams.m_redraw = true;
 }
 
 void FlowVisToolGUI::LoadBallsDialog(FlowVisTool& g_flowVisTool)
@@ -124,7 +124,7 @@ void FlowVisToolGUI::LoadBallsDialog(FlowVisTool& g_flowVisTool)
 
 	//if( bFullscreen ) DXUTToggleFullScreen();
 
-	g_flowVisTool.g_renderingParams.m_redraw = true;
+	g_flowVisTool.g_raycastParams.m_redraw = true;
 }
 
 void FlowVisToolGUI::SaveRenderingParamsDialog(FlowVisTool& g_flowVisTool)
@@ -943,7 +943,7 @@ void FlowVisToolGUI::ExtraWindow(FlowVisTool& g_flowVisTool)
 				if (ImGui::Button("Clear Loaded Lines", ImVec2(buttonWidth, 0)))
 				{
 					g_flowVisTool.ReleaseLineBuffers();
-					g_flowVisTool.g_renderingParams.m_redraw = true;
+					g_flowVisTool.g_raycastParams.m_redraw = true;
 				}
 
 				ImGui::Spacing();
@@ -958,7 +958,7 @@ void FlowVisToolGUI::ExtraWindow(FlowVisTool& g_flowVisTool)
 				if (ImGui::Button("Clear Loaded Balls", ImVec2(buttonWidth, 0)))
 				{
 					g_flowVisTool.ReleaseBallBuffers();
-					g_flowVisTool.g_renderingParams.m_redraw = true;
+					g_flowVisTool.g_raycastParams.m_redraw = true;
 				}
 
 				ImGui::Spacing();
@@ -1074,7 +1074,7 @@ void FlowVisToolGUI::HeatmapWindow(FlowVisTool& g_flowVisTool)
 				if (ImGui::Button("Reset", ImVec2(buttonWidth, 0)))
 				{
 					g_flowVisTool.g_heatMapManager.ClearChannels();
-					g_flowVisTool.g_renderingParams.m_redraw = true;
+					g_flowVisTool.g_raycastParams.m_redraw = true;
 				}
 
 				static auto getterNormalizationMode = [](void* data, int idx, const char** out_str)
@@ -1174,19 +1174,12 @@ void FlowVisToolGUI::GeneralRenderingWindow(FlowVisTool& g_flowVisTool)
 		{
 			ImGui::PushItemWidth(-150);
 			{
-				if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
-					g_flowVisTool.g_renderingParams.m_redraw = true;
-
-				ImGui::Checkbox("Rendering Preview", &g_flowVisTool.g_renderingParams.m_showPreview);
-
 				if (ImGui::DragFloat("Domain Box Thickness", &g_flowVisTool.g_renderingManager.m_DomainBoxThickness, 0.0001f, 0.0f, FLT_MAX, "%.4f"))
 				{
 					g_flowVisTool.g_renderingManager.m_DomainBoxThickness = std::max(0.0f, g_flowVisTool.g_renderingManager.m_DomainBoxThickness);
-					g_flowVisTool.g_renderingParams.m_redraw = true;
 				}
 
-				if (ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_renderingParams.m_backgroundColor))
-					g_flowVisTool.g_renderingParams.m_redraw = true;
+				ImGui::ColorEdit4("Background color", (float*)&g_flowVisTool.g_renderingParams.m_backgroundColor);
 
 				ImGui::Checkbox("Fixed Light Dir", &g_flowVisTool.g_renderingParams.m_FixedLightDir);
 
@@ -1240,8 +1233,36 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 		if (ImGui::Begin("Raycasting", &g_showRaycastingWindow))
 		{
 			ImGui::PushItemWidth(-150);
+			if (g_flowVisTool.g_volumes.empty())
 			{
+				ImGui::Text("No dataset available.");
+			}
+			else
+			{
+				FlowVisToolVolumeData* current = nullptr;
+
+				if (g_flowVisTool.GetSelectedvolume() >= 0 && g_flowVisTool.GetSelectedvolume() < g_flowVisTool.g_volumes.size())
+					current = g_flowVisTool.g_volumes[g_flowVisTool.GetSelectedvolume()];
+
+				FlowVisToolVolumeData* selected = VolumeDataSelectionCombo(g_flowVisTool, current);
+
+				if (current != selected)
+				{
+					for (size_t i = 0; i < g_flowVisTool.g_volumes.size(); i++)
+					{
+						if (g_flowVisTool.g_volumes[i] == selected)
+							g_flowVisTool.SetSelectedVolume(i);
+					}
+				}
+
+
+				ImGui::Spacing();
+				ImGui::Separator();
+
 				ImGui::Checkbox("Enabled", &g_flowVisTool.g_raycastParams.m_raycastingEnabled);
+
+				if (ImGui::Button("Redraw", ImVec2(buttonWidth, 0)))
+					g_flowVisTool.g_raycastParams.m_redraw = true;
 
 				int v = g_flowVisTool.g_raycasterManager.m_bricksPerFrame;
 				if (ImGui::SliderInt("Bricks per frame", &v, 1, 20))
@@ -1343,15 +1364,15 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& g_flowVisTool)
 				ImGui::Text("Filter");
 
 				v = g_flowVisTool.g_filterParams.m_radius[0];
-				if (ImGui::SliderInt("Radius 1", &v, 0, 247))
+				if (ImGui::SliderInt("Radius 1", &v, 0, 64))
 					g_flowVisTool.g_filterParams.m_radius[0] = (unsigned int)v;
 
 				v = g_flowVisTool.g_filterParams.m_radius[1];
-				if (ImGui::SliderInt("Radius 2", &v, 0, 247))
+				if (ImGui::SliderInt("Radius 2", &v, 0, 64))
 					g_flowVisTool.g_filterParams.m_radius[1] = (unsigned int)v;
 
 				v = g_flowVisTool.g_filterParams.m_radius[2];
-				if (ImGui::SliderInt("Radius 3", &v, 0, 247))
+				if (ImGui::SliderInt("Radius 3", &v, 0, 64))
 					g_flowVisTool.g_filterParams.m_radius[2] = (unsigned int)v;
 
 				ImGui::Spacing();

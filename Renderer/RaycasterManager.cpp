@@ -35,7 +35,6 @@ namespace
 
 RaycasterManager::RaycasterManager()
 	: m_pDevice(nullptr)
-	, m_pCompressShared(nullptr), m_pCompressVolume(nullptr)
 	, m_brickSlotsFilled(0)
 	, m_pTfArray(nullptr)
 	, m_nextBrickToRender(0), m_nextPass(0)
@@ -452,6 +451,9 @@ void RaycasterManager::ReleaseResources()
 
 	ReleaseMeasureBrickSlots();
 	ReleaseVolumeDependentResources();
+
+	m_pCompressShared.destroy();
+	m_pCompressVolume.destroy();
 }
 
 bool RaycasterManager::CreateVolumeDependentResources()
@@ -460,9 +462,6 @@ bool RaycasterManager::CreateVolumeDependentResources()
 
 	ReleaseVolumeDependentResources();
 
-	m_pCompressShared = new GPUResources();
-	m_pCompressVolume = new CompressVolumeResources();
-
 	if (m_pVolume->IsCompressed())
 	{
 		uint brickSize = m_pVolume->GetBrickSizeWithOverlap();
@@ -470,8 +469,17 @@ bool RaycasterManager::CreateVolumeDependentResources()
 		uint channelCount = (brickSize <= 128) ? m_pVolume->GetChannelCount() : 1;
 		uint huffmanBits = m_pVolume->GetHuffmanBitsMax();
 
-		m_pCompressShared->create(CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits));
-		m_pCompressVolume->create(m_pCompressShared->getConfig());
+		GPUResources::Config newconfig = CompressVolumeResources::getRequiredResources(brickSize, brickSize, brickSize, channelCount, huffmanBits);
+		GPUResources::Config currentconfig = m_pCompressShared.getConfig();
+
+		if (currentconfig.blockCountMax != newconfig.blockCountMax || currentconfig.bufferSize != newconfig.bufferSize || currentconfig.elemCountPerBlockMax != newconfig.elemCountPerBlockMax || currentconfig.log2HuffmanDistinctSymbolCountMax != newconfig.log2HuffmanDistinctSymbolCountMax || currentconfig.offsetIntervalMin != newconfig.offsetIntervalMin)
+		{
+			m_pCompressShared.destroy();
+			m_pCompressVolume.destroy();
+
+			m_pCompressShared.create(newconfig);
+			m_pCompressVolume.create(m_pCompressShared.getConfig());
+		}
 	}
 
 
@@ -500,19 +508,19 @@ bool RaycasterManager::CreateVolumeDependentResources()
 
 void RaycasterManager::ReleaseVolumeDependentResources()
 {
-	if (m_pCompressShared)
-	{
-		m_pCompressShared->destroy();
-		delete m_pCompressShared;
-		m_pCompressShared = nullptr;
-	}
+	//if (m_pCompressShared)
+	//{
+	//	m_pCompressShared->destroy();
+	//	delete m_pCompressShared;
+	//	m_pCompressShared = nullptr;
+	//}
 
-	if (m_pCompressVolume)
-	{
-		m_pCompressVolume->destroy();
-		delete m_pCompressVolume;
-		m_pCompressVolume = nullptr;
-	}
+	//if (m_pCompressVolume)
+	//{
+	//	m_pCompressVolume->destroy();
+	//	delete m_pCompressVolume;
+	//	m_pCompressVolume = nullptr;
+	//}
 
 	for (size_t i = 0; i < m_brickSlots.size(); ++i)
 		m_brickSlots[i].Release();
@@ -681,6 +689,8 @@ void RaycasterManager::CancelRendering()
 	m_bricksToLoad.clear();
 	m_pFilteredVolumes = nullptr;
 	m_pVolume = nullptr;
+
+	ClearResult();
 }
 
 float RaycasterManager::GetRenderingProgress() const
@@ -828,7 +838,7 @@ void RaycasterManager::RenderBricks(bool recordEvents)
 
 						MultiTimerGPU* pTimer = recordEventsThisBrick ? &m_timerUploadDecompress : nullptr;
 						eCompressionType compression = m_pVolume->IsCompressed() ? COMPRESSION_FIXEDQUANT : COMPRESSION_NONE;
-						UploadBrick(m_pCompressShared, m_pCompressVolume, data, dataSize, pBrick->GetSize(), compression, quantSteps, false, m_dpChannelBuffer.data(), &brickSlotFiltered, Vec3ui(0, 0, 0), tex, pTimer);
+						UploadBrick(&m_pCompressShared, &m_pCompressVolume, data, dataSize, pBrick->GetSize(), compression, quantSteps, false, m_dpChannelBuffer.data(), &brickSlotFiltered, Vec3ui(0, 0, 0), tex, pTimer);
 
 						channel += 4;
 						tex++;
@@ -839,7 +849,7 @@ void RaycasterManager::RenderBricks(bool recordEvents)
 				if (m_brickSlotsFilled < m_brickSlots.size())
 				{
 					MultiTimerGPU* pTimer = recordEventsThisBrick ? &m_timerUploadDecompress : nullptr;
-					UploadBrick(m_pCompressShared, m_pCompressVolume, m_pVolume->GetInfo(), *pBrick, m_dpChannelBuffer.data(), &m_brickSlots[m_brickSlotsFilled++], Vec3ui(0, 0, 0), pTimer);
+					UploadBrick(&m_pCompressShared, &m_pCompressVolume, m_pVolume->GetInfo(), *pBrick, m_dpChannelBuffer.data(), &m_brickSlots[m_brickSlotsFilled++], Vec3ui(0, 0, 0), pTimer);
 				}
 
 
@@ -877,7 +887,7 @@ void RaycasterManager::RenderBricks(bool recordEvents)
 
 				// compress
 				float quantStep = GetDefaultMeasureQuantStep(m_raycastParams.m_measure1); //TODO configurable quality factor
-				if (!compressVolumeFloat(*m_pCompressShared, *m_pCompressVolume, m_dpChannelBuffer[0], size.x(), size.y(), size.z(), 2, m_measureBricksCompressed[brickIndexLinear], quantStep, m_pVolume->GetUseLessRLE()))
+				if (!compressVolumeFloat(m_pCompressShared, m_pCompressVolume, m_dpChannelBuffer[0], size.x(), size.y(), size.z(), 2, m_measureBricksCompressed[brickIndexLinear], quantStep, m_pVolume->GetUseLessRLE()))
 				{
 					printf("RenderingManager::RenderBricks: compressVolumeFloat failed\n");
 					//TODO cancel rendering?
@@ -897,7 +907,7 @@ void RaycasterManager::RenderBricks(bool recordEvents)
 					m_timerUploadDecompress.StartNextTimer();
 
 				cudaSafeCall(cudaHostRegister(m_measureBricksCompressed[brickIndexLinear].data(), m_measureBricksCompressed[brickIndexLinear].size() * sizeof(uint), 0));
-				decompressVolumeFloat(*m_pCompressShared, *m_pCompressVolume, m_dpChannelBuffer[0], size.x(), size.y(), size.z(), 2, m_measureBricksCompressed[brickIndexLinear], quantStep, m_pVolume->GetUseLessRLE());
+				decompressVolumeFloat(m_pCompressShared, m_pCompressVolume, m_dpChannelBuffer[0], size.x(), size.y(), size.z(), 2, m_measureBricksCompressed[brickIndexLinear], quantStep, m_pVolume->GetUseLessRLE());
 				cudaSafeCall(cudaHostUnregister(m_measureBricksCompressed[brickIndexLinear].data()));
 
 				pBrickSlotMeasure->FillFromGPUChannels(const_cast<const float**>(m_dpChannelBuffer.data()), size);

@@ -90,8 +90,8 @@ public:
 	cudaArray*					m_pTfArray;
 	Raycaster					m_raycaster;
 	const TimeVolume*			m_pVolume;
-	GPUResources*				m_pCompressShared;
-	CompressVolumeResources*	m_pCompressVolume;
+	GPUResources				m_pCompressShared;
+	CompressVolumeResources		m_pCompressVolume;
 	// pre-computed measure bricks, only exist in appropriate eMeasureComputeModes
 	std::vector<BrickSlot*>			m_measureBrickSlots;
 	std::vector<bool>				m_measureBrickSlotsFilled;

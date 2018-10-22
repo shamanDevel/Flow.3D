@@ -9,27 +9,28 @@
 #include <cuda_d3d11_interop.h>
 #include <cuda_profiler_api.h>
 
-#include <TimeVolume.h>
 #include <FilterParams.h>
 #include <RaycastParams.h>
 #include <ParticleTraceParams.h>
 #include <ParticleTraceParams.h>
-#include <HeatMap.h>
-#include <FilteringManager.h>
-#include <TracingManager.h>
-#include <HeatMapManager.h>
+#include <RenderingParams.h>
 #include <ProjectionParams.h>
 #include <StereoParams.h>
 #include <ViewParams.h>
 #include <BatchTraceParams.h>
+
+#include <FilteringManager.h>
+#include <TracingManager.h>
+#include <HeatMapManager.h>
+#include <RenderingManager.h>
+#include <RaycasterManager.h>
+
+#include <FlowVisToolVolumeData.h>
+#include <HeatMap.h>
 #include <WorkerThread.h>
 #include <TimerCPU.h>
 #include <RenderTexture.h>
 #include <ScreenEffect.h>
-#include <RenderingManager.h>
-#include <RaycasterManager.h>
-#include <FlowVisToolVolumeData.h>
-#include <RenderingParams.h>
 
 #include <Vec.h>
 
@@ -101,14 +102,11 @@ struct ImageSequence
 #pragma endregion
 
 
-
-
 class FlowVisTool
 {
 public:
 	ID3D11Device*			m_d3dDevice = nullptr;
 	ID3D11DeviceContext*	m_d3dDeviceContex = nullptr;
-	//ID3D11RenderTargetView*	m_mainRenderTargetView = nullptr;
 
 	// texture to hold results from other GPUs
 	ID3D11Texture2D*			g_pRenderBufferTempTex = nullptr;
@@ -129,44 +127,36 @@ public:
 	int							g_primaryCudaDeviceIndex = -1;
 	bool						g_useAllGPUs = false;
 
-	cudaGraphicsResource*		g_pTfEdtSRVCuda = nullptr;
-
-
 	RenderingParameters		g_renderingParams;
 	ProjectionParams		g_projParams;
 	StereoParams			g_stereoParams;
 	ViewParams				g_viewParams;
 
 #pragma region VolumeDependent
-	clock_t	g_lastRenderParamsUpdate = 0;
-	clock_t	g_lastTraceParamsUpdate = 0;
+	clock_t		g_lastRenderParamsUpdate = 0;
 
 	TimerCPU	g_timerTracing;
 
-	//bool m_retrace = false;
-	//bool s_isTracing = false;
-	bool s_isFiltering = false;
-	bool s_isRaycasting = false;
+	bool		m_isFiltering = false;
+	bool		m_isRaycasting = false;
+
+	bool		m_restartFiltering = false;
+
+	cudaGraphicsResource*	g_pTfEdtSRVCuda = nullptr;
 
 	FilterParams			g_filterParams;
 	RaycastParams			g_raycastParams;
-	//ParticleTraceParams	g_particleTraceParams;
-	//ParticleRenderParams	g_particleRenderParams;
 	HeatMapParams			g_heatMapParams;
-	
+
 	std::vector<FlowVisToolVolumeData*>	g_volumes;
-	//GPUResources				g_compressShared;
-	//CompressVolumeResources	g_compressVolume;
 
 	// resources on primary GPU
 	FlowGraph			g_flowGraph;
 	FilteringManager	g_filteringManager;
-	//TracingManager		g_tracingManager;
 	HeatMapManager		g_heatMapManager;
 	RenderingManager	g_renderingManager;
 	RaycasterManager	g_raycasterManager;
 #pragma endregion
-
 
 
 #if defined(BATCH_IMAGE_SEQUENCE)
@@ -182,6 +172,12 @@ public:
 	TimerCPU		g_timerRendering;
 
 	ScreenEffect	g_screenEffect;
+
+
+private:
+	// Currently only particle tracing can be simultaneous. We can filter and raycast one volume at a time. This variable indicated which one should be used with everything else besides particle tracing.
+	int m_selectedVolume = -1;
+
 
 public:
 	FlowVisTool();
@@ -203,6 +199,9 @@ public:
 	bool LoadFlowGraph(FlowVisToolVolumeData* volumeData);
 	//void LoadOrBuildFlowGraph();
 	
+	void SetSelectedVolume(int selected);
+	int GetSelectedvolume() { return m_selectedVolume; }
+
 private:
 	void ReleaseVolumeDependentResources();
 	bool CreateVolumeDependentResources(FlowVisToolVolumeData* volumeData);
@@ -219,8 +218,25 @@ private:
 	void BlitRenderingResults();
 
 	static bool CheckForChanges(FlowVisToolVolumeData* volumeData);
-	static bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
-	bool RenderMulti();
+	bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
+	bool RenderTracingResults();
+
+	bool ShouldStartFiltering();
+	bool ShouldStartTracing(FlowVisToolVolumeData* volumeData);
+	bool ShouldStartRaycasting();
+
+	bool CanFilter();
+	bool CanTrace();
+	bool CanRaycast();
+
+	void StartFiltering();
+	void StartTracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
+	void StartRaycasting();
+	
+	void UpdateBricks(TimeVolume* volume, const std::vector<const TimeVolumeIO::Brick*>& bricks);
+	void UpdateFiltering();
+	void UpdateTracing(FlowVisToolVolumeData* volumeData);
+	void UpdateRaycasting();
 
 private:
 	// disable copy and assignment

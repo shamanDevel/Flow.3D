@@ -14,6 +14,8 @@ void RaycastParams::Reset()
 {
 	m_raycastingEnabled			= false;
 
+	m_redraw					= false;
+
 	m_measure1					= MEASURE_VELOCITY;
 	m_measure2					= MEASURE_VELOCITY;
 	m_measureScale1				= 1.0f;
