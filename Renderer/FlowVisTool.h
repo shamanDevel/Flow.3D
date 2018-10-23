@@ -49,56 +49,6 @@ struct MyCudaDevice
 
 	WorkerThread* pThread;
 };
-
-#ifdef BATCH_IMAGE_SEQUENCE
-struct BatchTrace
-{
-	BatchTrace()
-		: WriteLinebufs(false), Running(false), FileCur(0), StepCur(0), ExitAfterFinishing(false) {}
-
-	std::vector<std::string> VolumeFiles;
-
-	std::string OutPath;
-	bool WriteLinebufs;
-
-	bool Running;
-	uint FileCur;
-	uint StepCur;
-
-	std::ofstream FileStats;
-	std::ofstream FileTimings;
-
-	std::vector<float> Timings;
-
-	bool ExitAfterFinishing;
-};
-
-struct ImageSequence
-{
-	ImageSequence()
-		: FrameCount(100)
-		, AngleInc(0.0f), ViewDistInc(0.0f), FramesPerTimestep(1)
-		, Record(false), FromRenderBuffer(false)
-		, BaseRotationQuat(0.0f, 0.0f, 0.0f, 0.0f), BaseTimestep(0)
-		, Running(false), FrameCur(0) {}
-
-	//TODO move into params struct:
-	int32 FrameCount;
-	float AngleInc;
-	float ViewDistInc;
-	int32 FramesPerTimestep;
-
-	bool  Record;
-	bool  FromRenderBuffer;
-
-	tum3D::Vec4f BaseRotationQuat;
-	int32 BaseTimestep;
-	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-	bool  Running;
-	int32 FrameCur;
-};
-#endif
 #pragma endregion
 
 
@@ -126,6 +76,14 @@ public:
 	std::vector<MyCudaDevice>	g_cudaDevices;
 	int							g_primaryCudaDeviceIndex = -1;
 	bool						g_useAllGPUs = false;
+
+	std::vector<LineBuffers*> g_lineBuffers;
+	std::vector<BallBuffers*> g_ballBuffers;
+	float                     g_ballRadius = 0.011718750051f;
+
+	TimerCPU		g_timerRendering;
+
+	ScreenEffect	g_screenEffect;
 
 	RenderingParameters		g_renderingParams;
 	ProjectionParams		g_projParams;
@@ -158,22 +116,6 @@ public:
 	RaycasterManager	g_raycasterManager;
 #pragma endregion
 
-
-#if defined(BATCH_IMAGE_SEQUENCE)
-	BatchTraceParams		g_batchTraceParams;
-	BatchTrace				g_batchTrace;
-	ImageSequence			g_imageSequence;
-#endif
-
-	std::vector<LineBuffers*> g_lineBuffers;
-	std::vector<BallBuffers*> g_ballBuffers;
-	float                     g_ballRadius = 0.011718750051f;
-
-	TimerCPU		g_timerRendering;
-
-	ScreenEffect	g_screenEffect;
-
-
 private:
 	// Currently only particle tracing can be simultaneous. We can filter and raycast one volume at a time. This variable indicated which one should be used with everything else besides particle tracing.
 	int m_selectedVolume = -1;
@@ -197,8 +139,10 @@ public:
 	void BuildFlowGraph(const std::string& filenameTxt = "");
 	bool SaveFlowGraph();
 	bool LoadFlowGraph(FlowVisToolVolumeData* volumeData);
-	//void LoadOrBuildFlowGraph();
-	
+#ifdef Single
+	void LoadOrBuildFlowGraph();
+#endif
+
 	void SetSelectedVolume(int selected);
 	int GetSelectedvolume() { return m_selectedVolume; }
 
@@ -217,7 +161,7 @@ private:
 	bool Rendering();
 	void BlitRaycastingResults();
 
-	static bool CheckForChanges(FlowVisToolVolumeData* volumeData);
+	void CheckForChanges(FlowVisToolVolumeData* volumeData);
 	bool Tracing(FlowVisToolVolumeData* volumeData, FlowGraph& flowGraph);
 	bool RenderTracingResults();
 
