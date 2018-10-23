@@ -97,12 +97,6 @@
     <ClCompile Include="BoxEffect.cpp">
       <Filter>Shaders</Filter>
     </ClCompile>
-    <ClCompile Include="TransferFunctionEditor\TransferFunctionEditor.cpp">
-      <Filter>TransferFunctionEditor</Filter>
-    </ClCompile>
-    <ClCompile Include="TransferFunctionEditor\TransferFunctionLine.cpp">
-      <Filter>TransferFunctionEditor</Filter>
-    </ClCompile>
     <ClCompile Include="IntegratorKernelStreamDenseCPU.cpp">
       <Filter>ParticleTracing\CPU</Filter>
     </ClCompile>
@@ -417,12 +411,6 @@
     <ClInclude Include="BoxEffect.h">
       <Filter>Shaders</Filter>
     </ClInclude>
-    <ClInclude Include="TransferFunctionEditor\TransferFunctionEditor.h">
-      <Filter>TransferFunctionEditor</Filter>
-    </ClInclude>
-    <ClInclude Include="TransferFunctionEditor\TransferFunctionLine.h">
-      <Filter>TransferFunctionEditor</Filter>
-    </ClInclude>
     <ClInclude Include="AdvectDenseCPU.h">
       <Filter>ParticleTracing\CPU</Filter>
     </ClInclude>
@@ -732,9 +720,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="TransferFunctionEditor\TransferFunctionEditor.fx">
-      <Filter>TransferFunctionEditor</Filter>
-    </FxCompile>
     <FxCompile Include="Box.fx">
       <Filter>Shaders</Filter>
     </FxCompile>

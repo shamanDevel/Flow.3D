@@ -222,8 +222,6 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClCompile Include="TraceableVolume.cpp" />
     <ClCompile Include="TracingTestData.cpp" />
     <ClCompile Include="TransferFunction.cpp" />
-    <ClCompile Include="TransferFunctionEditor\TransferFunctionEditor.cpp" />
-    <ClCompile Include="TransferFunctionEditor\TransferFunctionLine.cpp" />
     <ClCompile Include="WorkerThread.cpp" />
     <ClCompile Include="stb_image.c" />
     <ClCompile Include="stb_image_write.c" />
@@ -341,8 +339,6 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <ClInclude Include="TraceableVolume.h" />
     <ClInclude Include="TracingTestData.h" />
     <ClInclude Include="TransferFunction.h" />
-    <ClInclude Include="TransferFunctionEditor\TransferFunctionEditor.h" />
-    <ClInclude Include="TransferFunctionEditor\TransferFunctionLine.h" />
     <ClInclude Include="VolumeInfoGPU.h" />
     <ClInclude Include="WorkerThread.h" />
     <ClInclude Include="stb_image.h" />
@@ -413,9 +409,6 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     </FxCompile>
     <FxCompile Include="Quad.fx" />
     <FxCompile Include="Screen.fx">
-      <FileType>Document</FileType>
-    </FxCompile>
-    <FxCompile Include="TransferFunctionEditor\TransferFunctionEditor.fx">
       <FileType>Document</FileType>
     </FxCompile>
     <None Include="Advect.cuh" />

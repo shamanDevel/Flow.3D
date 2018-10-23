@@ -1770,10 +1770,10 @@ void FlowVisToolGUI::ProfilerWindow(FlowVisTool& flowVisTool)
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::Text("Window resolution: %dx%d", flowVisTool.g_renderingParams.m_windowSize.x(), flowVisTool.g_renderingParams.m_windowSize.y());
+			//ImGui::Text("Window resolution: %dx%d", flowVisTool.g_renderingParams.m_windowSize.x(), flowVisTool.g_renderingParams.m_windowSize.y());
 			ImGui::Text("Viewport resolution: %dx%d", flowVisTool.g_projParams.m_imageWidth, flowVisTool.g_projParams.m_imageHeight);
-			ImGui::Text("Trace Time: %.2f ms", flowVisTool.g_timerTracing.GetElapsedTimeMS());
-			ImGui::Text("Render Time: %.2f ms", flowVisTool.g_timerRendering.GetElapsedTimeMS());
+			//ImGui::Text("Trace Time: %.2f ms", flowVisTool.g_timerTracing.GetElapsedTimeMS());
+			//ImGui::Text("Render Time: %.2f ms", flowVisTool.g_timerRendering.GetElapsedTimeMS());
 		}
 		ImGui::End();
 	}
