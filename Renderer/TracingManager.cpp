@@ -810,9 +810,8 @@ bool TracingManager::TraceParticlesIteratively()
 	{
 		int timestep = m_traceableVol->m_pVolume->GetCurNearestTimestepIndex();
 		printf("Upload all bricks at timestep %d\n", timestep);
-		if (!m_traceableVol->UploadWholeTimestep(m_traceParams.m_cpuTracing, m_traceParams.m_waitForDisk, timestep, false, m_currentTimestamp, LineModeIsTimeDependent(m_traceParams.m_lineMode), m_traceParams.m_purgeTimeoutInRounds)) {
+		if (!m_traceableVol->UploadWholeTimestep(m_traceParams.m_cpuTracing, m_traceParams.m_waitForDisk, timestep, false, m_currentTimestamp, LineModeIsTimeDependent(m_traceParams.m_lineMode), m_traceParams.m_purgeTimeoutInRounds))
 			return false; //still uploading
-		}
 		m_particlesNeedsUploadTimestep = false;
 		printf("uploading done\n");
 	}

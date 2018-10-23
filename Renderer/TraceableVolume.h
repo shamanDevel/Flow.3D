@@ -84,6 +84,11 @@ public:
 	void ReleaseResources();
 	bool IsCreated();
 
+	// How many bytes of a texture a single brick with 'timeSlotCount' time steps takes.
+	static size_t BrickTimeSizeInBytes(const TimeVolume* volume, size_t timeSlotCount);
+	// How many bytes of a texture a full time steps takes.
+	static size_t TimeStepSizeInBytes(const TimeVolume* volume);
+
 	//===========================================================================================================================
 	std::vector<uint> GetBrickNeighbors(uint linearIndex) const;
 	// get neighbors in -x,-y,-z,+x,+y,+z order; return uint(-1) if non-existing

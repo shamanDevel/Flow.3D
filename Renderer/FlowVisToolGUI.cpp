@@ -429,6 +429,11 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 			case eLineMode::LINE_PARTICLES:
 			{
 				selected->m_renderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
+				if (selected->m_tracingManager.m_gpuMemUsageLimitMB * 1024ll * 1024ll < TraceableVolume::TimeStepSizeInBytes(selected->m_volume))
+				{
+					ImGui::OpenPopup("Memory usage warning!");
+					selected->m_tracingPaused = true;
+				}
 				break;
 			}
 			case eLineMode::LINE_PATH:
@@ -439,6 +444,37 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 			}
 			}
 		}
+
+		// Popup to warn about memory requirements. OpenPopup triggers this.
+		static bool dont_ask_me_next_time = false;
+		ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_::ImGuiCond_Always);
+		if (ImGui::BeginPopupModal("Memory usage warning!", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			float requiredMemMB = TraceableVolume::TimeStepSizeInBytes(selected->m_volume) / (1024.0f * 1024.0f);
+
+			ImGui::TextWrapped("Interactive particle tracing requires the entire time-step to be uploaded into GPU memory. The 'GPU Mem Usage Limit' for this instance is not large enought to fit one time-step. Please increase the limit to at least %.0fMB.\n\n", requiredMemMB);
+			ImGui::Separator();
+
+			if (ImGui::Button("Increase now", ImVec2(120, 0)))
+			{
+				selected->m_tracingPaused = false;
+				selected->m_retrace = true;
+				selected->m_tracingManager.m_gpuMemUsageLimitMB = requiredMemMB;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SetItemDefaultFocus();
+
+			ImGui::SameLine();
+			
+			if (ImGui::Button("Close", ImVec2(120, 0)))
+			{
+				selected->m_tracingPaused = false;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
 
 		if (ImGui::DragInt("Line count", &traceParams.m_lineCount, 1.0f, 1.0f, INT_MAX))
 			traceParams.m_lineCount = std::max(1, traceParams.m_lineCount);
