@@ -21,16 +21,21 @@ bool FlowVisToolGUI::g_showProfilerWindow = true;
 bool FlowVisToolGUI::g_showStatusWindow = true;
 
 
-const float buttonWidth = 200;
 int g_threadCount = omp_get_num_procs();
-int FlowVisToolGUI::g_lineIDOverride = -1;
+int g_lineIDOverride = -1;
 
 
+#pragma region ProfilerStuff
 const int max_frames = 150;
+
 std::vector<float> frameTimes(max_frames);
 int currentFrameTimeIndex = 0;
 
+std::vector<float> availableGPUMemMB(max_frames);
+int currentAvailableGPUMemMBIndex = 0;
+#pragma endregion
 
+const float buttonWidth = 200;
 ImVec4 sectionTextColor = ImVec4(0.67f, 0.52f, 0.00f, 1.00f);
 ImVec4 datasetNameTextColor = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
 
@@ -234,6 +239,24 @@ void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& flowVisTool)
 #endif
 #pragma endregion
 
+void Plot(std::vector<float>& data, int idx, float max, const char* label)
+{
+	ImGui::BeginGroup();
+	ImGui::Text("%.0f", max);
+	ImGui::Text(" ");
+	ImGui::Text(" ");
+	ImGui::Text("0");
+	ImGui::EndGroup();
+
+	// Capture the group size and create widgets using the same size
+	ImVec2 size = ImGui::GetItemRectSize();
+
+	ImGui::SameLine();
+
+	ImGui::PushItemWidth(-1);
+	ImGui::PlotLines(label, &data[0], data.size(), idx, "", 0.0f, max, ImVec2(0, size.y));
+	ImGui::PopItemWidth();
+}
 
 void TimeVolGUI(TimeVolume& volume)
 {
@@ -1777,35 +1800,41 @@ void FlowVisToolGUI::ProfilerWindow(FlowVisTool& flowVisTool)
 	currentFrameTimeIndex = (currentFrameTimeIndex + 1) % frameTimes.size();
 	frameTimes[currentFrameTimeIndex] = ImGui::GetIO().DeltaTime * 1000.0f;
 
+	size_t memFree = 0;
+	size_t memTotal = 0;
+	cudaMemGetInfo(&memFree, &memTotal);
+
+	currentAvailableGPUMemMBIndex = (currentAvailableGPUMemMBIndex + 1) % availableGPUMemMB.size();
+	availableGPUMemMB[currentAvailableGPUMemMBIndex] = memFree / (1024.f * 1024.0f);
+
 	if (g_showProfilerWindow)
 	{
 		ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("Profiler"))
 		{
-			//ImGui::Text("Average %.2f ms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-			ImGui::Text("Current %.2f ms (%.1f FPS)", ImGui::GetIO().DeltaTime * 1000.0f, 1.0f / ImGui::GetIO().DeltaTime);
+			// Frames times
+			{
+				//ImGui::Text("Average %.2f ms (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+				ImGui::Text("Frame Time %.2f ms (%.1f FPS)", ImGui::GetIO().DeltaTime * 1000.0f, 1.0f / ImGui::GetIO().DeltaTime);
 
-			float max = FLT_MIN;
-			for (size_t i = 0; i < frameTimes.size(); i++)
-				max = std::max(frameTimes[i], max);
-			//max = std::ceil(max * 1.1f);
-			max = std::ceil(max / 5.0f) * 5.0f;
+				float max = FLT_MIN;
+				for (size_t i = 0; i < frameTimes.size(); i++)
+					max = std::max(frameTimes[i], max);
+				//max = std::ceil(max * 1.1f);
+				max = std::ceil(max / 5.0f) * 5.0f;
 
-			ImGui::BeginGroup();
-			ImGui::Text("%.0f", max);
-			ImGui::Text(" ");
-			ImGui::Text(" ");
-			ImGui::Text("0");
-			ImGui::EndGroup();
-			
-			// Capture the group size and create widgets using the same size
-			ImVec2 size = ImGui::GetItemRectSize();
+				Plot(frameTimes, currentFrameTimeIndex, max, "ms");
+			}
 
-			ImGui::SameLine();
+			ImGui::Separator();
+			ImGui::Spacing();
 
-			ImGui::PushItemWidth(-1);
-			ImGui::PlotLines("ms", &frameTimes[0], frameTimes.size(), currentFrameTimeIndex, "", 0.0f, max, ImVec2(0, size.y));
-			ImGui::PopItemWidth();
+			// GPU mem
+			{
+				ImGui::Text("Available GPU Mem %.1fMB", availableGPUMemMB[currentAvailableGPUMemMBIndex]);
+
+				Plot(availableGPUMemMB, currentAvailableGPUMemMBIndex, memTotal / (1024.0f * 1024.0f), "MB");
+			}
 
 			ImGui::Separator();
 			ImGui::Spacing();

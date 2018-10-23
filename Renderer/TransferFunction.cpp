@@ -20,7 +20,7 @@ TransferFunction::TransferFunction()
 void TransferFunction::Reset()
 {
 	m_color0 = tum3D::Vec4f(0.232f, 0.365f, 0.764f, 1.0f);
-	m_color1 = tum3D::Vec4f(0.755f, 0.226f, 0.226f, 1.0f);
+	m_color1 = tum3D::Vec4f(0.869f, 0.372f, 0.099f, 1.0f);
 
 	m_rangeMin = 0.0f;
 	m_rangeMax = 1.0f;

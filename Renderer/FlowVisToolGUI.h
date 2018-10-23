@@ -18,8 +18,6 @@ public:
 	static bool g_showStatusWindow;
 	static bool g_show_demo_window;
 
-	static int g_lineIDOverride;
-
 #pragma region Dialogs
 	//static void SaveLinesDialog(FlowVisTool& flowVisTool);
 
