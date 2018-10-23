@@ -65,7 +65,7 @@ TraceableVolume::~TraceableVolume()
 	m_pVolume = nullptr;
 }
 
-bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent)
+bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent, int gpuMemUsageLimitMB)
 {
 	//if (m_pVolume == nullptr || !m_pVolume->IsOpen())
 	//	return false;
@@ -164,7 +164,7 @@ bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bo
 	size_t memBuffer = max(memPerTimeSlot, min(size_t(32) * 1024 * 1024, memTotal / 100));
 	//size_t memAvailable = memFree - min(memBuffer, memFree);
 	//size_t memAvailable = 1024ll * 1024ll * 1024ll;
-	size_t memAvailable = 1024ll * 1024ll * 128ll;
+	size_t memAvailable = 1024ll * 1024ll * (size_t)gpuMemUsageLimitMB;
 
 	float memAvailableMB = float(memAvailable) / (1024.0f * 1024.0f);
 

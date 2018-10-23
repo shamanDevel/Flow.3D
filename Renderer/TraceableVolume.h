@@ -80,7 +80,7 @@ public:
 	TraceableVolume(const TimeVolume* volume);
 	~TraceableVolume();
 
-	bool CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent);
+	bool CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent, int gpuMemUsageLimitMB);
 	void ReleaseResources();
 	bool IsCreated();
 

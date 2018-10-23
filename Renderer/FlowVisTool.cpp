@@ -322,7 +322,7 @@ void FlowVisTool::OnFrame(float deltatime)
 		UpdateFiltering();
 
 	for (size_t i = 0; i < g_volumes.size(); i++)
-		if (g_volumes[i]->m_isTracing)
+		if (g_volumes[i]->m_isTracing && !g_volumes[i]->m_tracingPaused)
 			UpdateTracing(g_volumes[i]);
 
 	if (m_isRaycasting)

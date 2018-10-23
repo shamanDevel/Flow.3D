@@ -234,6 +234,7 @@ TracingManager::TracingManager()
 	, m_numRejections(20)
 	, m_seedManyParticles(false)
 	, m_traceableVol(nullptr)
+	, m_gpuMemUsageLimitMB(256)
 {
 }
 
@@ -570,7 +571,7 @@ bool TracingManager::StartTracing(const TimeVolume& volume, const ParticleTraceP
 
 	// create volume-dependent resources last - they will take up all available GPU memory
 	//if (FAILED(CreateVolumeDependentResources()))
-	if (!m_traceableVol->CreateResources(timestepMinInit, m_traceParams.m_cpuTracing, LineModeIsTimeDependent(m_traceParams.m_lineMode)))
+	if (!m_traceableVol->CreateResources(timestepMinInit, m_traceParams.m_cpuTracing, LineModeIsTimeDependent(m_traceParams.m_lineMode), m_gpuMemUsageLimitMB))
 	{
 		MessageBoxA(nullptr, "TracingManager::StartTracing: Failed creating volume-dependent resources! (probably not enough GPU memory)", "Fail", MB_OK | MB_ICONINFORMATION);
 		CancelTracing();

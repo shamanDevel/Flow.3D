@@ -343,6 +343,12 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 {
 	ParticleTraceParams& traceParams = selected->m_traceParams;
 
+	if (ImGui::SliderInt("GPU Mem Usage Limit", &selected->m_tracingManager.m_gpuMemUsageLimitMB, 16, 4096, "%d MB"))
+	{
+		if (selected->m_isTracing)
+			selected->m_retrace = true;
+	}
+
 	if (ImGui::Button("Retrace", ImVec2(buttonWidth, 0)))
 		selected->m_retrace = true;
 
@@ -411,7 +417,7 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 
 		static auto getterLineMode = [](void* data, int idx, const char** out_str)
 		{
-			if (idx >= LINE_MODE_COUNT) return false;
+			if (idx == LINE_PATH_FTLE || idx >= LINE_MODE_COUNT) return false;
 			*out_str = GetLineModeName(eLineMode(idx));
 			return true;
 		};
@@ -449,25 +455,23 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 		ImGui::DragFloat("Cell Change Time Threshold", &traceParams.m_cellChangeThreshold, 0.001f, 0.0f, 0.0f, "%.5f");
 	}
 
-	ImGui::Spacing();
-	ImGui::Separator();
+	//ImGui::Spacing();
+	//ImGui::Separator();
 
-	ImGui::Checkbox("CPU Tracing", &traceParams.m_cpuTracing);
+	//ImGui::Checkbox("CPU Tracing", &traceParams.m_cpuTracing);
 
-	if (ImGui::SliderInt("# CPU Threads", &g_threadCount, 1, 16))
-		omp_set_num_threads(g_threadCount);
-
-	ImGui::Spacing();
-	ImGui::Separator();
+	//if (ImGui::SliderInt("# CPU Threads", &g_threadCount, 1, 16))
+	//	omp_set_num_threads(g_threadCount);
 
 	int v;
-	//v = flowVisTool.g_tracingManager.GetBrickSlotCountMax();
+	//v = selected->m_tracingManager.GetBrickSlotCountMax();
 	//if (ImGui::DragInt("Max Brick Slot Count", &v, 1, 0, INT_MAX))
-	//	flowVisTool.g_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
+	//	selected->m_tracingManager.GetBrickSlotCountMax() = (unsigned int)std::max(0, v);
 
-	//v = flowVisTool.g_tracingManager.GetTimeSlotCountMax();
+	//v = selected->m_tracingManager.GetTimeSlotCountMax();
 	//if (ImGui::DragInt("Max Time Slot Count", &v, 1, 0, INT_MAX))
-	//	flowVisTool.g_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
+	//	selected->m_tracingManager.GetTimeSlotCountMax() = (unsigned int)std::max(0, v);
+
 
 	ImGui::Spacing();
 	ImGui::Separator();

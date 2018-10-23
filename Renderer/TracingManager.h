@@ -44,6 +44,9 @@
 class TracingManager
 {
 public:
+
+	int m_gpuMemUsageLimitMB;
+
 	TracingManager();
 	~TracingManager();
 
