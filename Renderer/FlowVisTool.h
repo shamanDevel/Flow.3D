@@ -211,7 +211,7 @@ private:
 
 	bool ResizeRenderBuffer();
 
-	bool CheckForChanges();
+	void CheckForChanges();
 	void Filtering();
 	void Tracing();
 	bool Rendering();

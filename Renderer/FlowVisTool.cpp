@@ -643,7 +643,7 @@ bool FlowVisTool::RenderTracingResults()
 	return true;
 }
 
-bool FlowVisTool::CheckForChanges()
+void FlowVisTool::CheckForChanges()
 {
 	clock_t curTime = clock();
 
@@ -840,8 +840,6 @@ bool FlowVisTool::CheckForChanges()
 		g_raycastParams.m_redraw = false;
 		StopRaycasting();
 	}
-
-	return g_raycastParams.m_redraw;
 }
 
 #ifdef Single
@@ -1635,6 +1633,11 @@ void FlowVisTool::UpdateTracing(FlowVisToolVolumeData* volumeData)
 	assert(volumeData->m_isTracing && !volumeData->m_tracingPaused);
 
 	UpdateBricks(volumeData->m_volume, volumeData->m_tracingManager.GetBricksToLoad());
+
+	// set parameters even if tracing is currently enabled.
+	// This allows changes to the parameters in the particle mode, even if they are currently running
+	if (LineModeIsIterative(volumeData->m_traceParams.m_lineMode))
+		volumeData->m_tracingManager.SetParams(volumeData->m_traceParams);
 
 	bool finished = volumeData->m_tracingManager.Trace();
 	//if (finished || LineModeIsIterative(volumeData.m_traceParams.m_lineMode)) 
