@@ -35,6 +35,7 @@ std::vector<float> availableGPUMemMB(max_frames);
 int currentAvailableGPUMemMBIndex = 0;
 #pragma endregion
 
+
 const float buttonWidth = 200;
 ImVec4 sectionTextColor = ImVec4(0.67f, 0.52f, 0.00f, 1.00f);
 ImVec4 datasetNameTextColor = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
@@ -77,6 +78,72 @@ void FlowVisToolGUI::SaveLinesDialog(FlowVisTool& flowVisTool)
 	}
 
 	//if( bFullscreen ) DXUTToggleFullScreen();
+}
+void FlowVisToolGUI::LoadSliceTexture(FlowVisTool& flowVisTool)
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//release old texture
+		SAFE_RELEASE(flowVisTool.g_particleRenderParams.m_pSliceTexture);
+		//create new texture
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* tmp = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFile(flowVisTool.m_d3dDevice, wfilename.c_str(), &tmp, &flowVisTool.g_particleRenderParams.m_pSliceTexture))) {
+			std::cout << "Slice texture " << filename << " loaded" << std::endl;
+			flowVisTool.g_particleRenderParams.m_showSlice = true;
+			flowVisTool.g_renderingParams.m_redraw = true;
+		}
+		else {
+			std::cerr << "Failed to load slice texture" << std::endl;
+		}
+		SAFE_RELEASE(tmp);
+	}
+}
+
+void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& flowVisTool)
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
+		//create new texture
+		std::wstring wfilename(filename.begin(), filename.end());
+		ID3D11Resource* res = NULL;
+		//ID3D11ShaderResourceView* srv = NULL;
+		if (!FAILED(DirectX::CreateWICTextureFromFileEx(flowVisTool.m_d3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
+			std::cout << "Seed texture " << filename << " loaded" << std::endl;
+			//delete old data
+			delete[] flowVisTool.g_particleTraceParams.m_seedTexture.m_colors;
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = NULL;
+			//Copy to cpu memory
+			ID3D11Texture2D* tex = NULL;
+			res->QueryInterface(&tex);
+			D3D11_TEXTURE2D_DESC desc;
+			tex->GetDesc(&desc);
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_width = desc.Width;
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_height = desc.Height;
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
+			D3D11_MAPPED_SUBRESOURCE mappedResource;
+			ID3D11DeviceContext* context = NULL;
+			flowVisTool.m_d3dDevice->GetImmediateContext(&context);
+			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
+				for (int y = 0; y < desc.Width; ++y) {
+					memcpy(&flowVisTool.g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
+				}
+				context->Unmap(tex, 0);
+			}
+			SAFE_RELEASE(context);
+			SAFE_RELEASE(tex);
+			//reset color
+			flowVisTool.g_particleTraceParams.m_seedTexture.m_picked.clear();
+			//set seed box to domain
+			flowVisTool.SetBoundingBoxToDomainSize();
+			std::cout << "Seed texture copied to cpu memory" << std::endl;
+		}
+		else {
+			std::cerr << "Failed to load seed texture" << std::endl;
+		}
+		//SAFE_RELEASE(srv);
+		SAFE_RELEASE(res);
+	}
 }
 #endif
 
@@ -161,83 +228,12 @@ void FlowVisToolGUI::LoadRenderingParamsDialog(FlowVisTool& flowVisTool)
 	//if( bFullscreen ) DXUTToggleFullScreen();	
 }
 
-#ifdef Single
-void FlowVisToolGUI::LoadSliceTexture(FlowVisTool& flowVisTool)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-		//release old texture
-		SAFE_RELEASE(flowVisTool.g_particleRenderParams.m_pSliceTexture);
-		//create new texture
-		std::wstring wfilename(filename.begin(), filename.end());
-		ID3D11Resource* tmp = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFile(flowVisTool.m_d3dDevice, wfilename.c_str(), &tmp, &flowVisTool.g_particleRenderParams.m_pSliceTexture))) {
-			std::cout << "Slice texture " << filename << " loaded" << std::endl;
-			flowVisTool.g_particleRenderParams.m_showSlice = true;
-			flowVisTool.g_renderingParams.m_redraw = true;
-		}
-		else {
-			std::cerr << "Failed to load slice texture" << std::endl;
-		}
-		SAFE_RELEASE(tmp);
-	}
-}
-#endif
-
 bool DialogColorTexture(std::string& path)
 {
 	return tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", path, false);
 }
-
-
-#ifdef Single
-void FlowVisToolGUI::LoadSeedTexture(FlowVisTool& flowVisTool)
-{
-	std::string filename;
-	if (tum3d::GetFilenameDialog("Load Texture", "Images (jpg, png, bmp)\0*.png;*.jpg;*.jpeg;*.bmp\0", filename, false)) {
-		//create new texture
-		std::wstring wfilename(filename.begin(), filename.end());
-		ID3D11Resource* res = NULL;
-		//ID3D11ShaderResourceView* srv = NULL;
-		if (!FAILED(DirectX::CreateWICTextureFromFileEx(flowVisTool.m_d3dDevice, wfilename.c_str(), 0Ui64, D3D11_USAGE_STAGING, 0, D3D11_CPU_ACCESS_READ, 0, false, &res, NULL))) {
-			std::cout << "Seed texture " << filename << " loaded" << std::endl;
-			//delete old data
-			delete[] flowVisTool.g_particleTraceParams.m_seedTexture.m_colors;
-			flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = NULL;
-			//Copy to cpu memory
-			ID3D11Texture2D* tex = NULL;
-			res->QueryInterface(&tex);
-			D3D11_TEXTURE2D_DESC desc;
-			tex->GetDesc(&desc);
-			flowVisTool.g_particleTraceParams.m_seedTexture.m_width = desc.Width;
-			flowVisTool.g_particleTraceParams.m_seedTexture.m_height = desc.Height;
-			flowVisTool.g_particleTraceParams.m_seedTexture.m_colors = new unsigned int[desc.Width * desc.Height];
-			D3D11_MAPPED_SUBRESOURCE mappedResource;
-			ID3D11DeviceContext* context = NULL;
-			flowVisTool.m_d3dDevice->GetImmediateContext(&context);
-			if (!FAILED(context->Map(tex, 0, D3D11_MAP_READ, 0, &mappedResource))) {
-				for (int y = 0; y < desc.Width; ++y) {
-					memcpy(&flowVisTool.g_particleTraceParams.m_seedTexture.m_colors[y*desc.Width], ((char*)mappedResource.pData) + (y*mappedResource.RowPitch), sizeof(unsigned int) * desc.Width);
-				}
-				context->Unmap(tex, 0);
-			}
-			SAFE_RELEASE(context);
-			SAFE_RELEASE(tex);
-			//reset color
-			flowVisTool.g_particleTraceParams.m_seedTexture.m_picked.clear();
-			//set seed box to domain
-			flowVisTool.SetBoundingBoxToDomainSize();
-			std::cout << "Seed texture copied to cpu memory" << std::endl;
-		}
-		else {
-			std::cerr << "Failed to load seed texture" << std::endl;
-		}
-		//SAFE_RELEASE(srv);
-		SAFE_RELEASE(res);
-	}
-}
-#endif
 #pragma endregion
+
 
 void Plot(std::vector<float>& data, int idx, float max, const char* label)
 {
@@ -364,6 +360,18 @@ void TimeVolGUI(TimeVolume& volume)
 
 void TraceParamsGUI(FlowVisToolVolumeData* selected)
 {
+	ImGui::PushItemWidth(0);
+	if (selected->m_tracingManager.IsTracing())
+	{
+		float progress = 0.0f;
+		if (selected->m_tracingManager.IsTracing())
+			selected->m_tracingManager.GetTracingProgress();
+		ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
+		ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
+		ImGui::Text("Tracing");
+	}
+	ImGui::PopItemWidth();
+	
 	ParticleTraceParams& traceParams = selected->m_traceParams;
 
 	if (ImGui::SliderInt("GPU Mem Usage Limit", &selected->m_tracingManager.m_gpuMemUsageLimitMB, 16, 4096, "%d MB"))
@@ -407,13 +415,28 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 		ImGui::DragFloat3("Seed box min", (float*)&traceParams.m_seedBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
 		ImGui::DragFloat3("Seed box size", (float*)&traceParams.m_seedBoxSize, 0.005f, 0.0f, 0.0f, "%.3f");
 
-		static auto getterSeedingPattern = [](void* data, int idx, const char** out_str)
+		if (ImGui::BeginCombo("Seeding pattern", ParticleTraceParams::GetSeedPatternName(traceParams.m_seedPattern))) // The second parameter is the label previewed before opening the combo.
 		{
-			if (idx >= ParticleTraceParams::eSeedPattern::COUNT) return false;
-			*out_str = ParticleTraceParams::GetSeedPatternName(ParticleTraceParams::eSeedPattern(idx));
-			return true;
-		};
-		ImGui::Combo("Seeding pattern", (int*)&traceParams.m_seedPattern, getterSeedingPattern, nullptr, ParticleTraceParams::eSeedPattern::COUNT);
+			for (int n = 0; n < ParticleTraceParams::eSeedPattern::COUNT; n++)
+			{
+				if (n == ParticleTraceParams::eSeedPattern::FTLE)
+					continue;
+
+				bool is_selected = (n == traceParams.m_seedPattern); // You can store your selection however you want, outside or inside your objects
+
+				ImGui::PushID(n);
+				if (ImGui::Selectable(ParticleTraceParams::GetSeedPatternName(n), is_selected))
+				{
+					traceParams.m_seedPattern = ParticleTraceParams::eSeedPattern(n);
+					selected->m_retrace = true;
+				}
+				ImGui::PopID();
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+			}
+			ImGui::EndCombo();
+		}
 	}
 
 	// Tracing
@@ -438,38 +461,54 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 		};
 		ImGui::Combo("Interpolation", (int*)&traceParams.m_filterMode, getterFilterMode, nullptr, TEXTURE_FILTER_MODE_COUNT);
 
-		static auto getterLineMode = [](void* data, int idx, const char** out_str)
+		static bool openMemoryPopup = false;
+
+		if (ImGui::BeginCombo("Line mode", GetLineModeName(traceParams.m_lineMode))) // The second parameter is the label previewed before opening the combo.
 		{
-			if (idx == LINE_PATH_FTLE || idx >= LINE_MODE_COUNT) return false;
-			*out_str = GetLineModeName(eLineMode(idx));
-			return true;
-		};
-		if (ImGui::Combo("Line mode", (int*)&traceParams.m_lineMode, getterLineMode, nullptr, LINE_MODE_COUNT))
-		{
-			switch (traceParams.m_lineMode)
+			for (int n = 0; n < LINE_MODE_COUNT; n++)
 			{
-			case eLineMode::LINE_PARTICLE_STREAM:
-			case eLineMode::LINE_PARTICLES:
-			{
-				selected->m_renderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
-				if (selected->m_tracingManager.m_gpuMemUsageLimitMB * 1024ll * 1024ll < TraceableVolume::TimeStepSizeInBytes(selected->m_volume))
+				if (n == LINE_PATH_FTLE)
+					continue;
+
+				bool is_selected = (n == traceParams.m_lineMode); // You can store your selection however you want, outside or inside your objects
+
+				ImGui::PushID(n);
+				if (ImGui::Selectable(GetLineModeName(eLineMode(n)), is_selected))
 				{
-					ImGui::OpenPopup("Memory usage warning!");
-					selected->m_tracingPaused = true;
+					traceParams.m_lineMode = eLineMode(n);
+					switch (traceParams.m_lineMode)
+					{
+					case eLineMode::LINE_PARTICLE_STREAM:
+					case eLineMode::LINE_PARTICLES:
+					{
+						selected->m_renderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
+						if (selected->m_tracingManager.m_gpuMemUsageLimitMB * 1024ll * 1024ll < TraceableVolume::TimeStepSizeInBytes(selected->m_volume))
+						{
+							openMemoryPopup = true;
+							selected->m_tracingPaused = true;
+						}
+						break;
+					}
+					case eLineMode::LINE_PATH:
+					case eLineMode::LINE_STREAM:
+					{
+						selected->m_renderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_TUBE;
+						break;
+					}
+					}
 				}
-				break;
+				ImGui::PopID();
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
 			}
-			case eLineMode::LINE_PATH:
-			case eLineMode::LINE_STREAM:
-			{
-				selected->m_renderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_TUBE;
-				break;
-			}
-			}
+			ImGui::EndCombo();
 		}
 
+		if (openMemoryPopup)
+			ImGui::OpenPopup("Memory usage warning!"); // It's not working within the BeginCombo. Have no idea why.
+
 		// Popup to warn about memory requirements. OpenPopup triggers this.
-		static bool dont_ask_me_next_time = false;
 		ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_::ImGuiCond_Always);
 		if (ImGui::BeginPopupModal("Memory usage warning!", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 		{
@@ -480,6 +519,7 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 
 			if (ImGui::Button("Increase now", ImVec2(120, 0)))
 			{
+				openMemoryPopup = false;
 				selected->m_tracingPaused = false;
 				selected->m_retrace = true;
 				selected->m_tracingManager.m_gpuMemUsageLimitMB = requiredMemMB;
@@ -491,6 +531,7 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 			
 			if (ImGui::Button("Close", ImVec2(120, 0)))
 			{
+				openMemoryPopup = false;
 				selected->m_tracingPaused = false;
 				ImGui::CloseCurrentPopup();
 			}
@@ -895,29 +936,32 @@ void FlowVisToolGUI::MainMenu(FlowVisTool& flowVisTool)
 				g_showGeneralRenderingSettingsWindow = !g_showGeneralRenderingSettingsWindow;
 			if (ImGui::MenuItem("Tracing Options", nullptr, g_showTracingOptionsWindow))
 				g_showTracingOptionsWindow = !g_showTracingOptionsWindow;
-			if (ImGui::MenuItem("Dataset", nullptr, g_showDatasetWindow))
+			if (ImGui::MenuItem("Datasets", nullptr, g_showDatasetWindow))
 				g_showDatasetWindow = !g_showDatasetWindow;
 			if (ImGui::MenuItem("Raycasting", nullptr, g_showRaycastingWindow))
 				g_showRaycastingWindow = !g_showRaycastingWindow;
+#ifdef Single
 			if (ImGui::MenuItem("FTLE", nullptr, g_showFTLEWindow))
 				g_showFTLEWindow = !g_showFTLEWindow;
-			if (ImGui::MenuItem("Extra", nullptr, g_showExtraWindow))
-				g_showExtraWindow = !g_showExtraWindow;
 			if (ImGui::MenuItem("Heatmap", nullptr, g_showHeatmapWindow))
 				g_showHeatmapWindow = !g_showHeatmapWindow;
+#endif
+			if (ImGui::MenuItem("Extra", nullptr, g_showExtraWindow))
+				g_showExtraWindow = !g_showExtraWindow;
 			if (ImGui::MenuItem("Status", nullptr, g_showStatusWindow))
 				g_showStatusWindow = !g_showStatusWindow;
 			ImGui::Separator();
-			if (ImGui::MenuItem("ImGui Demo", nullptr, g_show_demo_window))
-				g_show_demo_window = !g_show_demo_window;
 			if (ImGui::MenuItem("Profiler", nullptr, g_showProfilerWindow))
 				g_showProfilerWindow = !g_showProfilerWindow;
+			if (ImGui::MenuItem("ImGui Demo", nullptr, g_show_demo_window))
+				g_show_demo_window = !g_show_demo_window;
 
 			ImGui::EndMenu();
 		}
 		ImGui::EndMainMenuBar();
 	}
 }
+
 
 #pragma region Windows
 void FlowVisToolGUI::DatasetWindow(FlowVisTool& flowVisTool)
@@ -950,16 +994,6 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& flowVisTool)
 						ImGui::Separator();
 
 						ImGui::PushItemWidth(0);
-						//if (flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
-						{
-							float progress = 0.0f;
-							if (flowVisTool.g_volumes[i]->m_tracingManager.IsTracing())
-								flowVisTool.g_volumes[i]->m_tracingManager.GetTracingProgress();
-							ImGui::ProgressBar(progress, ImVec2(0.0f, 0.0f));
-							ImGui::SameLine(0.0f, ImGui::GetStyle().ItemInnerSpacing.x);
-							ImGui::Text("Tracing");
-						}
-
 						//if (flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() > 0.0f && flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress() < 1.0f)
 						{
 							ImGui::ProgressBar(flowVisTool.g_volumes[0]->m_volume->GetLoadingProgress(), ImVec2(0.0f, 0.0f));

@@ -19,8 +19,6 @@ public:
 	static bool g_show_demo_window;
 
 #pragma region Dialogs
-	//static void SaveLinesDialog(FlowVisTool& flowVisTool);
-
 	static void LoadLinesDialog(FlowVisTool& flowVisTool);
 
 	static void LoadBallsDialog(FlowVisTool& flowVisTool);
@@ -29,11 +27,16 @@ public:
 
 	static void LoadRenderingParamsDialog(FlowVisTool& flowVisTool);
 
-	//static void LoadSliceTexture(FlowVisTool& flowVisTool);
+#ifdef Single
+	static void SaveLinesDialog(FlowVisTool& flowVisTool);
 
-	//static void LoadSeedTexture(FlowVisTool& flowVisTool);
+	static void LoadSliceTexture(FlowVisTool& flowVisTool);
+
+	static void LoadSeedTexture(FlowVisTool& flowVisTool);
+#endif
 #pragma endregion
 
+	// GUI entry point.
 	static void RenderGUI(FlowVisTool& flowVisTool, bool& resizeNextFrame, ImVec2& sceneWindowSize);
 
 	static void DockSpace();
@@ -46,7 +49,9 @@ public:
 
 	static void ExtraWindow(FlowVisTool& flowVisTool);
 
-	//static void FTLEWindow(FlowVisTool& flowVisTool);
+#ifdef Single
+	static void FTLEWindow(FlowVisTool& flowVisTool);
+#endif
 
 	static void HeatmapWindow(FlowVisTool& flowVisTool);
 
