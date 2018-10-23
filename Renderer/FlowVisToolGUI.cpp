@@ -1505,7 +1505,8 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				//ImGui::Checkbox("Show Clip Box", &flowVisTool.g_renderingManager.m_renderClipBox);
+				if (current)
+					ImGui::Checkbox("Show Clip Box", &current->m_renderClipBox);
 
 				ImGui::DragFloat3("ClipBoxMin", (float*)&flowVisTool.g_raycastParams.m_clipBoxMin, 0.005f, 0.0f, 0.0f, "%.3f");
 				ImGui::DragFloat3("ClipBoxMax", (float*)&flowVisTool.g_raycastParams.m_clipBoxMax, 0.005f, 0.0f, 0.0f, "%.3f");

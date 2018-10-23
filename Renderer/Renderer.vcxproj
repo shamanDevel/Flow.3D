@@ -74,11 +74,11 @@
       <GPUDebugInfo>true</GPUDebugInfo>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>@echo $(ProjectDir)
-xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
+      <Command>::@echo $(ProjectDir)
+::xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
 
-@echo $(ProjectDir)TransferFunctionEditor\
-xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"
+::@echo $(ProjectDir)TransferFunctionEditor\
+::xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"
 
 @echo Copying $(SolutionDir)resources to $(TargetDir)resources
 xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
@@ -131,11 +131,11 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
       </AdditionalCompilerOptions>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>@echo $(ProjectDir)
-xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
+      <Command>::@echo $(ProjectDir)
+::xcopy /y /d  "$(ProjectDir)*.fx" "$(TargetDir)"
 
-@echo $(ProjectDir)TransferFunctionEditor\
-xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"
+::@echo $(ProjectDir)TransferFunctionEditor\
+::xcopy /y /d  "$(ProjectDir)TransferFunctionEditor\*.fx" "$(TargetDir)"
 
 @echo Copying $(SolutionDir)resources to $(TargetDir)resources
 xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
