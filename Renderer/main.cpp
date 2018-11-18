@@ -182,7 +182,7 @@ uint GetShadersPerMP(int major, int minor)
 		case 2: return (minor == 0) ? 32 : 48;
 		case 3: return 192;
 		case 5: return 128;
-		case 6: return (minor == 0) ? 64 : 128;
+		case 7: case 6: return (minor == 0) ? 64 : 128;
 		default: assert(false); return 1;
 	}
 }
