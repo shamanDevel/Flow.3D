@@ -148,7 +148,7 @@ public:
 	std::vector<float*>	m_pChannelBufferCPU;
 
 	// cudaMallocHost for uploading to BrickIndexGPU
-	uint2*      m_pBrickToSlot;			// Size depends on brickcount
+	uint2*      m_pBrickToSlot;			// Size depends on c
 	uint*       m_pSlotTimestepMin;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
 	uint*       m_pSlotTimestepMax;		// Size depends on maxTexture3D size, bricksize and available GPU memory.
 

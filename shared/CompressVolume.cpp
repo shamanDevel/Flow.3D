@@ -283,7 +283,7 @@ bool compressVolumeLossless(GPUResources& shared, CompressVolumeResources& resou
 void decompressVolumeLossless(GPUResources& shared, CompressVolumeResources& resources, short* dpImage, uint sizeX, uint sizeY, uint sizeZ, uint numLevels, const std::vector<uint>& bits)
 {
 	uint elemCount = sizeX * sizeY * sizeZ;
-	uint sizeBytes = elemCount * sizeof(short);
+	uint sizeBytes = elemCount * sizeof(short);	
 
 	short* dpBuffer0 = shared.getBuffer<short>(elemCount);
 	short* dpBuffer1 = shared.getBuffer<short>(elemCount / 8);
