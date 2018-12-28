@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 	Json::Object jsonObject;
 	bool jsonObjectAvailable;
 
-	eCompressionType compression = COMPRESSION_NONE;
+	eCompressionType compression = COMPRESSION_NONE; // = 0
 	string quantStepsString;
 	vector<float> quantSteps;
 	bool lessRLE;
@@ -165,7 +165,11 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<float> domainSizeYArg("", "domainY", "The domain size in y-direction", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> domainSizeZArg("", "domainZ", "The domain size in z-direction", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> timeSpacingArg("t", "timespacing", "Distance between time steps", false, 1.0f, "Float", cmd);
-		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 64, "Integer", cmd);
+		
+		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", true, 64, "Integer", cmd); /* \param req changed to "true" required to enter bricksize
+																														 in command line* 28.12.2018 - Behdad Ghaffari */
+		//TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 64, "Integer", cmd); 
+
 		TCLAP::ValueArg<int32> overlapArg("v", "overlap", "Brick overlap (size of halo)", false, 4, "Integer", cmd);
 
 		TCLAP::ValueArg<string> quantStepsArg("q", "quantstep", "Enable compression with fixed quantization steps [%f %f ...]", false, "[5e-4 5e-4 5e-4 5e-4]", "Float Array", cmd);
@@ -305,6 +309,7 @@ int main(int argc, char* argv[])
 		LOAD_ARG_FROM_JSON(volumeSize[2], volumeSizeXArg, "griddims", Json::ARRAY, AsArray()[0].AsInt32());
 		LOAD_ARG_FROM_JSON(volumeSize[1], volumeSizeYArg, "griddims", Json::ARRAY, AsArray()[1].AsInt32());
 		LOAD_ARG_FROM_JSON(volumeSize[0], volumeSizeZArg, "griddims", Json::ARRAY, AsArray()[2].AsInt32());
+
 		//volumeSize[0] = volumeSizeXArg.getValue();
 		//volumeSize[1] = volumeSizeYArg.getValue();
 		//volumeSize[2] = volumeSizeZArg.getValue();
@@ -611,6 +616,8 @@ int main(int argc, char* argv[])
 	out.SetTimeSpacing(timeSpacing);
 
 	Vec3i brickCount = (volumeSize + brickDataSize - 1) / brickDataSize;
+
+
 
 	char fn[1024];
 

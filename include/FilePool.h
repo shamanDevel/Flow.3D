@@ -11,6 +11,7 @@
 
 #include <Windows.h>
 
+// what is FilePool???
 
 class FilePool
 {

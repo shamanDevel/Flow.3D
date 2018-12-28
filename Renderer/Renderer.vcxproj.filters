@@ -718,6 +718,7 @@
     <None Include="RaycasterKernelIso2SeparateStep.cui">
       <Filter>Raycaster</Filter>
     </None>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Box.fx">

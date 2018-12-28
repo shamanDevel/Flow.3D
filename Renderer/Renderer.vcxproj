@@ -416,6 +416,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <None Include="Advect.cuh" />
     <None Include="AdvectDense.cuh" />
     <None Include="AdvectTime.cuh" />
+    <None Include="ClassDiagram.cd" />
     <None Include="Coords.cuh" />
     <None Include="IntegratorCommon.cuh" />
     <None Include="Jacobian.cuh" />
