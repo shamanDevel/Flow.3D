@@ -166,8 +166,8 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<float> domainSizeZArg("", "domainZ", "The domain size in z-direction", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> timeSpacingArg("t", "timespacing", "Distance between time steps", false, 1.0f, "Float", cmd);
 		
-		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", true, 64, "Integer", cmd); /* \param req changed to "true" required to enter bricksize
-																														 in command line* 28.12.2018 - Behdad Ghaffari */
+		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", true, 64, "Integer", cmd); /* \param req changed to "true" entering bricksize
+																														 in command line 28.12.2018 - Behdad Ghaffari */
 		//TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 64, "Integer", cmd); 
 
 		TCLAP::ValueArg<int32> overlapArg("v", "overlap", "Brick overlap (size of halo)", false, 4, "Integer", cmd);
@@ -377,11 +377,11 @@ int main(int argc, char* argv[])
 		brickSize = brickSizeArg.getValue();
 		overlap = overlapArg.getValue();
 
-		//if(quantStepsArg.isSet())
-		//{
-		compression = quantFirstArg.isSet() ? COMPRESSION_FIXEDQUANT_QF : COMPRESSION_FIXEDQUANT;
-		quantStepsString = quantStepsArg.getValue();
-		//}
+		if(quantStepsArg.isSet()) // Remove quantization @Behdad
+		{
+			compression = quantFirstArg.isSet() ? COMPRESSION_FIXEDQUANT_QF : COMPRESSION_FIXEDQUANT;
+			quantStepsString = quantStepsArg.getValue();
+		}
 		lessRLE = lessRLEArg.getValue();
 		huffmanBits = huffmanBitsArg.getValue();
 
