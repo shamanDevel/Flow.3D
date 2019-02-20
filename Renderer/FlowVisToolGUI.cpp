@@ -1588,28 +1588,36 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& flowVisTool, bool& resizeNextFrame
 				{
 					userInteraction = true;
 
-					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)flowVisTool.g_renderingParams.m_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
-
+					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)flowVisTool.g_renderingParams.m_windowSize.x(),\
+						(double)ImGui::GetIO().MouseDelta.y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
 					tum3D::Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)orbitSens;
 
-					// Don't trust this code. Seriously, I have no idea how this is working.
+
 					tum3D::Vec4f rotationX;
-
-					tum3D::Vec3f up;
-					tum3D::rotateVecByQuaternion(tum3D::Vec3f(0.0f, 0.0f, 1.0f), flowVisTool.g_viewParams.m_rotationQuat, up);
-					up = tum3D::normalize(up);
-
-					tum3D::rotationQuaternion((float)(up.y() < 0.0f ? -delta.x() : delta.x()) * PI, up, rotationX);
-					//tum3D::rotationQuaternion(delta.x() * PI, Vec3f(0.0f, 0.0f, 1.0f), rotationX);
-
-					tum3D::Vec4f rotation = tum3D::Vec4f(1, 0, 0, 0);
-
-					tum3D::multQuaternion(rotationX, flowVisTool.g_viewParams.m_rotationQuat, rotation); flowVisTool.g_viewParams.m_rotationQuat = rotation;
-
+					tum3D::Vec4f rotation;
 					tum3D::Vec4f rotationY;
-					tum3D::rotationQuaternion((float)delta.y() * PI, tum3D::Vec3f(1.0f, 0.0f, 0.0f), rotationY);
+					////////////////////////////// rotation around X-axis /////////////////////////
 
-					tum3D::multQuaternion(rotationY, flowVisTool.g_viewParams.m_rotationQuat, rotation); flowVisTool.g_viewParams.m_rotationQuat = rotation;
+					// calculate the rotation matrix by delta.x() and around up vector and store it in rotationX
+					tum3D::rotationQuaternion((float)(delta.x()) * PI, tum3D::Vec3f(0.0f, 1.0f, 0.0f), rotationX);
+
+					// calculate the 4X4 rotation matrix
+					tum3D::multQuaternion(rotationX, flowVisTool.g_viewParams.m_rotationQuat, rotation); 
+
+					// apply the roation
+					flowVisTool.g_viewParams.m_rotationQuat = rotation;
+
+					////////////////////////////// rotation around Y-axis /////////////////////////
+
+					// calculate the 3x3 rotation matrix and save it in rotationY
+					tum3D::rotationQuaternion((float)(delta.y()) * PI, tum3D::Vec3f(1.0f, 0.0f, 0.0f), rotationY);
+					
+					// calculate the 4x4 rotation matrix and save it in rotation
+					tum3D::multQuaternion(rotationY, flowVisTool.g_viewParams.m_rotationQuat, rotation);
+
+					// apply the roation matrix
+					flowVisTool.g_viewParams.m_rotationQuat = rotation;
+
 				}
 			}
 

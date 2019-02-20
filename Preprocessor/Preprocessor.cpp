@@ -109,10 +109,18 @@ int main(int argc, char* argv[])
 	Vec3i volumeSize;
 	int channels = 0;
 	bool periodic;
+	
+
+	// @Behdad
+	bool tempExist;
+
+
 	tum3D::Vec3f gridSpacing;
 	float timeSpacing;
 	int32 brickSize;
 	int32 overlap;
+
+	
 
 	Json::Object jsonObject;
 	bool jsonObjectAvailable;
@@ -153,10 +161,15 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<int32> tStepArg("", "tstep", "Timestep increment", false, 1, "Integer", cmd);
 		TCLAP::ValueArg<int32> tOffsetArg("", "toffset", "Index of the first timestep to write (for appending!)", false, 0, "Integer", cmd);
 
+
 		TCLAP::ValueArg<int32> volumeSizeXArg("x", "volumesizex", "X dimension of the volume", false, 1024, "Integer", cmd);
 		TCLAP::ValueArg<int32> volumeSizeYArg("y", "volumesizey", "Y dimension of the volume", false, 1024, "Integer", cmd);
 		TCLAP::ValueArg<int32> volumeSizeZArg("z", "volumesizez", "Z dimension of the volume", false, 1024, "Integer", cmd);
+
 		TCLAP::SwitchArg periodicArg("", "periodic", "Use periodic boundary, i.e. wrap (default is clamp)", cmd);
+
+		// @Behdad
+		TCLAP::SwitchArg tempExistArg("", "tempExist", "Dataset contains temperatures (otherwise a dummy channel for temperature is added to the dataset)", cmd);
 		TCLAP::ValueArg<float> gridSpacingArg("g", "gridspacing", "Distance between grid points (for cubic cells)", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> gridSpacingXArg("", "gridspacingX", "Distance between grid points in x-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> gridSpacingYArg("", "gridspacingY", "Distance between grid points in y-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
@@ -169,6 +182,7 @@ int main(int argc, char* argv[])
 		TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", true, 64, "Integer", cmd); /* \param req changed to "true" entering bricksize
 																														 in command line 28.12.2018 - Behdad Ghaffari */
 		//TCLAP::ValueArg<int32> brickSizeArg("b", "bricksize", "Brick size including overlap", false, 64, "Integer", cmd); 
+
 
 		TCLAP::ValueArg<int32> overlapArg("v", "overlap", "Brick overlap (size of halo)", false, 4, "Integer", cmd);
 
@@ -290,6 +304,8 @@ int main(int argc, char* argv[])
 		LOAD_ARG_FROM_JSON(keepLA3Ds, keepLA3DsArg, "keepLA3Ds", Json::BOOL, AsBool());
 		LOAD_ARG_FROM_JSON(overwrite, overwriteArg, "overwrite", Json::BOOL, AsBool());
 
+		
+
 		if (isRelative(inPath) //not an absolute path
 			&& !inRootPath.empty()) { //json file defines the root
 			inPath = inRootPath + "\\" + inPath;
@@ -306,6 +322,7 @@ int main(int argc, char* argv[])
 		LOAD_ARG_FROM_JSON(tStep, tStepArg, "tstep", Json::INT, AsInt32());
 		LOAD_ARG_FROM_JSON(tOffset, tOffsetArg, "toffset", Json::INT, AsInt32());
 
+
 		LOAD_ARG_FROM_JSON(volumeSize[2], volumeSizeXArg, "griddims", Json::ARRAY, AsArray()[0].AsInt32());
 		LOAD_ARG_FROM_JSON(volumeSize[1], volumeSizeYArg, "griddims", Json::ARRAY, AsArray()[1].AsInt32());
 		LOAD_ARG_FROM_JSON(volumeSize[0], volumeSizeZArg, "griddims", Json::ARRAY, AsArray()[2].AsInt32());
@@ -314,6 +331,10 @@ int main(int argc, char* argv[])
 		//volumeSize[1] = volumeSizeYArg.getValue();
 		//volumeSize[2] = volumeSizeZArg.getValue();
 		periodic = periodicArg.getValue();
+		
+		//@Behdad
+		tempExist = tempExistArg.getValue();
+
 
 		if (gridSpacingArg.isSet()) {
 			if (gridSpacingXArg.isSet() || gridSpacingYArg.isSet() || gridSpacingZArg.isSet()
@@ -377,7 +398,7 @@ int main(int argc, char* argv[])
 		brickSize = brickSizeArg.getValue();
 		overlap = overlapArg.getValue();
 
-		if(quantStepsArg.isSet()) // Remove quantization @Behdad
+		if(quantStepsArg.isSet()) // @Behdad: Remove quantization 
 		{
 			compression = quantFirstArg.isSet() ? COMPRESSION_FIXEDQUANT_QF : COMPRESSION_FIXEDQUANT;
 			quantStepsString = quantStepsArg.getValue();

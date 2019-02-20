@@ -3,7 +3,9 @@
 
 
 #include <math_constants.h>
-#include <math_functions.h>
+// math_function is an internal header file
+#include<cuda_runtime_api.h>
+//#include <math_functions.h>
 
 #include "TextureFilterMode.h"
 
