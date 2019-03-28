@@ -6,6 +6,11 @@
 #include <omp.h>
 #include <fstream>
 #include <vector>
+#include <DirectXMath.h>
+
+#include "Transformations.h"
+
+
 
 
 bool FlowVisToolGUI::g_showTrajectoriesRenderingSettingsWindow = true;
@@ -1577,82 +1582,58 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& flowVisTool, bool& resizeNextFrame
 		if (ImGui::IsItemHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
 			//if (ImGui::IsWindowHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
 		{
-			// Zoom
+			// Mouse Zoom
 			flowVisTool.g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * flowVisTool.g_viewParams.m_viewDistance;
 			flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, flowVisTool.g_viewParams.m_viewDistance);
 
-			// Orbit
+			// Mouse Orbit
 			if (ImGui::IsMouseDragging(0))
 			{
 				if (ImGui::GetIO().MouseDelta.x != 0 || ImGui::GetIO().MouseDelta.y != 0)
 				{
 					userInteraction = true;
-
-					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)flowVisTool.g_renderingParams.m_windowSize.x(),\
-						(double)ImGui::GetIO().MouseDelta.y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
-					tum3D::Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)orbitSens;
-
-
-					tum3D::Vec4f rotationX;
-					tum3D::Vec4f rotation;
-					tum3D::Vec4f rotationY;
-					////////////////////////////// rotation around X-axis /////////////////////////
-
-					// calculate the rotation matrix by delta.x() and around up vector and store it in rotationX
-					tum3D::rotationQuaternion((float)(delta.x()) * PI, tum3D::Vec3f(0.0f, 1.0f, 0.0f), rotationX);
-
-					// calculate the 4X4 rotation matrix
-					tum3D::multQuaternion(rotationX, flowVisTool.g_viewParams.m_rotationQuat, rotation); 
-
-					// apply the roation
-					flowVisTool.g_viewParams.m_rotationQuat = rotation;
-
-					////////////////////////////// rotation around Y-axis /////////////////////////
-
-					// calculate the 3x3 rotation matrix and save it in rotationY
-					tum3D::rotationQuaternion((float)(delta.y()) * PI, tum3D::Vec3f(1.0f, 0.0f, 0.0f), rotationY);
-					
-					// calculate the 4x4 rotation matrix and save it in rotation
-					tum3D::multQuaternion(rotationY, flowVisTool.g_viewParams.m_rotationQuat, rotation);
-
-					// apply the roation matrix
-					flowVisTool.g_viewParams.m_rotationQuat = rotation;
-
+					XY_Rotation(ImGui::GetIO().MouseDelta.x, ImGui::GetIO().MouseDelta.y, orbitSens, (float)ImGui::GetIO().DeltaTime, flowVisTool);
 				}
 			}
 
-			// Pan on xy plane
+			// Mouse Translation
 			if (ImGui::IsMouseDragging(2))
 			{
 				if (ImGui::GetIO().MouseDelta.x != 0 || ImGui::GetIO().MouseDelta.y != 0)
 				{
 					userInteraction = true;
-
-					tum3D::Vec2d normDelta = tum3D::Vec2d((double)ImGui::GetIO().MouseDelta.x / (double)flowVisTool.g_renderingParams.m_windowSize.x(), (double)ImGui::GetIO().MouseDelta.y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
-
-					tum3D::Vec2d delta = normDelta * (double)ImGui::GetIO().DeltaTime * (double)flowVisTool.g_viewParams.m_viewDistance * (double)panSens;
-
-					tum3D::Vec2f target = flowVisTool.g_viewParams.m_lookAt.xy();
-
-					tum3D::Vec2f right = flowVisTool.g_viewParams.GetRightVector().xy(); right = tum3D::normalize(right);
-					target = target - right * delta.x();
-
-					tum3D::Vec2f forward = flowVisTool.g_viewParams.GetViewDir().xy(); forward = tum3D::normalize(forward);
-
-					if (forward.x() == 0.0f && forward.y() == 0.0f)
-					{
-						tum3D::Vec3f for3d;
-						tum3D::crossProd(tum3D::Vec3f(0.0f, 0.0f, -flowVisTool.g_viewParams.GetViewDir().z()), tum3D::Vec3f(right.x(), right.y(), 0.0f), for3d);
-						forward = for3d.xy();
-					}
-
-					target = target - forward * delta.y();
-
-					flowVisTool.g_viewParams.m_lookAt.x() = target.x();
-					flowVisTool.g_viewParams.m_lookAt.y() = target.y();
+					XY_translation(ImGui::GetIO().MouseDelta.x, ImGui::GetIO().MouseDelta.y, panSens, (float)ImGui::GetIO().DeltaTime, flowVisTool);
 				}
 			}
+
+			// Keyboard press A
+			if (ImGui::IsKeyPressed('A'))
+			{
+				userInteraction = true;
+				std::printf("The key A is pressed \n");
+
+			}
+			// Keyboard press D
+			if (ImGui::IsKeyPressed('D'))
+			{
+				userInteraction = true;
+				std::printf("The key D is pressed \n");
+			}
+			// Keyboard press S
+			if (ImGui::IsKeyPressed('S'))
+			{
+				userInteraction = true;
+				std::printf("The key S is pressed \n");
+			}
+			// Keyboard press W
+			if (ImGui::IsKeyPressed('W'))
+			{
+				userInteraction = true;
+				std::printf("The key W is pressed \n");
+			}
+
 		}
+		
 
 		ImVec2 sceneViewPos = ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowPos().y + ImGui::GetWindowContentRegionMin().y);
 		ImVec2 sceneViewSize = ImVec2(ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x, ImGui::GetWindowContentRegionMax().y - ImGui::GetWindowContentRegionMin().y);
@@ -1926,3 +1907,5 @@ void FlowVisToolGUI::StatusWindow(FlowVisTool& flowVisTool)
 	}
 }
 #pragma endregion
+
+

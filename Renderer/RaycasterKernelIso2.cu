@@ -53,6 +53,11 @@ __device__ inline void iso2Step(
 		int index = (lengthSq(pp-rayPosTx) <= fDist) ? 0 : 1;
 
 		float3 grad = getGradient<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, pp, c_raycastParams.gridSpacing);
+		if (shadeSI)
+			vColors[index] = shadeScaleInvariant(rayDir, grad, c_raycastParams.isoColor2);
+		else
+			vColors[index] = shadeIsosurface(rayDir, grad, c_raycastParams.isoColor2);
+		
 		if(shadeSI)
 			vColors[index] = shadeScaleInvariant(rayDir, grad, c_raycastParams.isoColor2);
 		else

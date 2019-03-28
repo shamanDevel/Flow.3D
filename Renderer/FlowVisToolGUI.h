@@ -1,3 +1,7 @@
+#ifndef __TUM3D__FLOWVISTOOLGUI_H__
+#define __TUM3D__FLOWVISTOOLGUI_H__
+
+
 #pragma once
 
 #include <imgui.h>
@@ -67,3 +71,5 @@ public:
 
 	static void StatusWindow(FlowVisTool& flowVisTool);
 };
+
+#endif

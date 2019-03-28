@@ -22,6 +22,8 @@ struct ViewParams
 	tum3D::Vec4f m_rotationQuat;
 	tum3D::Vec3f m_lookAt;
 	float        m_viewDistance;
+	
+
 
 	tum3D::Vec3f GetCameraPosition() const;
 	tum3D::Vec3f GetViewDir() const;

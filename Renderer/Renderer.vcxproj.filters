@@ -193,6 +193,12 @@
     <ClCompile Include="TransferFunction.cpp">
       <Filter>TransferFunctionEditor</Filter>
     </ClCompile>
+    <ClCompile Include="Transformations.cpp">
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="Transformations.h">
+      <Filter>GUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="DXUT">

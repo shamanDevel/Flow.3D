@@ -1,3 +1,6 @@
+#ifndef __FLOWVISTOOL_H_
+#define __FLOWVISTOOL_H_
+
 #pragma once
 
 #include <vector>
@@ -33,7 +36,7 @@
 #include <ScreenEffect.h>
 
 #include <Vec.h>
-
+#include <DirectXMath.h>
 
 #pragma region AuxStructures
 struct MyCudaDevice
@@ -191,3 +194,7 @@ private:
 	FlowVisTool(const FlowVisTool&);
 	FlowVisTool& operator=(const FlowVisTool&);
 };
+
+
+
+#endif //__FLOWVISTOOL_H_

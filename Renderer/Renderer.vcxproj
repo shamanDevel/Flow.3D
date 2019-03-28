@@ -221,6 +221,8 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     </CudaCompile>
     <ClCompile Include="RenderTexture.cpp" />
     <ClCompile Include="ScreenEffect.cpp" />
+    <ClCompile Include="Transformations.cpp" />
+    <ClCompile Include="Transformations.h" />
     <ClCompile Include="TraceableVolume.cpp" />
     <ClCompile Include="TracingTestData.cpp" />
     <ClCompile Include="TransferFunction.cpp" />
