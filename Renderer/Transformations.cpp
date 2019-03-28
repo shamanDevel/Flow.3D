@@ -74,3 +74,9 @@ void XY_Rotation(float x, float y, float orbitSens, float DeltaTime, FlowVisTool
 	// apply the roation matrix
 	flowVisTool.g_viewParams.m_rotationQuat = rotation;
 }
+
+void zoomInOut(float z, float zoomSens, float DeltaTime, FlowVisTool & flowVisTool)
+{
+	flowVisTool.g_viewParams.m_viewDistance -= z * DeltaTime * zoomSens * flowVisTool.g_viewParams.m_viewDistance;
+	flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, flowVisTool.g_viewParams.m_viewDistance);
+}

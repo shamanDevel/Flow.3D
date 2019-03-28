@@ -1583,8 +1583,7 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& flowVisTool, bool& resizeNextFrame
 			//if (ImGui::IsWindowHovered(ImGuiHoveredFlags_::ImGuiHoveredFlags_None))
 		{
 			// Mouse Zoom
-			flowVisTool.g_viewParams.m_viewDistance -= ImGui::GetIO().MouseWheel * ImGui::GetIO().DeltaTime * zoomSens * flowVisTool.g_viewParams.m_viewDistance;
-			flowVisTool.g_viewParams.m_viewDistance = std::max(0.0001f, flowVisTool.g_viewParams.m_viewDistance);
+			zoomInOut(ImGui::GetIO().MouseWheel, zoomSens, ImGui::GetIO().DeltaTime, flowVisTool);
 
 			// Mouse Orbit
 			if (ImGui::IsMouseDragging(0))
@@ -1610,26 +1609,30 @@ void FlowVisToolGUI::SceneWindow(FlowVisTool& flowVisTool, bool& resizeNextFrame
 			if (ImGui::IsKeyPressed('A'))
 			{
 				userInteraction = true;
-				std::printf("The key A is pressed \n");
+				XY_translation(20, 0, panSens, (float)ImGui::GetIO().DeltaTime, flowVisTool);
+			}
+
+			// Keyboard press D
+			else if (ImGui::IsKeyPressed('D'))
+			{
+				userInteraction = true;
+				XY_translation(-20, 0, panSens, (float)ImGui::GetIO().DeltaTime, flowVisTool);
+			}
+
+			// Keyboard press S
+			else if (ImGui::IsKeyPressed('S'))
+			{
+				userInteraction = true;
+				zoomInOut(-1, zoomSens, ImGui::GetIO().DeltaTime, flowVisTool);
 
 			}
-			// Keyboard press D
-			if (ImGui::IsKeyPressed('D'))
-			{
-				userInteraction = true;
-				std::printf("The key D is pressed \n");
-			}
-			// Keyboard press S
-			if (ImGui::IsKeyPressed('S'))
-			{
-				userInteraction = true;
-				std::printf("The key S is pressed \n");
-			}
+
 			// Keyboard press W
-			if (ImGui::IsKeyPressed('W'))
+			else if (ImGui::IsKeyPressed('W'))
 			{
 				userInteraction = true;
-				std::printf("The key W is pressed \n");
+				zoomInOut(1, zoomSens, ImGui::GetIO().DeltaTime, flowVisTool);
+
 			}
 
 		}
