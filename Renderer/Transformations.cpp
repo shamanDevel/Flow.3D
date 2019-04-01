@@ -44,8 +44,11 @@ void XY_translation(float x, float y, float panSens, float DeltaTime, FlowVisToo
 
 void XY_Rotation(float x, float y, float orbitSens, float DeltaTime, FlowVisTool & flowVisTool)
 {
+	// define (thetaX, thetaY) with respect to the window size
 	tum3D::Vec2d normDelta = tum3D::Vec2d(x/ (double)flowVisTool.g_renderingParams.m_windowSize.x(), \
 		y / (double)flowVisTool.g_renderingParams.m_windowSize.y());
+
+	// multiply 2d rotation vector by orbit sensitivity
 	tum3D::Vec2d delta = normDelta * DeltaTime * (double)orbitSens;
 
 
@@ -55,10 +58,10 @@ void XY_Rotation(float x, float y, float orbitSens, float DeltaTime, FlowVisTool
 	////////////////////////////// rotation around Y-axis /////////////////////////
 
 	// calculate the rotation matrix by delta.x() and around up vector and store it in rotationX
-	tum3D::rotationQuaternion((float)(delta.x()) * PI, tum3D::Vec3f(0.0f, 1.0f, 0.0f), rotationX);
+	tum3D::rotationQuaternion((float)(delta.x()) * PI, tum3D::Vec3f(0.0f, 1.0f, 0.0f), rotationY);
 
 	// calculate the 4X4 rotation matrix
-	tum3D::multQuaternion(rotationX, flowVisTool.g_viewParams.m_rotationQuat, rotation);
+	tum3D::multQuaternion(rotationY, flowVisTool.g_viewParams.m_rotationQuat, rotation);
 
 	// apply the roation
 	flowVisTool.g_viewParams.m_rotationQuat = rotation;
@@ -66,10 +69,10 @@ void XY_Rotation(float x, float y, float orbitSens, float DeltaTime, FlowVisTool
 	////////////////////////////// rotation around X-axis /////////////////////////
 
 	// calculate the 3x3 rotation matrix and save it in rotationY
-	tum3D::rotationQuaternion((float)(delta.y()) * PI, tum3D::Vec3f(1.0f, 0.0f, 0.0f), rotationY);
+	tum3D::rotationQuaternion((float)(delta.y()) * PI, tum3D::Vec3f(1.0f, 0.0f, 0.0f), rotationX);
 
 	// calculate the 4x4 rotation matrix and save it in rotation
-	tum3D::multQuaternion(rotationY, flowVisTool.g_viewParams.m_rotationQuat, rotation);
+	tum3D::multQuaternion(rotationX, flowVisTool.g_viewParams.m_rotationQuat, rotation);
 
 	// apply the roation matrix
 	flowVisTool.g_viewParams.m_rotationQuat = rotation;
