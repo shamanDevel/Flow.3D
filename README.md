@@ -8,6 +8,7 @@ Compiling
 
 Known issues
 ------------
+- Using gaussian filter disables new timesteps loading.
 
 - Can't load timevol from external or network drives;
 - Orthographic size does not accounts for the viewport size - the current default values where chosen so that the viewport exactly fits the domain on a top-down view direction;
