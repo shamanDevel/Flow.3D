@@ -20,11 +20,12 @@ FlowVisTool::FlowVisTool()
 }
 
 
-bool FlowVisTool::Initialize(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, const std::vector<MyCudaDevice>& cudaDevices)
+bool FlowVisTool::Initialize(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, const std::vector<MyCudaDevice>& cudaDevices, IDXGISwapChain*	 _g_pSwapchain)
 {
 	m_d3dDevice = d3dDevice;
 	m_d3dDeviceContex = d3dDeviceContex;
 	g_cudaDevices = cudaDevices;
+	g_pSwapchain = _g_pSwapchain;
 
 	if (!InitCudaDevices())
 	{
@@ -147,6 +148,22 @@ bool FlowVisTool::SaveFlowGraph()
 	std::string filename = tum3d::RemoveExt(g_volumes[m_selectedVolume]->m_volume->GetFilename()) + ".fg";
 	return g_flowGraph.SaveToFile(filename);
 }
+
+// save screenshot
+bool  FlowVisTool::SaveScreenShot() 
+{
+	std::string filename;
+	if (tum3d::GetFilenameDialog("Save screenshots", "*.png\0*.png", filename, true))
+	{
+		filename = filename + ".png";
+		SaveScreenshot_toFile(filename);
+	}
+	return true;
+}
+
+
+
+
 
 bool FlowVisTool::LoadFlowGraph(FlowVisToolVolumeData* volumeData)
 {
@@ -786,6 +803,7 @@ void FlowVisTool::StartRaycasting()
 	{
 		printf("RaycasterManager::StartRendering returned STATE_ERROR.\n");
 		m_isRaycasting = false;
+
 	}
 	else
 	{
@@ -853,7 +871,12 @@ void FlowVisTool::UpdateFiltering()
 	bool finished = g_filteringManager.Filter();
 
 	if (finished)
+	{
 		m_isFiltering = false;
+		//@Behdad
+		g_raycasterManager.m_waitForRendering = false;
+	}
+	
 }
 
 void FlowVisTool::UpdateTracing(FlowVisToolVolumeData* volumeData)
@@ -911,6 +934,7 @@ void FlowVisTool::UpdateRaycasting()
 	{
 		m_isRaycasting = false;
 		g_timerRendering.Stop();
+		g_raycasterManager.m_waitForRendering = false;
 	}
 }
 
@@ -1186,7 +1210,7 @@ bool FlowVisTool::ResizeRenderBuffer()
 		desc.ArraySize = 1;
 		desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 		desc.CPUAccessFlags = 0;
-		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM; 
 		desc.MipLevels = 1;
 		desc.MiscFlags = 0;
 		desc.SampleDesc.Count = 1;
@@ -1207,23 +1231,48 @@ bool FlowVisTool::ResizeRenderBuffer()
 
 
 // save a screenshot from the framebuffer
-//void SaveScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
-//{
-//	ID3D11Resource* pSwapChainTex;
-//	g_mainRenderTargetView->GetResource(&pSwapChainTex);
-//	pd3dImmediateContext->CopyResource(g_pStagingTex, pSwapChainTex);
-//	SAFE_RELEASE(pSwapChainTex);
-//
-//	D3D11_MAPPED_SUBRESOURCE mapped = { 0 };
-//	pd3dImmediateContext->Map(g_pStagingTex, 0, D3D11_MAP_READ, 0, &mapped);
-//
-//	stbi_write_png(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData, mapped.RowPitch);
-//
-//	//stbi_write_bmp(filename.c_str(), g_windowSize.x(), g_windowSize.y(), 4, mapped.pData);
-//
-//	pd3dImmediateContext->Unmap(g_pStagingTex, 0);
-//}
-//
+void FlowVisTool::SaveScreenshot_toFile(std::string  filename)
+{
+
+	
+	// convert char* to wchar_t*
+	const wchar_t * pfilename = nullptr;
+	wchar_t * temp = new wchar_t[filename.length()];
+	const char * c_strFilename = filename.c_str();
+
+	for (int i = 0; c_strFilename[i] != 0; i++)
+	{
+		temp[i] = c_strFilename[i];
+	}
+	pfilename = temp;
+	
+	// defines pointer to the texture
+	ID3D11Texture2D* pBuffer = nullptr;
+	
+	// return a pointer to the back buffer in the swapchain and store it in pBuffer
+	HRESULT hr = g_pSwapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&pBuffer));
+
+	// if the previous step is successful save the texture in to the file
+	if (SUCCEEDED(hr))
+	{
+		//hr = DirectX::SaveDDSTextureToFile(m_d3dDeviceContex, pBuffer, pfilename);
+		hr = DirectX::SaveWICTextureToFile(m_d3dDeviceContex, pBuffer,GUID_ContainerFormatPng, pfilename, &GUID_WICPixelFormat48bppRGB);
+	} 
+	
+
+	if (SUCCEEDED(hr))
+	{
+		std::cout << "Saved!";
+	}
+	else {
+		std::cout << "Nope!";
+	}
+
+	delete[] temp;
+}
+
+
+
 //// save a screenshot from the (possibly higher-resolution) render buffer
 //void SaveRenderBufferScreenshot(ID3D11DeviceContext* pd3dImmediateContext, const std::string& filename)
 //{
@@ -1244,6 +1293,9 @@ bool FlowVisTool::ResizeRenderBuffer()
 //
 //	pd3dImmediateContext->Unmap(g_pRenderBufferStagingTex, 0);
 //}
+
+
+
 // Picks the seed from the seed texture and places is into 'seed' if there is a intersection.
 // The function returns true iff there was an intersection
 // 'intersection' will contain the 3D-coordinate of intersection

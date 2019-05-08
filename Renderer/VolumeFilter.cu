@@ -8,7 +8,7 @@
 // HACK to get stuff to compile...
 extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
 
-#include "VolumeFilterKernels.cui"
+#include "VolumeFilterKernels.cuh"
 
 
 //void VolumeFilter::GetMaskedVelocity(const float* d_pDataX, const float* d_pDataY, const float* d_pDataZ, float* d_pOutX, float* d_pOutY, float* d_pOutZ, const tum3D::Vec3i& size, eMeasure measure, float threshold)

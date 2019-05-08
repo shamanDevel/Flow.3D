@@ -489,6 +489,8 @@ void TraceParamsGUI(FlowVisToolVolumeData* selected)
 						selected->m_renderParams.m_lineRenderMode = eLineRenderMode::LINE_RENDER_PARTICLES;
 						if (selected->m_tracingManager.m_gpuMemUsageLimitMB * 1024ll * 1024ll < TraceableVolume::TimeStepSizeInBytes(selected->m_volume))
 						{
+							// @Behdad: prints the memory limit and the size of time step
+							std::printf("Memory limit is %d MB and size of time step is %d Byte", selected->m_tracingManager.m_gpuMemUsageLimitMB, TraceableVolume::TimeStepSizeInBytes(selected->m_volume));
 							openMemoryPopup = true;
 							selected->m_tracingPaused = true;
 						}
@@ -1030,8 +1032,17 @@ void FlowVisToolGUI::DatasetWindow(FlowVisTool& flowVisTool)
 	}
 }
 
+
+
 void FlowVisToolGUI::ExtraWindow(FlowVisTool& flowVisTool)
 {
+	// defines variable for saving an animation
+	static bool animation_start		= false;
+	static bool isTracing			= false;
+	static bool isRaycasting		= false;
+	static std::string animation_folderName = "";
+	static int file_index = 0;
+
 	// Extra window
 	if (g_showExtraWindow)
 	{
@@ -1105,11 +1116,86 @@ void FlowVisToolGUI::ExtraWindow(FlowVisTool& flowVisTool)
 				ImGui::Spacing();
 				ImGui::Separator();
 
-				//if (ImGui::Button("Save Screenshot", ImVec2(buttonWidth, 0)))
-				//	flowVisTool.g_saveScreenshot = true;
+				if (ImGui::Button("Save Screenshot", ImVec2(buttonWidth, 0)))
+				{
+					flowVisTool.g_saveScreenshot = true;
+					flowVisTool.SaveScreenShot();
+				}
 
-				//if (ImGui::Button("Save Renderbuffer", ImVec2(buttonWidth, 0)))
-				//	flowVisTool.g_saveRenderBufferScreenshot = true;
+				// save screenshots for all timesteps
+				ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_::ImGuiCond_Always);
+				bool nextImage = true;
+
+
+
+				if (ImGui::Button(("Save animation"), ImVec2(buttonWidth, 0)))
+				{
+					if (!flowVisTool.g_volumes.empty())
+					{
+						if (tum3d::GetFilenameDialog("Save screenshots", "*.png\0*.png", animation_folderName, true))
+						{
+							animation_start = true;
+							
+						}
+
+						// set the view distance to a default value
+						//flowVisTool.g_viewParams.m_viewDistance = 3.0f;
+
+					}
+					else
+					{
+						std::cout << "The Dataset is not loaded yet!" << "\n";
+					}
+					
+
+				}
+				if (ImGui::Button(("stop animation"), ImVec2(buttonWidth, 0)))
+				{
+					animation_start = false;
+				}
+				static FlowVisToolVolumeData* selected = nullptr;
+				
+				if (animation_start )
+				{
+					// find the current time
+					float t = flowVisTool.g_volumes[0]->m_volume->GetCurTime();
+
+					// find the last timestep of time spacing
+					float timeSpacing = flowVisTool.g_volumes[0]->m_volume->GetTimeSpacing();
+					int32 timestepMax = flowVisTool.g_volumes[0]->m_volume->GetTimestepCount() - 1;
+					float timeMax = timeSpacing * float(timestepMax);
+					selected = VolumeDataSelectionCombo(flowVisTool, selected);
+					isTracing = selected->m_tracingManager.IsTracing();
+					isRaycasting = flowVisTool.g_raycasterManager.IsRendering();
+		
+
+
+					if (t == timeMax)
+					{
+						std::printf("time is at maximum \n");
+						animation_start = false;
+						file_index = 0;
+					}
+
+					if(!isTracing && !flowVisTool.g_raycasterManager.waitForRendering())
+					{
+						selected->m_volume->SetCurTime(t + timeSpacing);
+						
+						flowVisTool.g_raycasterManager.m_waitForRendering = true;
+
+						isTracing = true;
+
+
+						// print out information
+						std::printf("Timespace is %f, Maxtime is %f, current time is %f", timeSpacing, timeMax, t);
+						std::string filename = animation_folderName + "_" + std::to_string(file_index)+".png";
+						flowVisTool.SaveScreenshot_toFile(filename);
+						file_index++;
+						//animation_tracing = selected->m_tracingManager.IsTracing();
+
+					}
+					
+				}
 			}
 			ImGui::PopItemWidth();
 		}
@@ -1492,6 +1578,7 @@ void FlowVisToolGUI::RaycastingWindow(FlowVisTool& flowVisTool)
 				v = flowVisTool.g_filterParams.m_radius[0];
 				if (ImGui::SliderInt("Radius 1", &v, 0, 64))
 					flowVisTool.g_filterParams.m_radius[0] = (unsigned int)v;
+				
 
 				v = flowVisTool.g_filterParams.m_radius[1];
 				if (ImGui::SliderInt("Radius 2", &v, 0, 64))

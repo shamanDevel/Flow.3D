@@ -64,6 +64,9 @@ public:
 
 	void RenderBricks(bool recordEvents);
 	bool IsRendering() const;
+	// @Behdad
+	bool waitForRendering() const;
+
 	void CancelRendering();
 	float GetRenderingProgress() const;
 	void UpdateBricksToLoad();
@@ -103,6 +106,8 @@ public:
 	uint									m_bricksPerFrame;
 	uint									m_nextBrickToRender;
 	uint									m_nextPass;
+	//@Behdad
+	bool									m_waitForRendering = false;
 
 	const std::vector<FilteredVolume>*		m_pFilteredVolumes;
 

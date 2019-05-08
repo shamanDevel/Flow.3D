@@ -380,19 +380,12 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <CudaCompile Include="RaycasterKernelDvr.cu" />
     <CudaCompile Include="RaycasterKernelDvrEe.cu" />
     <CudaCompile Include="RaycasterKernelIso.cu" />
-    <CudaCompile Include="RaycasterKernelMs2IsoCascade.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
+    <ClInclude Include="RaycasterKernelMs2IsoCascade.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
     <CudaCompile Include="RaycasterKernelIso2Separate.cu" />
-    <CudaCompile Include="RaycasterKernelMs3IsoCascade.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="RaycasterKernelMs3Sivr.cu">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
+    <CudaCompile Include="RaycasterKernelMs3IsoCascade.cu" />
+    <CudaCompile Include="RaycasterKernelMs3Sivr.cu" />
     <CudaCompile Include="RaycasterKernelIso2.cu" />
     <CudaCompile Include="VolumeFilter.cu" />
     <CudaCompile Include="VolumeInfoGPU.cu" />
@@ -424,24 +417,26 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     <None Include="Jacobian.cuh" />
     <None Include="MatrixMath.cuh" />
     <None Include="Measures.cuh" />
-    <None Include="RaycasterKernelMs2IsoCascadeStep.cui">
+    <None Include="RaycasterKernelMs2IsoCascadeStep.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="RaycasterKernelIso2SeparateStep.cui" />
-    <None Include="RaycasterKernelMs3IsoCascadeStep.cui">
+    <None Include="RaycasterKernelIso2SeparateStep.cuh" />
+    <None Include="RaycasterKernelMs3IsoCascadeStep.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="RaycasterKernelMs3SivrStep.cui">
+    <None Include="RaycasterKernelMs3SivrStep.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="RaycasterKernelGlobals.cui" />
-    <None Include="RaycasterKernelHelpers.cui" />
+    <ClInclude Include="RaycasterKernelGlobals.cuh" />
+    <ClInclude Include="RaycasterKernelHelpers.cuh">
+      <FileType>Document</FileType>
+    </ClInclude>
     <None Include="TextureFilter.cuh" />
     <None Include="TextureFilterTime.cuh" />
-    <None Include="VolumeFilterKernels.cui" />
+    <None Include="VolumeFilterKernels.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

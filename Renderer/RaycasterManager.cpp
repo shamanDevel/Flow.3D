@@ -210,6 +210,8 @@ RaycasterManager::eRenderState RaycasterManager::StartRendering(
 {
 	if (IsRendering())
 		CancelRendering();
+	//@Behdad
+	m_waitForRendering = true;
 
 	m_pVolume = &volume;
 	m_pFilteredVolumes = &filteredVolumes;
@@ -1011,4 +1013,10 @@ void RaycasterManager::UpdateTimings()
 
 	m_timerRender.Stop();
 	m_timings.RenderWall = m_timerRender.GetElapsedTimeMS();
+}
+
+//@Behdada
+bool RaycasterManager::waitForRendering() const
+{
+	return this->m_waitForRendering;
 }

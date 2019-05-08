@@ -531,9 +531,6 @@
     <ClInclude Include="DXUT\Core\ScreenGrab.h">
       <Filter>DXUT</Filter>
     </ClInclude>
-    <ClInclude Include="DXUT\Core\WICTextureLoader.h">
-      <Filter>DirectXTK</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\imgui\imconfig.h">
       <Filter>GUI\imgui</Filter>
     </ClInclude>
@@ -585,6 +582,9 @@
     </ClInclude>
     <ClInclude Include="TransferFunction.h">
       <Filter>TransferFunctionEditor</Filter>
+    </ClInclude>
+    <ClInclude Include="DXUT\Core\WICTextureLoader.h">
+      <Filter>DirectXTK</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -676,18 +676,6 @@
     <None Include="RaycasterKernelHelpers.cui">
       <Filter>Raycaster</Filter>
     </None>
-    <None Include="RaycasterKernelMs2IsoCascadeStep.cui">
-      <Filter>Raycaster</Filter>
-    </None>
-    <None Include="RaycasterKernelMs3IsoCascadeStep.cui">
-      <Filter>Raycaster</Filter>
-    </None>
-    <None Include="RaycasterKernelMs3SivrStep.cui">
-      <Filter>Raycaster</Filter>
-    </None>
-    <None Include="RaycasterKernelGlobals.cui">
-      <Filter>Raycaster</Filter>
-    </None>
     <None Include="Jacobian.cuh">
       <Filter>CudaTurbulence</Filter>
     </None>
@@ -706,9 +694,6 @@
     <None Include="Coords.cuh">
       <Filter>CudaTurbulence</Filter>
     </None>
-    <None Include="VolumeFilterKernels.cui">
-      <Filter>Filtering</Filter>
-    </None>
     <None Include="TextureFilterTime.cuh">
       <Filter>CudaTurbulence</Filter>
     </None>
@@ -721,10 +706,25 @@
     <None Include="AdvectDense.cuh">
       <Filter>CudaTurbulence</Filter>
     </None>
-    <None Include="RaycasterKernelIso2SeparateStep.cui">
+    <None Include="ClassDiagram.cd" />
+    <None Include="RaycasterKernelGlobals.cuh">
       <Filter>Raycaster</Filter>
     </None>
-    <None Include="ClassDiagram.cd" />
+    <None Include="RaycasterKernelIso2SeparateStep.cuh">
+      <Filter>Raycaster</Filter>
+    </None>
+    <None Include="RaycasterKernelMs3IsoCascadeStep.cuh">
+      <Filter>Raycaster</Filter>
+    </None>
+    <None Include="RaycasterKernelMs3SivrStep.cuh">
+      <Filter>Raycaster</Filter>
+    </None>
+    <None Include="RaycasterKernelMs2IsoCascadeStep.cuh">
+      <Filter>Raycaster</Filter>
+    </None>
+    <None Include="VolumeFilterKernels.cuh">
+      <Filter>Filtering</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Box.fx">

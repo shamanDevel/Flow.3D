@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include <d3d11.h>
+#include "WICTextureLoader.h"
 
 #include <cuda_runtime.h>
 #include <cuda_d3d11_interop.h>
@@ -35,8 +36,12 @@
 #include <RenderTexture.h>
 #include <ScreenEffect.h>
 
+// windows codec header
+#include <wincodec.h>
+
 #include <Vec.h>
 #include <DirectXMath.h>
+#include <ScreenGrab.h>
 
 #pragma region AuxStructures
 struct MyCudaDevice
@@ -65,6 +70,9 @@ public:
 	ID3D11Texture2D*			g_pRenderBufferTempTex = nullptr;
 	ID3D11ShaderResourceView*	g_pRenderBufferTempSRV = nullptr;
 	ID3D11RenderTargetView*		g_pRenderBufferTempRTV = nullptr;
+
+	// swapchain especially needed for screenshot
+	IDXGISwapChain*				g_pSwapchain = nullptr;
 
 	// render target to hold last finished image
 	ID3D11Texture2D*        g_pRaycastFinishedTex = nullptr;
@@ -103,6 +111,9 @@ public:
 
 	bool		m_restartFiltering = false;
 
+	// adding screenshot functionality
+	bool		g_saveScreenshot = false;
+
 	cudaGraphicsResource*	g_pTfEdtSRVCuda = nullptr;
 
 	FilterParams			g_filterParams;
@@ -123,11 +134,12 @@ private:
 	// Currently only particle tracing can be simultaneous. We can filter and raycast one volume at a time. This variable indicated which one should be used with everything else besides particle tracing.
 	int m_selectedVolume = -1;
 
+	
 
 public:
 	FlowVisTool();
 
-	bool Initialize(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, const std::vector<MyCudaDevice>& cudaDevices);
+	bool Initialize(ID3D11Device* d3dDevice, ID3D11DeviceContext* d3dDeviceContex, const std::vector<MyCudaDevice>& cudaDevices, IDXGISwapChain* _g_pSwapchain);
 	void Release();
 	void OnFrame(float deltaTime);
 
@@ -141,6 +153,15 @@ public:
 
 	void BuildFlowGraph(const std::string& filenameTxt = "");
 	bool SaveFlowGraph();
+	
+	// saves screenshots to file
+	void SaveScreenshot_toFile(std::string  filename);
+	bool SaveScreenShot();
+
+	// save animation
+	bool SaveAnimation(FlowVisTool & flowVisTool, TimeVolume* volume);
+
+
 	bool LoadFlowGraph(FlowVisToolVolumeData* volumeData);
 #ifdef Single
 	void LoadOrBuildFlowGraph();

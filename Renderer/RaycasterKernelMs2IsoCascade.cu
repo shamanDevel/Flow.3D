@@ -6,10 +6,10 @@
 #include "RaycasterKernelDefines.h"
 
 
-#include "RaycasterKernelGlobals.cui"
-#include "RaycasterKernelHelpers.cui"
+#include "RaycasterKernelGlobals.cuh"
+#include "RaycasterKernelHelpers.cuh"
 
-#include "RaycasterKernelMs2IsoCascadeStep.cui"
+#include "RaycasterKernelMs2IsoCascadeStep.cuh"
 
 
 

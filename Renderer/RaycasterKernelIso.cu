@@ -6,8 +6,8 @@
 #include "RaycasterKernelDefines.h"
 
 
-#include "RaycasterKernelGlobals.cui"
-#include "RaycasterKernelHelpers.cui"
+#include "RaycasterKernelGlobals.cuh"
+#include "RaycasterKernelHelpers.cuh"
 
 
 template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool shadeSI>
@@ -28,10 +28,11 @@ __device__ inline void isoStep(
 		float3 posOut = isInside ? pos - step : pos;
 		float3 posIn  = isInside ? pos : pos - step;
 		float3 posIsoTex = binarySearch<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, w2t(posOut), w2t(posIn), c_raycastParams.gridSpacing, c_raycastParams.isoValues.x, c_raycastParams.measureScale1);
-
+		
 		float3 grad = getGradient<measureSource, F, C>(c_raycastParams.measure1, g_texVolume1, posIsoTex, c_raycastParams.gridSpacing);
+
 		float4 color = shadeSI ? shadeScaleInvariant(rayDir, grad, c_raycastParams.isoColor1) : shadeIsosurface(rayDir, grad, c_raycastParams.isoColor1);
-		// color from vorticity direction:
+		// colo from vorticity direction:
 		//float3 vort = fabs(normalize(getVorticity<F>(g_texVolume1, pos)));
 		//float4 color = shadeIsosurface(rayDir, grad, make_float4(vort, c_raycastParams.isoColor1.w));
 
@@ -65,12 +66,14 @@ __device__ inline void isoRaycast(
 	float3 rayPos = getRayPos(c_raycastParams.viewInv);
 	float3 rayDir = getRayDir(c_raycastParams.viewInv, x, y);
 
+
 	x += renderTargetOffset.x;
 	y += renderTargetOffset.y;
 
 	// find intersection with box
 	float tnear, tfar;
-	if (!intersectBox(rayPos, rayDir, boxMin, boxMax, &tnear, &tfar)) return;
+	if (!intersectBox(rayPos, rayDir, boxMin, boxMax, &tnear, &tfar))
+		return;
 	tnear = fmaxf(tnear, 0.0f); // clamp to near plane
 
 	// current position and step increment in world space

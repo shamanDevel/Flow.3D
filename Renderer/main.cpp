@@ -519,7 +519,7 @@ bool CreateApplicationWindow()
 #pragma region Main
 bool InitializeFlowVisTool()
 {
-	if (!g_flowVisTool.Initialize(g_pd3dDevice, g_pd3dDeviceContext, g_cudaDevices))
+	if (!g_flowVisTool.Initialize(g_pd3dDevice, g_pd3dDeviceContext, g_cudaDevices, g_pSwapChain))
 		return false;
 
 	//g_flowVisTool.OpenVolumeFile("C:\\Users\\ge25ben\\Data\\TimeVol\\avg-wsize-170-wbegin-001.timevol");
