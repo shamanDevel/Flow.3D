@@ -586,6 +586,9 @@
     <ClInclude Include="DXUT\Core\WICTextureLoader.h">
       <Filter>DirectXTK</Filter>
     </ClInclude>
+    <ClInclude Include="RaycasterKernelMs2IsoCascade.cu" />
+    <ClInclude Include="RaycasterKernelGlobals.cuh" />
+    <ClInclude Include="RaycasterKernelHelpers.cuh" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="BrickSlot.cu" />
@@ -599,9 +602,6 @@
       <Filter>Raycaster</Filter>
     </CudaCompile>
     <CudaCompile Include="RaycasterKernelIso.cu">
-      <Filter>Raycaster</Filter>
-    </CudaCompile>
-    <CudaCompile Include="RaycasterKernelMs2IsoCascade.cu">
       <Filter>Raycaster</Filter>
     </CudaCompile>
     <CudaCompile Include="RaycasterKernelMs3IsoCascade.cu">
@@ -673,9 +673,6 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="RaycasterKernelHelpers.cui">
-      <Filter>Raycaster</Filter>
-    </None>
     <None Include="Jacobian.cuh">
       <Filter>CudaTurbulence</Filter>
     </None>
@@ -707,9 +704,6 @@
       <Filter>CudaTurbulence</Filter>
     </None>
     <None Include="ClassDiagram.cd" />
-    <None Include="RaycasterKernelGlobals.cuh">
-      <Filter>Raycaster</Filter>
-    </None>
     <None Include="RaycasterKernelIso2SeparateStep.cuh">
       <Filter>Raycaster</Filter>
     </None>

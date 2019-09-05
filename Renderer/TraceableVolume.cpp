@@ -82,6 +82,7 @@ size_t TraceableVolume::TimeStepSizeInBytes(const TimeVolume* volume)
 	return volume->GetBrickCount().volume() * BrickTimeSizeInBytes(volume, 1);
 }
 
+
 bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bool timeDependent, int gpuMemUsageLimitMB)
 {
 	//if (m_pVolume == nullptr || !m_pVolume->IsOpen())
@@ -139,9 +140,10 @@ bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bo
 	uint channelCount = m_pVolume->GetChannelCount();
 	uint channelCountTex = (channelCount == 3) ? 4 : channelCount;
 
-
-	// allocate channel buffers for decompression
+	//@Behdad: We do not use compression any more!
+	// allocate channel buffers for decompression 
 	size_t brickSizeBytePerChannel = brickSize * brickSize * brickSize * sizeof(float);
+	
 	m_dpChannelBuffer.resize(channelCount);
 	m_pChannelBufferCPU.resize(channelCount);
 	for (size_t channel = 0; channel < m_dpChannelBuffer.size(); channel++)
@@ -211,14 +213,18 @@ bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bo
 
 	if (cpuTracing)
 	{
+		
 		Vec3ui size = brickSize * m_brickSlotCount;
 		g_volume.size = make_uint3(size);
 		g_volume.data.resize(size.volume());
 		printf("TraceableVolume::CreateVolumeDependentResources:\n\tAllocated %ux%u brick slot(s) (target %u) with %u time slot(s) each\n",
 			m_brickSlotCount.y(), m_brickSlotCount.z(), brickSlotCountMax, m_brickSlotCount.x());
 	}
+	
+	// GPU Tracing (This part should be fine, but before that we have messed up with GPU memory)
 	else
 	{
+		
 		m_brickAtlas = new BrickSlot();
 		if (!m_brickAtlas->Create(brickSize, channelCount, m_brickSlotCount))
 		{
@@ -360,6 +366,7 @@ void TraceableVolume::ReleaseResources()
 		cudaSafeCall(cudaFree(m_dpChannelBuffer[channel]));
 		cudaSafeCall(cudaFreeHost(m_pChannelBufferCPU[channel]));
 	}
+	
 	m_dpChannelBuffer.clear();
 	m_pChannelBufferCPU.clear();
 

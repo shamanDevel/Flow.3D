@@ -115,8 +115,12 @@ bool BrickSlot::Create(uint size, uint channelCount, const Vec3ui& slotCount)
 
 		
 		cudaMemGetInfo(&memFree, &memTotal);
-		std::cout << "cudaMalloc3DArray: " << double(s) / (1024.0 * 1024.0) << "MB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
 
+
+		std::cout << "cudaMalloc3DArray: " << double(s) / (1024.0 * 1024.0) << "MB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB " << "Total Memory: " << float(memTotal) / (1024.0f * 1024.0f) << "MB" << std::endl; 
+
+
+		// There is a problem with the uncompressed version. The program consumes memory two times the size of each time step
 		cudaError_t result = cudaMalloc3DArray(&m_pArray[tex], &channelDesc[tex], extent, cudaArraySurfaceLoadStore);
 
 		if(result != cudaSuccess) {
