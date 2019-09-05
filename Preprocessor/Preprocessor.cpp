@@ -170,6 +170,7 @@ int main(int argc, char* argv[])
 
 		// @Behdad
 		TCLAP::SwitchArg tempExistArg("", "tempExist", "Dataset contains temperatures (otherwise a dummy channel for temperature is added to the dataset)", cmd);
+
 		TCLAP::ValueArg<float> gridSpacingArg("g", "gridspacing", "Distance between grid points (for cubic cells)", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> gridSpacingXArg("", "gridspacingX", "Distance between grid points in x-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
 		TCLAP::ValueArg<float> gridSpacingYArg("", "gridspacingY", "Distance between grid points in y-direction (for non-cubic cells)", false, 1.0f, "Float", cmd);
@@ -582,7 +583,7 @@ int main(int argc, char* argv[])
 	}
 
 
-	float *srcSlice = new float[volumeSize[0] * volumeSize[1] * 4];		// 4 = max number of channels
+	float *srcSlice = new float[(float)volumeSize[0] * (float)volumeSize[1] * 4.0f];		// 4 = max number of channels
 	std::vector<std::vector<float>> rawBrickChannelData(channels);
 	std::vector<std::vector<float>> rawBrickChannelDataReconst(channels);
 	std::vector<std::vector<uint32>> compressedBrickChannelData(channels);
@@ -726,6 +727,7 @@ int main(int argc, char* argv[])
 
 			// Read slice by slice and write to target array
 			cout << "Creating LA3D for " << fileName << "\n\n";
+
 
 			for (int32 slice = 0; slice < volumeSize[2]; ++slice)
 			{
