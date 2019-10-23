@@ -583,7 +583,12 @@ int main(int argc, char* argv[])
 	}
 
 
-	float *srcSlice = new float[(float)volumeSize[0] * (float)volumeSize[1] * 4.0f];		// 4 = max number of channels
+	const size_t PAGE_SIZE = 64;
+	const size_t numPagesX = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
+	const size_t numPagesY = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
+	const size_t numPagesZ = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
+
+	float* srcSlice = new float[volumeSize[0] * PAGE_SIZE * 4];		// 4 = max number of channels
 	std::vector<std::vector<float>> rawBrickChannelData(channels);
 	std::vector<std::vector<float>> rawBrickChannelDataReconst(channels);
 	std::vector<std::vector<uint32>> compressedBrickChannelData(channels);
@@ -701,7 +706,7 @@ int main(int argc, char* argv[])
 			string tmpFilePath = tmpPath + "tmp_" + fileName + ".la3d";
 			wstring wstrTmpFilePath(tmpFilePath.begin(), tmpFilePath.end());
 
-			if(tum3d::FileExists(tmpFilePath))
+			if (tum3d::FileExists(tmpFilePath))
 			{
 				//TODO check size etc?
 				cout << "Using existing LA3D file " << tmpFilePath << "\n";
@@ -717,7 +722,7 @@ int main(int argc, char* argv[])
 			E_ASSERT("File " << filePath << " does not exist", tum3d::FileExists(filePath));
 
 			// Open file
-			FILE *file;
+			FILE* file;
 			fopen_s(&file, filePath.c_str(), "rb");
 			E_ASSERT("Could not open file \"" << filePath << "\"", file != nullptr);
 
@@ -728,13 +733,35 @@ int main(int argc, char* argv[])
 			// Read slice by slice and write to target array
 			cout << "Creating LA3D for " << fileName << "\n\n";
 
-
-			for (int32 slice = 0; slice < volumeSize[2]; ++slice)
+			
+			for (int32 pageSliceZ = 0; pageSliceZ < numPagesZ; ++pageSliceZ)
 			{
-				SimpleProgress(slice, volumeSize[2] - 1);
+				size_t pageZStart = pageSliceZ * PAGE_SIZE;
+				size_t pageDepth = PAGE_SIZE;
 
-				fread(srcSlice, sizeof(float) * fdesc->channels, volumeSize[0] * volumeSize[1], file);
-				fdesc->tmpArray->CopyFrom(srcSlice, 0, 0, slice, volumeSize[0], volumeSize[1], 1, volumeSize[0], volumeSize[1]);
+				if (pageSliceZ == numPagesZ - 1 && volumeSize[2] % PAGE_SIZE != 0) {
+					pageDepth = volumeSize[2] % PAGE_SIZE;
+				}
+
+				for (int32 pageSliceY = 0; pageSliceY < numPagesY; ++pageSliceY)
+				{
+					SimpleProgress(pageSliceZ * numPagesY + pageSliceY, numPagesZ * numPagesY);
+
+					size_t pageYStart = pageSliceY * PAGE_SIZE;
+					size_t pageHeight = PAGE_SIZE;
+
+					if (pageYStart == numPagesY - 1 && volumeSize[1] % PAGE_SIZE != 0) {
+						pageHeight = volumeSize[1] % PAGE_SIZE;
+					}
+
+					for (int32 sliceZ = pageZStart; sliceZ < pageZStart + pageDepth; ++sliceZ)
+					{
+						int64_t filePos = sliceZ * volumeSize[1] * volumeSize[0] + pageYStart * volumeSize[0];
+						_fseeki64(file, filePos, SEEK_SET);
+						fread(srcSlice, sizeof(float) * fdesc->channels, volumeSize[0] * pageHeight, file);
+						fdesc->tmpArray->CopyFrom(srcSlice, 0, pageYStart, sliceZ, volumeSize[0], pageHeight, 1, volumeSize[0], pageHeight);
+					}
+				}
 			}
 		}
 
