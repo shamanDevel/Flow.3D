@@ -736,7 +736,7 @@ int main(int argc, char* argv[])
 			
 			for (int32 pageSliceZ = 0; pageSliceZ < numPagesZ; ++pageSliceZ)
 			{
-				SimpleProgress(pageSliceZ, numPagesZ);
+				SimpleProgress(pageSliceZ, numPagesZ - 1);
 
 				size_t pageZStart = pageSliceZ * PAGE_SIZE;
 				size_t pageDepth = PAGE_SIZE;
