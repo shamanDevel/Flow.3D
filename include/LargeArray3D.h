@@ -1004,7 +1004,7 @@ void LargeArray3D<T>::CopyFrom(void* pSource, unsigned int uiX, unsigned int uiY
 	for (unsigned int z = uiZ; z < uiZ + uiDepth; z++) {
 		for (unsigned int y = uiY; y < uiY + uiHeight; y++) {
 			for (unsigned int x = uiX; x < uiX + uiWidth; x++) {
-				memcpy(Get(x,y,z), &pucSource[m_uiDim * sizeof(T) * (x-uiX + (y-uiY + (z-uiZ)*uiSourceHeight)*uiSourceWidth)], sizeof(T)*m_uiDim);
+				memcpy(Get(x,y,z), &pucSource[m_uiDim * sizeof(T) * (x-uiX + (y-uiY + (size_t)(z-uiZ)*uiSourceHeight)*uiSourceWidth)], sizeof(T)*m_uiDim);
 			}
 		}
 	}
