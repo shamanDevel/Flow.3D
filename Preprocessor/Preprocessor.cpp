@@ -91,7 +91,8 @@ int main(int argc, char* argv[])
 	{
 		string fileMask;
 		int channels;
-		LA3D::LargeArray3D<float>* tmpArray;
+		//LA3D::LargeArray3D<float>* tmpArray; // TODO: Remove
+		FILE* file;
 	};
 
 	//atexit(&e);
@@ -418,7 +419,7 @@ int main(int argc, char* argv[])
 			FileListItem desc;
 			E_ASSERT("Invalid input file desc: " << *it, sscanf_s(it->c_str(), "%[^:]:%d", tmp, 1024, &desc.channels) == 2);
 			desc.fileMask = tmp;
-			desc.tmpArray = new LA3D::LargeArray3D<float>(desc.channels);
+			desc.file = NULL;
 
 			fileList.push_back(desc);
 			channels += desc.channels;
@@ -553,7 +554,6 @@ int main(int argc, char* argv[])
 	}
 
 	// accumulated timings, in seconds
-	float timeCreateLA3D = 0.0f;
 	float timeBricking = 0.0f;
 	float timeCompressGPU = 0.0f;
 	float timeDecompressGPU = 0.0f;
@@ -698,24 +698,10 @@ int main(int argc, char* argv[])
 
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
-			cout << "\n\n";
-
 			sprintf_s(fn, fdesc->fileMask.c_str(), timestep);
 			string fileName(fn);
 
-			string tmpFilePath = tmpPath + "tmp_" + fileName + ".la3d";
-			wstring wstrTmpFilePath(tmpFilePath.begin(), tmpFilePath.end());
-
-			if (tum3d::FileExists(tmpFilePath))
-			{
-				//TODO check size etc?
-				cout << "Using existing LA3D file " << tmpFilePath << "\n";
-				fdesc->tmpArray->Open(wstrTmpFilePath.c_str(), true, laMem);
-				createdLA3Ds = false;
-				continue;
-			}
-
-			cout << "Loading channels from " << fileName << "...\n";
+			cout << "Opening file " << fileName << "...\n";
 
 			// Check if file exists
 			string filePath = inPath + fileName;
@@ -725,54 +711,18 @@ int main(int argc, char* argv[])
 			FILE* file;
 			fopen_s(&file, filePath.c_str(), "rb");
 			E_ASSERT("Could not open file \"" << filePath << "\"", file != nullptr);
-
-
-			// Create output array
-			fdesc->tmpArray->Create(volumeSize[0], volumeSize[1], volumeSize[2], 64, 64, 64, wstrTmpFilePath.c_str(), laMem);
-
-			// Read slice by slice and write to target array
-			cout << "Creating LA3D for " << fileName << "\n\n";
-
-			
-			for (int32 pageSliceZ = 0; pageSliceZ < numPagesZ; ++pageSliceZ)
-			{
-				size_t pageZStart = pageSliceZ * PAGE_SIZE;
-				size_t pageDepth = PAGE_SIZE;
-
-				if (pageSliceZ == numPagesZ - 1 && volumeSize[2] % PAGE_SIZE != 0) {
-					pageDepth = volumeSize[2] % PAGE_SIZE;
-				}
-
-				for (int32 pageSliceY = 0; pageSliceY < numPagesY; ++pageSliceY)
-				{
-					SimpleProgress(pageSliceZ * numPagesY + pageSliceY, numPagesZ * numPagesY);
-
-					size_t pageYStart = pageSliceY * PAGE_SIZE;
-					size_t pageHeight = PAGE_SIZE;
-
-					if (pageYStart == numPagesY - 1 && volumeSize[1] % PAGE_SIZE != 0) {
-						pageHeight = volumeSize[1] % PAGE_SIZE;
-					}
-
-					for (int32 sliceZ = pageZStart; sliceZ < pageZStart + pageDepth; ++sliceZ)
-					{
-						int64_t filePos = sliceZ * volumeSize[1] * volumeSize[0] + pageYStart * volumeSize[0];
-						_fseeki64(file, filePos, SEEK_SET);
-						fread(srcSlice, sizeof(float) * fdesc->channels, volumeSize[0] * pageHeight, file);
-						fdesc->tmpArray->CopyFrom(srcSlice, 0, pageYStart, sliceZ, volumeSize[0], pageHeight, 1, volumeSize[0], pageHeight);
-					}
-				}
-			}
+			fdesc->file = file;
 		}
-
-		LARGE_INTEGER timestampLA3DEnd;
-		QueryPerformanceCounter(&timestampLA3DEnd);
-		timeCreateLA3D += float(timestampLA3DEnd.QuadPart - timestampLA3DStart.QuadPart) / float(perfFreq.QuadPart);
 
 		cout << "\n\nBricking...\n";
 
 		LARGE_INTEGER timestampBrickingStart;
 		QueryPerformanceCounter(&timestampBrickingStart);
+
+
+		// Create a memory slice for reading from files. Four is the maximum number of channels.
+		float* memorySlice = new float[brickSize * 4];
+		const int64_t numVolumeCellsTotal = volumeSize[0] * volumeSize[1] * volumeSize[2];
 
 		// Brick and write
 		for (int32 bz = 0; bz < brickCount[2]; ++bz)
@@ -804,33 +754,58 @@ int main(int argc, char* argv[])
 							rawBrickChannelDataReconst[channel].resize(size.volume());
 						}
 
+						int32 volPos[3];
+
 						for (uint32 z = 0; z < size.z(); ++z)
 						{
+							volPos[2] = bz * brickDataSize - overlap + z;
+							if (periodic)
+							{
+								volPos[2] = (volumeSize[2] + volPos[2]) % volumeSize[2];
+							}
+							else
+							{
+								volPos[2] = clamp(volPos[2], 0, volumeSize[2] - 1);
+							}
+
 							for (uint32 y = 0; y < size.y(); ++y)
 							{
+								volPos[1] = by * brickDataSize - overlap + y;
+								if (periodic)
+								{
+									volPos[1] = (volumeSize[1] + volPos[1]) % volumeSize[1];
+								}
+								else
+								{
+									volPos[1] = clamp(volPos[1], 0, volumeSize[1] - 1);
+								}
+
+								int64_t filePos = timestep * numVolumeCellsTotal // Zeroth level: Time
+									+ static_cast<int64_t>(volPos[2]) * volumeSize[0] * volumeSize[1] // First level: z
+									+ static_cast<int64_t>(volPos[1]) * volumeSize[0] // Third level: z
+									+ static_cast<int64_t>(bx) * brickDataSize - overlap; // Fourth level: z
+								
+								_fseeki64(fdesc->file, filePos, SEEK_SET);
+								fread(memorySlice, sizeof(float) * fdesc->channels, size.x(), fdesc->file);
+
 								for (uint32 x = 0; x < size.x(); ++x)
 								{
-									int32 volPos[3];
 									volPos[0] = bx * brickDataSize - overlap + x;
-									volPos[1] = by * brickDataSize - overlap + y;
-									volPos[2] = bz * brickDataSize - overlap + z;
 
 									if(periodic)
 									{
 										volPos[0] = (volumeSize[0] + volPos[0]) % volumeSize[0];
-										volPos[1] = (volumeSize[1] + volPos[1]) % volumeSize[1];
-										volPos[2] = (volumeSize[2] + volPos[2]) % volumeSize[2];
 									}
 									else
 									{
 										volPos[0] = clamp(volPos[0], 0, volumeSize[0] - 1);
-										volPos[1] = clamp(volPos[1], 0, volumeSize[1] - 1);
-										volPos[2] = clamp(volPos[2], 0, volumeSize[2] - 1);
 									}
 
 									for (int32 localChannel = 0; localChannel < fdesc->channels; ++localChannel)
 									{
-										*dstPtr[localChannel]++ = fdesc->tmpArray->Get(volPos[0], volPos[1], volPos[2])[localChannel];
+										// TODO
+										std::ptrdiff_t sliceOffset = static_cast<std::ptrdiff_t>(x) * fdesc->channels + localChannel;
+										*dstPtr[localChannel]++ = memorySlice[sliceOffset];
 									}
 								}
 							}
@@ -930,6 +905,8 @@ int main(int argc, char* argv[])
 			}	// For y
 		}	// For z
 
+		delete[] memorySlice;
+
 		LARGE_INTEGER timestampBrickingEnd;
 		QueryPerformanceCounter(&timestampBrickingEnd);
 		timeBricking += float(timestampBrickingEnd.QuadPart - timestampBrickingStart.QuadPart) / float(perfFreq.QuadPart);
@@ -951,21 +928,22 @@ int main(int argc, char* argv[])
 		WriteStatsCSV(fileStatsTimestep, statsTimestep.GetStats(), quantStepCommon);
 
 
+		// TODO: Delete
 		// close and (optionally) delete temp files
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
 			// delete file only if we created it ourselves
-			bool discard = createdLA3Ds && !keepLA3Ds;
+			//bool discard = createdLA3Ds && !keepLA3Ds; // TODO: Delete
 			// don't bother saving anything if file will be deleted anyway
-			fdesc->tmpArray->Close(discard);
-			if(discard)
+			//fdesc->tmpArray->Close(discard); // TODO: Delete
+			/*if(discard)
 			{
 				// delete the file
 				sprintf_s(fn, fdesc->fileMask.c_str(), timestep);
 				string fileName(fn);
 				string tmpFilePath = tmpPath + "tmp_" + fileName + ".la3d";
 				DeleteFileA(tmpFilePath.c_str());
-			}
+			}*/
 		}
 
 	}	// For timestep
@@ -983,7 +961,8 @@ int main(int argc, char* argv[])
 
 	for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 	{
-		delete fdesc->tmpArray;
+		fclose(fdesc->file);
+		fdesc->file = nullptr;
 	}
 
 	delete[] srcSlice;
@@ -1012,7 +991,6 @@ int main(int argc, char* argv[])
 	std::ofstream fileTimings(outPath + outFile + "_timings.txt");
 	fileTimings;
 	fileTimings << "Total time:       " << fixed << setw(10) << setprecision(3) << timeGlobal << " s\n";
-	fileTimings << "Create LA3Ds:     " << fixed << setw(10) << setprecision(3) << timeCreateLA3D << " s\n";
 	fileTimings << "Bricking:         " << fixed << setw(10) << setprecision(3) << timeBricking << " s\n";
 	fileTimings << "Compress (GPU):   " << fixed << setw(10) << setprecision(3) << timeCompressGPU << " s\n";
 	fileTimings << "Decompress (GPU): " << fixed << setw(10) << setprecision(3) << timeDecompressGPU << " s\n";
