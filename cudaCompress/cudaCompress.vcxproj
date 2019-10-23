@@ -172,7 +172,7 @@ copy "$(CudaToolkitBinDir)\cudart64_*.dll" "$(TargetDir)"
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
       <Include>
       </Include>
       <PtxAsOptionV>false</PtxAsOptionV>

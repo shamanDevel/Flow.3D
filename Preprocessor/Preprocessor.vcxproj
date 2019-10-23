@@ -85,7 +85,7 @@ exit 1</Command>
       </Message>
     </PostBuildEvent>
     <CudaCompile>
-      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

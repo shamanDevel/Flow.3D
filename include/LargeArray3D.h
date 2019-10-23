@@ -854,14 +854,9 @@ void LargeArray3D<T>::GetPage(unsigned int uiPageX, unsigned int uiPageY, unsign
 			PageOut(pPageToPageOut);
 		}
 		PageIn(pPage);
+		m_pageCache.push_front(pPage);
+		pPage->m_pageCacheLocator = m_pageCache.begin();
 	}
-	else
-	{
-		m_pageCache.erase(pPage->m_pageCacheLocator);
-	}
-
-	m_pageCache.push_front(pPage);
-	pPage->m_pageCacheLocator = m_pageCache.begin();
 
 	m_uiLastPageX = uiPageX;
 	m_uiLastPageY = uiPageY;
