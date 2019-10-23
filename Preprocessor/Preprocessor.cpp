@@ -721,8 +721,8 @@ int main(int argc, char* argv[])
 
 
 		// Create a memory slice for reading from files. Four is the maximum number of channels.
-		float* memorySlice = new float[brickSize * 4];
-		const int64_t numVolumeCellsTotal = volumeSize[0] * volumeSize[1] * volumeSize[2];
+		float* memorySlice = new float[static_cast<int64_t>(brickSize) * 4];
+		const int64_t numVolumeCellsTotal = static_cast<int64_t>(volumeSize[0]) * volumeSize[1] * volumeSize[2];
 
 		// Brick and write
 		for (int32 bz = 0; bz < brickCount[2]; ++bz)
@@ -784,6 +784,7 @@ int main(int argc, char* argv[])
 									+ static_cast<int64_t>(volPos[2]) * volumeSize[0] * volumeSize[1] // First level: z
 									+ static_cast<int64_t>(volPos[1]) * volumeSize[0] // Third level: z
 									+ static_cast<int64_t>(bx) * brickDataSize - overlap; // Fourth level: z
+								filePos *= sizeof(float) * fdesc->channels;
 								
 								_fseeki64(fdesc->file, filePos, SEEK_SET);
 								fread(memorySlice, sizeof(float) * fdesc->channels, size.x(), fdesc->file);
@@ -803,7 +804,6 @@ int main(int argc, char* argv[])
 
 									for (int32 localChannel = 0; localChannel < fdesc->channels; ++localChannel)
 									{
-										// TODO
 										std::ptrdiff_t sliceOffset = static_cast<std::ptrdiff_t>(x) * fdesc->channels + localChannel;
 										*dstPtr[localChannel]++ = memorySlice[sliceOffset];
 									}
