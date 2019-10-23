@@ -756,7 +756,8 @@ int main(int argc, char* argv[])
 
 					for (int32 sliceZ = pageZStart; sliceZ < pageZStart + pageDepth; ++sliceZ)
 					{
-						int64_t filePos = sliceZ * volumeSize[1] * volumeSize[0] + pageYStart * volumeSize[0];
+						int64_t filePos = (static_cast<uint64_t>(sliceZ) * volumeSize[1] * volumeSize[0] + static_cast<uint64_t>(pageYStart) * volumeSize[0])
+							* sizeof(float) * fdesc->channels;
 						_fseeki64(file, filePos, SEEK_SET);
 						fread(srcSlice, sizeof(float) * fdesc->channels, volumeSize[0] * pageHeight, file);
 						fdesc->tmpArray->CopyFrom(srcSlice, 0, pageYStart, sliceZ, volumeSize[0], pageHeight, 1, volumeSize[0], pageHeight);
