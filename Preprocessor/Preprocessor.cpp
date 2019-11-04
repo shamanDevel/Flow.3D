@@ -585,8 +585,8 @@ int main(int argc, char* argv[])
 
 	const size_t PAGE_SIZE = 64;
 	const size_t numPagesX = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
-	const size_t numPagesY = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
-	const size_t numPagesZ = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
+	const size_t numPagesY = (volumeSize[1] + PAGE_SIZE - 1) / PAGE_SIZE;
+	const size_t numPagesZ = (volumeSize[2] + PAGE_SIZE - 1) / PAGE_SIZE;
 
 	float* srcSlice = new float[volumeSize[0] * PAGE_SIZE * 4];		// 4 = max number of channels
 	std::vector<std::vector<float>> rawBrickChannelData(channels);
@@ -750,20 +750,23 @@ int main(int argc, char* argv[])
 					size_t pageYStart = pageSliceY * PAGE_SIZE;
 					size_t pageHeight = PAGE_SIZE;
 
-					if (pageYStart == numPagesY - 1 && volumeSize[1] % PAGE_SIZE != 0) {
+					if (pageSliceY == numPagesY - 1 && volumeSize[1] % PAGE_SIZE != 0) {
 						pageHeight = volumeSize[1] % PAGE_SIZE;
 					}
 
 					for (int32 sliceZ = pageZStart; sliceZ < pageZStart + pageDepth; ++sliceZ)
 					{
-						int64_t filePos = (static_cast<int64_t>(sliceZ) * volumeSize[1] * volumeSize[0] + static_cast<int64_t>(pageYStart) * volumeSize[0])
-							* sizeof(float) * fdesc->channels;
+						int64_t filePos = ((int64_t)sliceZ * (int64_t)volumeSize[1] * (int64_t)volumeSize[0] + (int64_t)pageYStart * (int64_t)volumeSize[0])
+							* sizeof(float) * (int64_t)fdesc->channels;
 						_fseeki64(file, filePos, SEEK_SET);
 						fread(srcSlice, sizeof(float) * fdesc->channels, volumeSize[0] * pageHeight, file);
 						fdesc->tmpArray->CopyFrom(srcSlice, 0, pageYStart, sliceZ, volumeSize[0], pageHeight, 1, volumeSize[0], pageHeight);
 					}
 				}
 			}
+
+			// Open in read-only mode after everything has been written
+			fdesc->tmpArray->Open(wstrTmpFilePath.c_str(), true, laMem);
 		}
 
 		LARGE_INTEGER timestampLA3DEnd;

@@ -258,9 +258,10 @@ bool TraceableVolume::CreateResources(uint minTimestepIndex, bool cpuTracing, bo
 	cudaMemGetInfo(&memFree, &memTotal);
 	std::cout << "cudaMallocHost: " << float(brickSlotCount.area() * sizeof(uint) * 2) / 1024.0f << "KB" << "\tAvailable: " << float(memFree) / (1024.0f * 1024.0f) << "MB" << std::endl;
 
-	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMin, brickSlotCount.area() * sizeof(uint)));
-	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMax, brickSlotCount.area() * sizeof(uint)));
-	for (uint i = 0; i < brickCount; i++)
+	uint brickSlotCountArea = brickSlotCount.area();
+	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMin, brickSlotCountArea * sizeof(uint)));
+	cudaSafeCall(cudaMallocHost(&m_pSlotTimestepMax, brickSlotCountArea * sizeof(uint)));
+	for (uint i = 0; i < brickSlotCountArea; i++) // TODO: brickCount
 	{
 		m_pSlotTimestepMin[i] = BrickIndexGPU::INVALID;
 		m_pSlotTimestepMax[i] = BrickIndexGPU::INVALID;
