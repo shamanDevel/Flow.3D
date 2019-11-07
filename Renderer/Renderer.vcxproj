@@ -67,7 +67,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+      <CodeGeneration>compute_75,sm_75;compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <Include>%(AdditionalIncludeDirectories)</Include>
       <Defines>%(PreprocessorDefinitions)</Defines>
       <PtxAsOptionV>false</PtxAsOptionV>
@@ -122,7 +122,7 @@ xcopy /y /d  "$(SolutionDir)resources" "$(TargetDir)resources\"</Command>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_75,sm_75</CodeGeneration>
+      <CodeGeneration>compute_75,sm_75;compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <PtxAsOptionV>false</PtxAsOptionV>
       <Optimization>InheritFromHost</Optimization>
       <Include>%(AdditionalIncludeDirectories)</Include>
