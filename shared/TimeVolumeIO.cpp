@@ -600,8 +600,8 @@ void TimeVolumeIO::WriteTimesteps(FILE* indexFile)
 			bd.bytesize = brick->m_bytesize;
 			bd.paddedBytesize = brick->m_bytesizePadded;
 
-			memcpy(bd.m_pMinMeasuresInBrick, brick.m_pMinMeasuresInBrick, sizeof(float)*NUM_MEASURES);
-			memcpy(bd.m_pMaxMeasuresInBrick, brick.m_pMaxMeasuresInBrick, sizeof(float)*NUM_MEASURES);
+			memcpy(bd.m_pMinMeasuresInBrick, brick->m_pMinMeasuresInBrick, sizeof(float)*NUM_MEASURES);
+			memcpy(bd.m_pMaxMeasuresInBrick, brick->m_pMaxMeasuresInBrick, sizeof(float)*NUM_MEASURES);
 
 			fwrite(&bd, sizeof(bd), 1, indexFile);
 			fwrite(brick->m_pChannelSize, sizeof(int64), m_info.m_iChannels, indexFile);

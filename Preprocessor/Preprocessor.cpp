@@ -21,6 +21,7 @@
 #include "Statistics.h"
 
 #include "TimeVolumeIO.h"
+#include <../Renderer/Measure.h>
 
 #include "CompressVolume.h"
 #include "GPUResources.h"

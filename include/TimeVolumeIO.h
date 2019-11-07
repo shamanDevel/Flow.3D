@@ -20,6 +20,7 @@
 
 #include "FilePool.h"
 #include "TimeVolumeInfo.h"
+#include "../Renderer/Measure.h"
 
 using tum3D::Vec3i;
 using tum3D::Vec3ui;
@@ -96,6 +97,9 @@ public:
 
 		LoadingState GetLoadingState() const { return m_state; }
 		bool IsLoaded() const { return m_state == LOADING_STATE_FINISHED; }
+
+		const float* GetMinMeasuresInBrick() const { return m_pMinMeasuresInBrick; }
+		const float* GetMaxMeasuresInBrick() const  { return m_pMaxMeasuresInBrick; }
 
 	private:
 		bool		m_exists;
@@ -453,8 +457,8 @@ TimeVolumeIO::Brick& TimeVolumeIO::AddBrick(int32 timestep, const Vec3i& spatial
 		brick.m_bytesize += brick.m_pChannelSize[i];
 	}
 
-	memcpy(brick.m_pMinMeasuresInBrick, minMeasuresInBrick, sizeof(float)*NUM_MEASURES);
-	memcpy(brick.m_pMaxMeasuresInBrick, maxMeasuresInBrick, sizeof(float)*NUM_MEASURES);
+	memcpy(brick.m_pMinMeasuresInBrick, minMeasuresInBrick.data(), sizeof(float)*NUM_MEASURES);
+	memcpy(brick.m_pMaxMeasuresInBrick, maxMeasuresInBrick.data(), sizeof(float)*NUM_MEASURES);
 
 	if (!m_info.IsCompressed())
 	{
