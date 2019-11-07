@@ -30,7 +30,7 @@ std::string getFileName(std::string filePath, bool withExtension = true, char se
 
 
 const char IDENT[] = "TUM3D_TIMEVOLUME";
-const int32 CURRENT_VERSION = 2;
+const int32 CURRENT_VERSION = 3;
 const int32 DEFAULT_PADDING = 1024;
 
 
@@ -503,6 +503,9 @@ void TimeVolumeIO::ReadTimesteps(FILE* indexFile)
 			//brick.m_ppChannelData = new void*[m_info.m_iChannels];
 			//brick.m_pChannelSize = new int64[m_info.m_iChannels];
 
+			memcpy(brick.m_pMinMeasuresInBrick, bd.m_pMinMeasuresInBrick, sizeof(float)*NUM_MEASURES);
+			memcpy(brick.m_pMaxMeasuresInBrick, bd.m_pMaxMeasuresInBrick, sizeof(float)*NUM_MEASURES);
+
 			brick.m_lruIt = m_lruCache.cend();
 
 			fread_s(brick.m_pChannelSize, m_info.m_iChannels * sizeof(int64), sizeof(int64), m_info.m_iChannels, indexFile);
@@ -596,6 +599,9 @@ void TimeVolumeIO::WriteTimesteps(FILE* indexFile)
 
 			bd.bytesize = brick->m_bytesize;
 			bd.paddedBytesize = brick->m_bytesizePadded;
+
+			memcpy(bd.m_pMinMeasuresInBrick, brick.m_pMinMeasuresInBrick, sizeof(float)*NUM_MEASURES);
+			memcpy(bd.m_pMaxMeasuresInBrick, brick.m_pMaxMeasuresInBrick, sizeof(float)*NUM_MEASURES);
 
 			fwrite(&bd, sizeof(bd), 1, indexFile);
 			fwrite(brick->m_pChannelSize, sizeof(int64), m_info.m_iChannels, indexFile);

@@ -32,6 +32,8 @@ enum eMeasure
 	MEASURE_COUNT,
 	MEASURE_FORCE32 =  0xFFFFFFFF
 };
+const size_t NUM_MEASURES = static_cast<size_t>(MEASURE_TIME_IN_CURRENT_CELL) + 1;
+
 const char* GetMeasureName(eMeasure mode);
 eMeasure GetMeasureFromName(const std::string& name);
 float GetDefaultMeasureScale(eMeasure mode);

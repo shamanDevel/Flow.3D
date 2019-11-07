@@ -4,9 +4,11 @@
 #include <iomanip>
 #include <algorithm>
 #include <iterator>
+#include <cmath>
+#include <cfloat>
 #include <conio.h>
 #include <vector>
-#include <stdlib.h>
+#include <cstdlib>
 
 #include <tclap/CmdLine.h>
 #include <Json\Json.h>
@@ -78,6 +80,54 @@ std::vector<std::string> split(const std::string &s, char delim) {
 	std::vector<std::string> elems;
 	split(s, delim, std::back_inserter(elems));
 	return elems;
+}
+
+void computeMinMaxMeasures(const std::vector<std::vector<float>> &rawBrickChannelData,
+		std::vector<float> &minMeasuresInBrick, std::vector<float> &maxMeasuresInBrick) {
+	minMeasuresInBrick.resize(NUM_MEASURES);
+	maxMeasuresInBrick.resize(NUM_MEASURES);
+
+	for (size_t measureIdx = 0; measureIdx < NUM_MEASURES; measureIdx++) {
+		float minValue = -FLT_MAX;
+		float maxValue = FLT_MAX;
+
+		// HACK: Just support raw measures for now.
+		if (measureIdx >= MEASURE_VELOCITY && measureIdx <= MEASURE_TEMPERATURE && rawBrickChannelData.size() == 4) {
+			size_t dataSize = rawBrickChannelData.at(0).size();
+			minValue = FLT_MAX;
+			maxValue = -FLT_MAX;
+
+			if (measureIdx == static_cast<size_t>(MEASURE_VELOCITY)) {
+				#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
+				for (int i = 0; i < dataSize; i++) {
+					float value = std::sqrt(
+						rawBrickChannelData[0][i]*rawBrickChannelData[0][i] +
+						rawBrickChannelData[1][i]*rawBrickChannelData[1][i] +
+						rawBrickChannelData[2][i]*rawBrickChannelData[2][i]
+					);
+					minValue = std::min(minValue, value);
+					maxValue = std::max(maxValue, value);
+				}
+			} else if (measureIdx == static_cast<size_t>(MEASURE_VELOCITY_Z)) {
+				#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
+				for (int i = 0; i < dataSize; i++) {
+					float value = rawBrickChannelData[2][i];
+					minValue = std::min(minValue, value);
+					maxValue = std::max(maxValue, value);
+				}
+			} else if (measureIdx == static_cast<size_t>(MEASURE_TEMPERATURE)) {
+				#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
+				for (int i = 0; i < dataSize; i++) {
+					float value = rawBrickChannelData[3][i];
+					minValue = std::min(minValue, value);
+					maxValue = std::max(maxValue, value);
+				}
+			}
+		}
+
+		minMeasuresInBrick[measureIdx] = minValue;
+		maxMeasuresInBrick[measureIdx] = maxValue;
+	}
 }
 
 
@@ -917,14 +967,19 @@ int main(int argc, char* argv[])
 					WriteStatsCSV(fileStatsBrick, statsBrick.GetStats(), quantStepCommon);
 
 
+					std::vector<float> minMeasuresInBrick, maxMeasuresInBrick;
+					computeMinMaxMeasures(rawBrickChannelData, minMeasuresInBrick, maxMeasuresInBrick);
+
 					// Add brick to output
 					if (compression != COMPRESSION_NONE)
 					{
-						out.AddBrick((timestep - tMin) / tStep + tOffset, spatialIndex, size, compressedBrickChannelData);
+						out.AddBrick((timestep - tMin) / tStep + tOffset, spatialIndex, size, compressedBrickChannelData,
+								minMeasuresInBrick, maxMeasuresInBrick);
 					}
 					else
 					{
-						out.AddBrick((timestep - tMin) / tStep + tOffset, spatialIndex, size, rawBrickChannelData);
+						out.AddBrick((timestep - tMin) / tStep + tOffset, spatialIndex, size, rawBrickChannelData,
+								minMeasuresInBrick, maxMeasuresInBrick);
 					}
 
 				}	// For x
