@@ -1,61 +1,229 @@
 #include <vector>
 #include <cutil_math.h>
+#include "MeasuresCPU.h"
 
+/******************************************************************************
+** Linear algebra implementations
+******************************************************************************/
 
-float4 sampleVolume(const std::vector<std::vector<float>>& tex, int x, int y, int z) {
-    // TODO
-    return float4{0.0f, 0.0f, 0.0f, 0.0f};
+vec3 make_vec3(float x, float y, float z) {
+	return vec3{x, y, z};
 }
 
-inline float sampleVolumeDerivativeX(const std::vector<std::vector<float>>& tex, int x, int y, int z, float h)
+vec3 make_vec3(const vec4& v4) {
+	return vec3{v4.x, v4.y, v4.z};
+}
+
+vec4 make_vec4(float x, float y, float z, float w) {
+	return vec4{x, y, z, w};
+}
+
+vec4 make_vec4(const vec3& v3) {
+	return vec4{v3.x, v3.y, v3.z, 1.0f};
+}
+
+float dot(const vec3& v1, const vec3& v2) {
+	return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+
+float length(const vec3& v) {
+	return std::sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+}
+
+vec3 normalize(const vec3& v) {
+	return v / length(v);
+}
+
+vec3 cross(vec3 a, vec3 b) { 
+    return make_vec3(a.y*b.z - a.z*b.y, a.z*b.x - a.x*b.z, a.x*b.y - a.y*b.x); 
+}
+
+
+
+template<typename T>
+T sampleVolume(const VolumeTextureCPU& tex, int x, int y, int z);
+
+
+template<>
+vec4 sampleVolume<vec4>(const VolumeTextureCPU& tex, int x, int y, int z) {
+    return tex.samplevec4(x, y, z);
+}
+
+template<>
+vec3 sampleVolume<vec3>(const VolumeTextureCPU& tex, int x, int y, int z) {
+    return tex.samplevec3(x, y, z);
+}
+
+
+template<typename T>
+inline T sampleVolumeDerivativeX(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
 {
 	// default implementation: central differences
-	float dp = sampleVolume(tex, x + 1, y, z);
-	float dn = sampleVolume(tex, x - 1, y, z);
+	T dp = sampleVolume<T>(tex, x + 1, y, z);
+	T dn = sampleVolume<T>(tex, x - 1, y, z);
 	return (dp - dn) / (2.0f * h);
 }
 
-inline float sampleVolumeDerivativeY(const std::vector<std::vector<float>>& tex, int x, int y, int z, float h)
+template<typename T>
+inline T sampleVolumeDerivativeY(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
 {
 	// default implementation: central differences
-	float dp = sampleVolume(tex, x, y + 1, z);
-	float dn = sampleVolume(tex, x, y - 1, z);
+	T dp = sampleVolume<T>(tex, x, y + 1, z);
+	T dn = sampleVolume<T>(tex, x, y - 1, z);
 	return (dp - dn) / (2.0f * h);
 }
 
-inline float sampleVolumeDerivativeY(const std::vector<std::vector<float>>& tex, int x, int y, int z, float h)
+template<typename T>
+inline T sampleVolumeDerivativeZ(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
 {
 	// default implementation: central differences
-	float dp = sampleVolume(tex, x, y, z + 1);
-	float dn = sampleVolume(tex, x, y, z - 1);
+	T dp = sampleVolume<T>(tex, x, y, z + 1);
+	T dn = sampleVolume<T>(tex, x, y, z - 1);
 	return (dp - dn) / (2.0f * h);
 }
 
-float3x3 getJacobian(int idx) {
+mat3x3 getJacobian(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h) {
 	// default implementation: just get derivatives in x, y, z
 	// note: result is "transposed" by convention (i.e. first index is component, second index is derivative direction) - fix this some time?
-	float3x3 J;
+	mat3x3 J;
 
 	// derivative in x direction
-	float3 dx = sampleVolumeDerivativeX<F, float4, float3>(tex, coord, h);
+	vec3 dx = sampleVolumeDerivativeX<vec3>(tex, x, y, z, h);
 	J.m[0].x = dx.x;
 	J.m[1].x = dx.y;
 	J.m[2].x = dx.z;
 
 	// derivative in y direction
-	float3 dy = sampleVolumeDerivativeY<F, float4, float3>(tex, coord, h);
+	vec3 dy = sampleVolumeDerivativeY<vec3>(tex, x, y, z, h);
 	J.m[0].y = dy.x;
 	J.m[1].y = dy.y;
 	J.m[2].y = dy.z;
 
 	// derivative in z direction
-	float3 dz = sampleVolumeDerivativeZ<F, float4, float3>(tex, coord, h);
+	vec3 dz = sampleVolumeDerivativeZ<vec3>(tex, x, y, z, h);
 	J.m[0].z = dz.x;
 	J.m[1].z = dz.y;
 	J.m[2].z = dz.z;
 
 	return J;
 }
+
+inline vec3 sampleScalarGradient(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
+{
+	// default implementation: just get derivatives in x, y, z
+	vec3 grad;
+
+	// derivative in x direction
+	vec4 dx = sampleVolumeDerivativeX<vec4>(tex, x, y, z, h);
+	grad.x = dx.w;
+
+	// derivative in y direction
+	vec4 dy = sampleVolumeDerivativeY<vec4>(tex, x, y, z, h);
+	grad.y = dy.w;
+
+	// derivative in z direction
+	vec4 dz = sampleVolumeDerivativeZ<vec4>(tex, x, y, z, h);
+	grad.z = dz.w;
+
+	return grad;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// Matrix Math
+///////////////////////////////////////////////////////////////////////////////
+
+__device__ inline mat3x3 multMat3x3(const mat3x3 &A, const mat3x3 &B)
+{
+	mat3x3 erg;
+
+	erg.m[0] = make_vec3(A.m[0].x*B.m[0].x + A.m[0].y*B.m[1].x + A.m[0].z*B.m[2].x, 
+						   A.m[0].x*B.m[0].y + A.m[0].y*B.m[1].y + A.m[0].z*B.m[2].y,
+						   A.m[0].x*B.m[0].z + A.m[0].y*B.m[1].z + A.m[0].z*B.m[2].z);
+
+	erg.m[1] = make_vec3(A.m[1].x*B.m[0].x + A.m[1].y*B.m[1].x + A.m[1].z*B.m[2].x, 
+						   A.m[1].x*B.m[0].y + A.m[1].y*B.m[1].y + A.m[1].z*B.m[2].y,
+						   A.m[1].x*B.m[0].z + A.m[1].y*B.m[1].z + A.m[1].z*B.m[2].z);
+
+	erg.m[2] = make_vec3(A.m[2].x*B.m[0].x + A.m[2].y*B.m[1].x + A.m[2].z*B.m[2].x, 
+						   A.m[2].x*B.m[0].y + A.m[2].y*B.m[1].y + A.m[2].z*B.m[2].y,
+						   A.m[2].x*B.m[0].z + A.m[2].y*B.m[1].z + A.m[2].z*B.m[2].z);
+
+	return erg;
+}
+
+
+
+__device__ inline mat3x3 addMat3x3(const mat3x3 &A, const mat3x3 &B)
+{
+	mat3x3 erg;
+
+	erg.m[0] = make_vec3(A.m[0].x+B.m[0].x, A.m[0].y+B.m[0].y, A.m[0].z+B.m[0].z);
+	erg.m[1] = make_vec3(A.m[1].x+B.m[1].x, A.m[1].y+B.m[1].y, A.m[1].z+B.m[1].z);
+	erg.m[2] = make_vec3(A.m[2].x+B.m[2].x, A.m[2].y+B.m[2].y, A.m[2].z+B.m[2].z);
+
+	return erg;
+}
+
+
+
+__device__ inline float Det3x3(const mat3x3 &A)
+{
+	return float( A.m[0].x*A.m[1].y*A.m[2].z + 
+				  A.m[0].y*A.m[1].z*A.m[2].x + 
+				  A.m[0].z*A.m[1].x*A.m[2].y - 
+				  A.m[0].x*A.m[2].y*A.m[1].z - 
+				  A.m[1].x*A.m[0].y*A.m[2].z - 
+				  A.m[2].x*A.m[1].y*A.m[0].z );
+}
+
+
+
+__device__ inline float Trace3x3(const mat3x3 &A)
+{
+	return float(A.m[0].x + A.m[1].y + A.m[2].z);
+}
+
+
+
+__device__ inline float TraceAAT(const mat3x3 &A)
+{
+	return float(A.m[0].x*A.m[0].x + A.m[0].y*A.m[0].y + A.m[0].z*A.m[0].z + 
+				 A.m[1].x*A.m[1].x + A.m[1].y*A.m[1].y + A.m[1].z*A.m[1].z + 
+				 A.m[2].x*A.m[2].x + A.m[2].y*A.m[2].y + A.m[2].z*A.m[2].z);
+}
+
+
+
+__device__ inline float FrobeniusNorm3x3(const mat3x3 &A)
+{
+	return sqrtf( TraceAAT(A) );
+}
+
+
+
+__device__ inline void TransposeInplace3x3(mat3x3 &A)
+{
+	float tmp;
+
+	tmp = A.m[0].y; A.m[0].y = A.m[1].x; A.m[1].x = tmp;
+	tmp = A.m[0].z; A.m[0].z = A.m[2].x; A.m[2].x = tmp;
+	tmp = A.m[1].z; A.m[1].z = A.m[2].y; A.m[2].y = tmp;
+}
+
+
+
+__device__ inline mat3x3 Transpose3x3(const mat3x3 &A)
+{
+	mat3x3 AT;
+
+	AT.m[0] = make_vec3(A.m[0].x, A.m[1].x, A.m[2].x);
+	AT.m[1] = make_vec3(A.m[0].y, A.m[1].y, A.m[2].y);
+	AT.m[2] = make_vec3(A.m[0].z, A.m[1].z, A.m[2].z);
+
+	return AT;
+}
+
 
 
 /******************************************************************************
@@ -64,12 +232,12 @@ float3x3 getJacobian(int idx) {
 
 
 // get heat current from velocity/temperature texture
-inline float3 getHeatCurrent(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& texCoord, const float3& h)
+inline vec3 getHeatCurrent(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
 {
-	float4 velT = sampleVolume<F, float4, float4>(tex, texCoord);
-	float3 gradT = sampleScalarGradient<F>(tex, texCoord, h);
+	vec4 velT = sampleVolume<vec4>(tex, x, y, z);
+	vec3 gradT = sampleScalarGradient(tex, x, y, z, h);
 
-	float3 j;
+	vec3 j;
 
 	float ra = 7e5;
 	float pr = 0.7;
@@ -83,12 +251,13 @@ inline float3 getHeatCurrent(texture<float4, cudaTextureType3D, cudaReadModeElem
 }
 
 
-inline float getHeatCurrentAlignment(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& texCoord, const float& h)
+// TODO: Originally "const float& h". Why?
+inline float getHeatCurrentAlignment(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
 {
-	float4 velT = sampleVolume<F, float4, float4>(tex, texCoord);
-	float3 gradT = sampleScalarGradient<F>(tex, texCoord, h);
+	vec4 velT = sampleVolume<vec4>(tex, x, y, z);
+	vec3 gradT = sampleScalarGradient(tex, x, y, z, h);
 
-	float3 j;
+	vec3 j;
 
 	float ra = 7e5;
 	float pr = 0.7;
@@ -99,7 +268,7 @@ inline float getHeatCurrentAlignment(texture<float4, cudaTextureType3D, cudaRead
 	j.z = velT.z * velT.w - kappa * gradT.z;
 
 	j = normalize(j);
-	float3 vel = normalize(make_float3(velT));
+	vec3 vel = normalize(make_vec3(velT));
 
 	return dot(j, vel);
 }
@@ -119,28 +288,60 @@ inline float getSign(const float value)
 
 
 /******************************************************************************
+** Jacobian and derived tensors
+******************************************************************************/
+
+
+__device__ inline mat3x3 getStrainRateTensor(const mat3x3 &J)
+{
+	// S_ij = 1/2 (J_ij + J_ji)
+	mat3x3 S;
+
+	S.m[0] = make_vec3( (J.m[0].x+J.m[0].x)/2.0f, (J.m[0].y+J.m[1].x)/2.0f, (J.m[0].z+J.m[2].x)/2.0f );
+	S.m[1] = make_vec3( (J.m[1].x+J.m[0].y)/2.0f, (J.m[1].y+J.m[1].y)/2.0f, (J.m[1].z+J.m[2].y)/2.0f );
+	S.m[2] = make_vec3( (J.m[2].x+J.m[0].z)/2.0f, (J.m[2].y+J.m[1].z)/2.0f, (J.m[2].z+J.m[2].z)/2.0f );
+
+	return S;
+}
+
+
+
+__device__ inline mat3x3 getSpinTensor(const mat3x3 &J)
+{
+	// O_ij = 1/2 (J_ij - J_ji)
+	mat3x3 O;
+
+	O.m[0] = make_vec3( (J.m[0].x-J.m[0].x)/2.0f, (J.m[0].y-J.m[1].x)/2.0f, (J.m[0].z-J.m[2].x)/2.0f );
+	O.m[1] = make_vec3( (J.m[1].x-J.m[0].y)/2.0f, (J.m[1].y-J.m[1].y)/2.0f, (J.m[1].z-J.m[2].y)/2.0f );
+	O.m[2] = make_vec3( (J.m[2].x-J.m[0].z)/2.0f, (J.m[2].y-J.m[1].z)/2.0f, (J.m[2].z-J.m[2].z)/2.0f );
+
+	return O;
+}
+
+
+/******************************************************************************
 ** (Invariant) Measures:
 ******************************************************************************/
 
-inline float3 getVorticity(const float3x3& J)
+inline vec3 getVorticity(const mat3x3& J)
 {
-	return make_float3(J.m[2].y - J.m[1].z, J.m[0].z - J.m[2].x, J.m[1].x - J.m[0].y);
+	return make_vec3(J.m[2].y - J.m[1].z, J.m[0].z - J.m[2].x, J.m[1].x - J.m[0].y);
 }
 
-inline float3 getVorticity(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3 &pos)
+inline vec3 getVorticity(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h)
 {
-	float3x3 jacobian = getJacobian<F>(tex, pos);
+	mat3x3 jacobian = getJacobian(tex, x, y, z, h);
 	return getVorticity(jacobian);
 }
 
-float getLambda2(const float3x3& J);
-float getQHunt(const float3x3& J);
-float getDeltaChong(const float3x3& J);
-float getSquareRotation(const float3x3& J);
-float getEnstrophyProduction(const float3x3& J);
-float getStrainProduction(const float3x3& J);
-float getSquareRateOfStrain(const float3x3& J);
-float getPVA(const float3x3 &J);
+float getLambda2(const mat3x3& J);
+float getQHunt(const mat3x3& J);
+float getDeltaChong(const mat3x3& J);
+float getSquareRotation(const mat3x3& J);
+float getEnstrophyProduction(const mat3x3& J);
+float getStrainProduction(const mat3x3& J);
+float getSquareRateOfStrain(const mat3x3& J);
+float getPVA(const mat3x3 &J);
 
 
 
@@ -149,12 +350,12 @@ float getPVA(const float3x3 &J);
 *************************************************************************************************************************************/
 
 // runtime switched versions
-inline float getMeasureFromRaw(eMeasure measure, const float4 vel4)
+inline float getMeasureFromRaw(eMeasure measure, const vec4 vel4)
 {
 	switch(measure)
 	{
 		case MEASURE_VELOCITY:
-			return length(make_float3(vel4));
+			return length(make_vec3(vel4));
 		case MEASURE_VELOCITY_Z:
 			return vel4.z;
 		case MEASURE_TEMPERATURE:
@@ -165,7 +366,7 @@ inline float getMeasureFromRaw(eMeasure measure, const float4 vel4)
 	}
 }
 
-inline float getMeasureFromHeatCurrent(eMeasure measure, const float3 heatCurrent)
+inline float getMeasureFromHeatCurrent(eMeasure measure, const vec3 heatCurrent)
 {
 	switch (measure)
 	{
@@ -183,7 +384,7 @@ inline float getMeasureFromHeatCurrent(eMeasure measure, const float3 heatCurren
 	}
 }
 
-inline float getMeasureFromJac(eMeasure measure, const float3x3& jacobian)
+inline float getMeasureFromJac(eMeasure measure, const mat3x3& jacobian)
 {
 	switch(measure)
 	{
@@ -213,61 +414,21 @@ inline float getMeasureFromJac(eMeasure measure, const float3x3& jacobian)
 	}
 }
 
-
-
-// interface function - runtime switched
-template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
-struct getMeasureFromVolume_Impl2
-{
-    static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h);
-	// no implementation - only specializations allowed
-};
-
-template <eMeasureSource source, eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<source, F, MEASURE_COMPUTE_PRECOMP_DISCARD>
-{
-    static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		// precomputed measure volume: just read value
-		return sampleVolume<F, float1, float>(g_texFeatureVolume, pos);
-	}
-};
-
-template <eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_RAW, F, MEASURE_COMPUTE_ONTHEFLY>
-{
-    static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		float4 vel4 = sampleVolume<F, float4, float4>(tex, pos);
+float getMeasureFromVolume(
+		const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h,
+		eMeasureSource measureSource, eMeasure measure) {
+	if (measureSource == MEASURE_SOURCE_RAW) {
+		vec4 vel4 = sampleVolume<vec4>(tex, x, y, z);
 		return getMeasureFromRaw(measure, vel4);
-	}
-};
-
-template <eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_HEAT_CURRENT, F, MEASURE_COMPUTE_ONTHEFLY>
-{
-	static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		float3 heatCurrent = getHeatCurrent<F>(tex, pos, h);
+	} else if (measureSource == MEASURE_SOURCE_RAW) {
+		vec3 heatCurrent = getHeatCurrent(tex, x, y, z, h);
 		return getMeasureFromHeatCurrent(measure, heatCurrent);
-	}
-};
-
-template <eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_JACOBIAN, F, MEASURE_COMPUTE_ONTHEFLY>
-{
-    static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		float3x3 jacobian = getJacobian<F>(tex, pos, h);
+	} else if (measureSource == MEASURE_SOURCE_RAW) {
+		mat3x3 jacobian = getJacobian(tex, x, y, z, h);
 		return getMeasureFromJac(measure, jacobian);
+	} else {
+		return 0.0f;
 	}
-};
-
-
-template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
-inline float getMeasure(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h, float measureScale)
-{
-	return (measureScale * getMeasureFromVolume_Impl2<source, F, C>::exec(measure, tex, pos, h));
 }
 
 
@@ -275,13 +436,13 @@ inline float getMeasure(eMeasure measure, texture<float4, cudaTextureType3D, cud
 ** (Invariant) Measures:
 ******************************************************************************/
 
-inline float3 getCosines(float arg)
+inline vec3 getCosines(float arg)
 {
 	float acs = acosf(arg);
-	return make_float3(cosf(acs/3.0f), cosf(acs/3.0f + 2.0f/3.0f * TUM3D_PI), cosf(acs/3.0f + 4.0f/3.0f * TUM3D_PI));
+	return vec3{cosf(acs/3.0f), cosf(acs/3.0f + 2.0f/3.0f * TUM3D_PI), cosf(acs/3.0f + 4.0f/3.0f * TUM3D_PI)};
 }
 
-float getLambda2(const float3x3& J)
+float getLambda2(const mat3x3& J)
 {
 	float s01 = 0.5*( (J.m[0].x+J.m[1].y)*(J.m[0].y+J.m[1].x) + J.m[0].z*J.m[2].y + J.m[1].z*J.m[2].x);
 	float s02 = 0.5*( (J.m[0].x+J.m[2].z)*(J.m[0].z+J.m[2].x) + J.m[0].y*J.m[1].z + J.m[2].y*J.m[1].x);
@@ -313,7 +474,11 @@ float getLambda2(const float3x3& J)
 	}
 	else if (yNsqr<hsqr) 
 	{
-		float3 L= xN + 2.0*delta*getCosines(-yN/h);
+		//vec3 L = xN + 2.0f*delta*getCosines(-yN/h);
+		vec3 L = 2.0f*delta*getCosines(-yN/h);
+		L.x += xN;
+		L.y += xN;
+		L.z += xN;
 		lambda2 = fminf(fmaxf(fminf(L.x,L.y),L.z),fmaxf(L.x,L.y));
 	}
 	else 
@@ -326,23 +491,23 @@ float getLambda2(const float3x3& J)
 }
 
 
-float getQHunt(const float3x3& jacobian)
+float getQHunt(const mat3x3& jacobian)
 {
-	float3x3 S = getStrainRateTensor( jacobian );
-	float3x3 O = getSpinTensor( jacobian );
+	mat3x3 S = getStrainRateTensor( jacobian );
+	mat3x3 O = getSpinTensor( jacobian );
 	float fS   = FrobeniusNorm3x3( S );
 	float fO   = FrobeniusNorm3x3( O );
 	return (0.5 * ( fO*fO - fS*fS ));
 }
 
 
-float getDeltaChong(const float3x3& J)
+float getDeltaChong(const mat3x3& J)
 {
-	float3x3 S		= getStrainRateTensor( J );
-	float3x3 O		= getSpinTensor( J );
-	float3x3 SS		= multMat3x3(S,S);
-	float3x3 OO		= multMat3x3(O,O);
-	float3x3 SSpOO	= addMat3x3(SS,OO);
+	mat3x3 S		= getStrainRateTensor( J );
+	mat3x3 O		= getSpinTensor( J );
+	mat3x3 SS		= multMat3x3(S,S);
+	mat3x3 OO		= multMat3x3(O,O);
+	mat3x3 SSpOO	= addMat3x3(SS,OO);
 
 	float Q = -0.5f * Trace3x3(SSpOO);
 	//float Q = getQHunt(J);
@@ -355,19 +520,19 @@ float getDeltaChong(const float3x3& J)
 }
 
 
-float getSquareRotation(const float3x3& J)
+float getSquareRotation(const mat3x3& J)
 {
-	float3x3 O	 = getSpinTensor( J );
-	float3x3 Osq = multMat3x3(O,O);
+	mat3x3 O	 = getSpinTensor( J );
+	mat3x3 Osq = multMat3x3(O,O);
 
 	return float(-0.5 * Trace3x3(Osq));
 }
 
 
-float getEnstrophyProduction(const float3x3& J)
+float getEnstrophyProduction(const mat3x3& J)
 {
-	float3x3 S	= getStrainRateTensor( J );
-	float3 w	= getVorticity( J );
+	mat3x3 S	= getStrainRateTensor( J );
+	vec3 w	= getVorticity( J );
 
 	float e = S.m[0].x * w.x * w.x +
 			  S.m[0].y * w.x * w.y +
@@ -383,9 +548,9 @@ float getEnstrophyProduction(const float3x3& J)
 }
 
 
-float getStrainProduction(const float3x3& J)
+float getStrainProduction(const mat3x3& J)
 {
-	float3x3 S = getStrainRateTensor( J );
+	mat3x3 S = getStrainRateTensor( J );
 
 	float e =	S.m[0].x*S.m[0].x*S.m[0].x + S.m[0].x*S.m[0].y*S.m[1].x + S.m[0].x*S.m[0].z*S.m[2].x +
 				S.m[0].y*S.m[1].x*S.m[0].x + S.m[0].y*S.m[1].y*S.m[1].x + S.m[0].y*S.m[1].z*S.m[2].x +
@@ -402,10 +567,10 @@ float getStrainProduction(const float3x3& J)
 
 
 // SquareRateOfStrain == Q_S in the paper except for a factor -0.5
-float getSquareRateOfStrain(const float3x3& J)
+float getSquareRateOfStrain(const mat3x3& J)
 {
-	float3x3 S	 = getStrainRateTensor(J);
-	float3x3 Ssq = multMat3x3(S,S);
+	mat3x3 S	 = getStrainRateTensor(J);
+	mat3x3 Ssq = multMat3x3(S,S);
 	return Trace3x3(Ssq);
 }
 
@@ -415,7 +580,7 @@ float getSquareRateOfStrain(const float3x3& J)
 * additional sorting of the eigenvalues (no positive definite tensor)
 ***********************************************************************************************/
 
-inline void sort3Items( float3 &v )
+inline void sort3Items( vec3 &v )
 {
 	float t;
 	if (v.y < v.x)
@@ -443,26 +608,26 @@ inline void sort3Items( float3 &v )
 
 
 
-inline float3 getOrthonormalEigenvector( const float &eigenValue, const float3 &vDiag, const float3 &vOffDiag)
+inline vec3 getOrthonormalEigenvector( const float &eigenValue, const vec3 &vDiag, const vec3 &vOffDiag)
 {
-	float3 vABC  = make_float3(vDiag.x - eigenValue, vDiag.y - eigenValue, vDiag.z - eigenValue);
+	vec3 vABC  = make_vec3(vDiag.x - eigenValue, vDiag.y - eigenValue, vDiag.z - eigenValue);
 
-	return normalize(make_float3( (vOffDiag.x*vOffDiag.z-vABC.y*vOffDiag.y)*(vOffDiag.y*vOffDiag.z-vABC.z*vOffDiag.x), 
+	return normalize(make_vec3( (vOffDiag.x*vOffDiag.z-vABC.y*vOffDiag.y)*(vOffDiag.y*vOffDiag.z-vABC.z*vOffDiag.x), 
 								 -(vOffDiag.y*vOffDiag.z-vABC.z*vOffDiag.x)*(vOffDiag.y*vOffDiag.x-vABC.x*vOffDiag.z), 
 								  (vOffDiag.x*vOffDiag.z-vABC.y*vOffDiag.y)*(vOffDiag.y*vOffDiag.x-vABC.x*vOffDiag.z)));
 }
 
 
 
-inline void eigensolveHasan(const float3x3 &J, float3 &sortedEigenvalues, float3 &eigenVector1, float3 &eigenVector2, float3 &eigenVector3)
+inline void eigensolveHasan(const mat3x3 &J, vec3 &sortedEigenvalues, vec3 &eigenVector1, vec3 &eigenVector2, vec3 &eigenVector3)
 {
-		const float3 vOne	= make_float3(1,1,1);
-		float3 vDiag		= make_float3(J.m[0].x, J.m[1].y, J.m[2].z);  // xx , yy , zz
-		float3 vOffDiag		= make_float3(J.m[0].y, J.m[0].z, J.m[1].z);  // xy , xz , yz
-		float3 offSq		= vOffDiag*vOffDiag;
+		const vec3 vOne	= make_vec3(1,1,1);
+		vec3 vDiag		= make_vec3(J.m[0].x, J.m[1].y, J.m[2].z);  // xx , yy , zz
+		vec3 vOffDiag		= make_vec3(J.m[0].y, J.m[0].z, J.m[1].z);  // xy , xz , yz
+		vec3 offSq		= vOffDiag*vOffDiag;
 		float I1			= dot(vDiag, vOne);
-		float I2			= dot(make_float3(vDiag.x, vDiag.x, vDiag.y), make_float3(vDiag.y, vDiag.z, vDiag.z)) - dot(offSq, vOne);
-		float I3			= vDiag.x*vDiag.y*vDiag.z + 2.0f*vOffDiag.x*vOffDiag.y*vOffDiag.z - dot(make_float3(vDiag.z, vDiag.y, vDiag.x), offSq);
+		float I2			= dot(make_vec3(vDiag.x, vDiag.x, vDiag.y), make_vec3(vDiag.y, vDiag.z, vDiag.z)) - dot(offSq, vOne);
+		float I3			= vDiag.x*vDiag.y*vDiag.z + 2.0f*vOffDiag.x*vOffDiag.y*vOffDiag.z - dot(make_vec3(vDiag.z, vDiag.y, vDiag.x), offSq);
 		float I1_3			= I1 / 3.0f;
 		float I1_3Sq		= I1_3 * I1_3;
 		float v				= I1_3Sq - I2 / 3.0f;
@@ -471,7 +636,7 @@ inline void eigensolveHasan(const float3x3 &J, float3 &sortedEigenvalues, float3
 		float phi			= acosf(s * vInv * sqrt(vInv)) / 3.0f;
 		float vSqrt2		= 2.0f * sqrt(v);
 
-		sortedEigenvalues = make_float3(I1_3 + vSqrt2 * cosf(phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) + phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) - phi));
+		sortedEigenvalues = make_vec3(I1_3 + vSqrt2 * cosf(phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) + phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) - phi));
 		sort3Items( sortedEigenvalues );
 
 		eigenVector1 = getOrthonormalEigenvector(sortedEigenvalues.x, vDiag, vOffDiag);
@@ -485,15 +650,15 @@ inline void eigensolveHasan(const float3x3 &J, float3 &sortedEigenvalues, float3
 * of the strain rate tensor and the vorticity)
 ***********************************************************************************************/
 
-float getPVA(const float3x3 &J)
+float getPVA(const mat3x3 &J)
 {
-		const float3 vOne	= make_float3(1,1,1);
-		float3 vDiag		= make_float3(J.m[0].x, J.m[1].y, J.m[2].z);  // xx , yy , zz
-		float3 vOffDiag		= make_float3(J.m[0].y, J.m[0].z, J.m[1].z);  // xy , xz , yz
-		float3 offSq		= vOffDiag*vOffDiag;
+		const vec3 vOne	= make_vec3(1,1,1);
+		vec3 vDiag		= make_vec3(J.m[0].x, J.m[1].y, J.m[2].z);  // xx , yy , zz
+		vec3 vOffDiag		= make_vec3(J.m[0].y, J.m[0].z, J.m[1].z);  // xy , xz , yz
+		vec3 offSq		= vOffDiag*vOffDiag;
 		float I1			= dot(vDiag, vOne);
-		float I2			= dot(make_float3(vDiag.x, vDiag.x, vDiag.y), make_float3(vDiag.y, vDiag.z, vDiag.z)) - dot(offSq, vOne);
-		float I3			= vDiag.x*vDiag.y*vDiag.z + 2.0f*vOffDiag.x*vOffDiag.y*vOffDiag.z - dot(make_float3(vDiag.z, vDiag.y, vDiag.x), offSq);
+		float I2			= dot(make_vec3(vDiag.x, vDiag.x, vDiag.y), make_vec3(vDiag.y, vDiag.z, vDiag.z)) - dot(offSq, vOne);
+		float I3			= vDiag.x*vDiag.y*vDiag.z + 2.0f*vOffDiag.x*vOffDiag.y*vOffDiag.z - dot(make_vec3(vDiag.z, vDiag.y, vDiag.x), offSq);
 		float I1_3			= I1 / 3.0f;
 		float I1_3Sq		= I1_3 * I1_3;
 		float v				= I1_3Sq - I2 / 3.0f;
@@ -502,11 +667,11 @@ float getPVA(const float3x3 &J)
 		float phi			= acosf(s * vInv * sqrt(vInv)) / 3.0f;
 		float vSqrt2		= 2.0f * sqrt(v);
 
-		float3 sortedEigenvalues = make_float3(I1_3 + vSqrt2 * cosf(phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) + phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) - phi));
+		vec3 sortedEigenvalues = make_vec3(I1_3 + vSqrt2 * cosf(phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) + phi), I1_3 - vSqrt2 * cosf((TUM3D_PI / 3.0f) - phi));
 		sort3Items( sortedEigenvalues ); 
 
-		float3 e2		 = getOrthonormalEigenvector(sortedEigenvalues.y, vDiag, vOffDiag);
-		float3 vorticity = getVorticity( J );
+		vec3 e2		 = getOrthonormalEigenvector(sortedEigenvalues.y, vDiag, vOffDiag);
+		vec3 vorticity = getVorticity( J );
 
 		return abs(dot(e2,vorticity));
 }
