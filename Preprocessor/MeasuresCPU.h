@@ -40,6 +40,34 @@ struct vec4 {
 		}
 		return lhs;
 	}
+
+	friend vec4 operator*(vec4 lhs, float a) {
+		for (int i = 0; i < 4; i++) {
+			lhs.v[i] *= a;
+		}
+		return lhs;
+	}
+
+	friend vec4 operator/(vec4 lhs, float a) {
+		for (int i = 0; i < 4; i++) {
+			lhs.v[i] /= a;
+		}
+		return lhs;
+	}
+
+	friend vec4 operator*(float a, vec4 lhs) {
+		for (int i = 0; i < 4; i++) {
+			lhs.v[i] *= a;
+		}
+		return lhs;
+	}
+
+	friend vec4 operator/(float a, vec4 lhs) {
+		for (int i = 0; i < 4; i++) {
+			lhs.v[i] /= a;
+		}
+		return lhs;
+	}
 };
 
 struct vec3 {
@@ -113,13 +141,17 @@ struct mat3x3 {
 
 	friend mat3x3 operator+(mat3x3 lhs, const mat3x3& rhs) {
 		for (int i = 0; i < 3; i++) {
-			lhs.m[i] += rhs.m[i];
+			for (int j = 0; j < 3; j++) {
+				lhs.m[i].v[j] += rhs.m[i].v[j];
+			}
 		}
 		return lhs;
 	}
 	friend mat3x3 operator-(mat3x3 lhs, const mat3x3& rhs) {
 		for (int i = 0; i < 3; i++) {
-			lhs.m[i] -= rhs.m[i];
+			for (int j = 0; j < 3; j++) {
+				lhs.m[i].v[j] -= rhs.m[i].v[j];
+			}
 		}
 		return lhs;
 	}
@@ -127,15 +159,15 @@ struct mat3x3 {
 		mat3x3 result;
 		for (int i = 0; i < 3; i++) {
 			for (int j = 0; j < 3; j++) {
-				result[i].v[j] = 0;
+				result.m[i].v[j] = 0;
 				for (int k = 0; k < 3; k++) {
-					result[i].v[j] += lhs.m[i].v[k] * rhs.m[k].v[j];
+					result.m[i].v[j] += lhs.m[i].v[k] * rhs.m[k].v[j];
 				}
 			}
 		}
 		return result;
 	}
-	friend mat3x3 operator*(mat3x3 lhs, const vec3& rhs) {
+	friend vec3 operator*(mat3x3 lhs, const vec3& rhs) {
 		vec3 result;
 		for (int i = 0; i < 3; i++) {
 			result.v[i] = 0;
@@ -155,7 +187,7 @@ struct mat3x3 {
 
 class VolumeTextureCPU {
 public:
-	VolumeTextureCPU(std::vector<std::vector<float>>& channelData, size_t sizeX, size_t sizeY, size_t sizeZ)
+	VolumeTextureCPU(const std::vector<std::vector<float>>& channelData, size_t sizeX, size_t sizeY, size_t sizeZ)
 		: channelData(channelData), sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {}
 
 	vec4 samplevec4(int x, int y, int z) const {
@@ -180,7 +212,7 @@ public:
 
 private:
 	size_t sizeX, sizeY, sizeZ;
-	std::vector<std::vector<float>> &channelData;
+	const std::vector<std::vector<float>> &channelData;
 };
 
 

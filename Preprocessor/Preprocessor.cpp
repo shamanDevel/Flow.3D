@@ -21,6 +21,7 @@
 #include "Statistics.h"
 
 #include "TimeVolumeIO.h"
+#include "MeasuresCPU.h"
 #include <../Renderer/Measure.h>
 
 #include "CompressVolume.h"
@@ -86,7 +87,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 void computeMinMaxMeasures(
 		const std::vector<std::vector<float>> &rawBrickChannelData,
 		std::vector<float> &minMeasuresInBrick, std::vector<float> &maxMeasuresInBrick,
-		size_t sizeX, size_t sizeY, size_t sizeZ) {
+		size_t sizeX, size_t sizeY, size_t sizeZ, const vec3& gridSpacing) {
 	minMeasuresInBrick.resize(NUM_MEASURES);
 	maxMeasuresInBrick.resize(NUM_MEASURES);
 
@@ -95,18 +96,14 @@ void computeMinMaxMeasures(
 		float maxValue = -FLT_MAX;
 
 		eMeasureSource measureSource = GetMeasureSource((eMeasure)measureIdx);
-		VolumeTextureCPU tex;
-		tex.sizeX = sizeX;
-		tex.sizeY = sizeY;
-		tex.sizeZ = sizeZ;
-		tex.channelData = rawBrickChannelData;
+		VolumeTextureCPU tex(rawBrickChannelData, sizeX, sizeY, sizeZ);
 
 		#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
 		for (size_t z = 0; z < sizeZ; z++) {
 			for (size_t y = 0; y < sizeY; y++) {
 				for (size_t x = 0; x < sizeX; x++) {
 					float value = getMeasureFromVolume(
-						tex, x, y, z, vec3{}, measureSource, (eMeasure)measureIdx);
+						tex, x, y, z, gridSpacing, measureSource, (eMeasure)measureIdx);
 					minValue = std::min(minValue, value);
 					maxValue = std::max(maxValue, value);
 				}
@@ -961,7 +958,7 @@ int main(int argc, char* argv[])
 					std::vector<float> minMeasuresInBrick, maxMeasuresInBrick;
 					computeMinMaxMeasures(
 							rawBrickChannelData, minMeasuresInBrick, maxMeasuresInBrick,
-							size.x(), size.y(), size.z());
+							size.x(), size.y(), size.z(), vec3{ gridSpacing.x(), gridSpacing.y(), gridSpacing.z() });
 
 					// Add brick to output
 					if (compression != COMPRESSION_NONE)

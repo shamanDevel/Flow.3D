@@ -143,6 +143,8 @@
     <ClCompile Include="..\include\Json\Json_st.cc">
       <Filter>Json</Filter>
     </ClCompile>
+    <ClCompile Include="..\Renderer\Measure.cpp" />
+    <ClCompile Include="MeasuresCPU.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="cudaCompress">

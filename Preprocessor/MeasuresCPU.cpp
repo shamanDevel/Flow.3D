@@ -1,5 +1,5 @@
 #include <vector>
-#include <cutil_math.h>
+#include <cmath>
 #include "MeasuresCPU.h"
 
 /******************************************************************************
@@ -61,7 +61,7 @@ inline T sampleVolumeDerivativeX(const VolumeTextureCPU& tex, int x, int y, int 
 	// default implementation: central differences
 	T dp = sampleVolume<T>(tex, x + 1, y, z);
 	T dn = sampleVolume<T>(tex, x - 1, y, z);
-	return (dp - dn) / (2.0f * h);
+	return (dp - dn) / (2.0f * h.x);
 }
 
 template<typename T>
@@ -70,7 +70,7 @@ inline T sampleVolumeDerivativeY(const VolumeTextureCPU& tex, int x, int y, int 
 	// default implementation: central differences
 	T dp = sampleVolume<T>(tex, x, y + 1, z);
 	T dn = sampleVolume<T>(tex, x, y - 1, z);
-	return (dp - dn) / (2.0f * h);
+	return (dp - dn) / (2.0f * h.y);
 }
 
 template<typename T>
@@ -79,7 +79,7 @@ inline T sampleVolumeDerivativeZ(const VolumeTextureCPU& tex, int x, int y, int 
 	// default implementation: central differences
 	T dp = sampleVolume<T>(tex, x, y, z + 1);
 	T dn = sampleVolume<T>(tex, x, y, z - 1);
-	return (dp - dn) / (2.0f * h);
+	return (dp - dn) / (2.0f * h.z);
 }
 
 mat3x3 getJacobian(const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h) {
@@ -133,7 +133,7 @@ inline vec3 sampleScalarGradient(const VolumeTextureCPU& tex, int x, int y, int 
 // Matrix Math
 ///////////////////////////////////////////////////////////////////////////////
 
-__device__ inline mat3x3 multMat3x3(const mat3x3 &A, const mat3x3 &B)
+inline mat3x3 multMat3x3(const mat3x3 &A, const mat3x3 &B)
 {
 	mat3x3 erg;
 
@@ -154,7 +154,7 @@ __device__ inline mat3x3 multMat3x3(const mat3x3 &A, const mat3x3 &B)
 
 
 
-__device__ inline mat3x3 addMat3x3(const mat3x3 &A, const mat3x3 &B)
+inline mat3x3 addMat3x3(const mat3x3 &A, const mat3x3 &B)
 {
 	mat3x3 erg;
 
@@ -167,7 +167,7 @@ __device__ inline mat3x3 addMat3x3(const mat3x3 &A, const mat3x3 &B)
 
 
 
-__device__ inline float Det3x3(const mat3x3 &A)
+inline float Det3x3(const mat3x3 &A)
 {
 	return float( A.m[0].x*A.m[1].y*A.m[2].z + 
 				  A.m[0].y*A.m[1].z*A.m[2].x + 
@@ -179,14 +179,14 @@ __device__ inline float Det3x3(const mat3x3 &A)
 
 
 
-__device__ inline float Trace3x3(const mat3x3 &A)
+inline float Trace3x3(const mat3x3 &A)
 {
 	return float(A.m[0].x + A.m[1].y + A.m[2].z);
 }
 
 
 
-__device__ inline float TraceAAT(const mat3x3 &A)
+inline float TraceAAT(const mat3x3 &A)
 {
 	return float(A.m[0].x*A.m[0].x + A.m[0].y*A.m[0].y + A.m[0].z*A.m[0].z + 
 				 A.m[1].x*A.m[1].x + A.m[1].y*A.m[1].y + A.m[1].z*A.m[1].z + 
@@ -195,14 +195,14 @@ __device__ inline float TraceAAT(const mat3x3 &A)
 
 
 
-__device__ inline float FrobeniusNorm3x3(const mat3x3 &A)
+inline float FrobeniusNorm3x3(const mat3x3 &A)
 {
 	return sqrtf( TraceAAT(A) );
 }
 
 
 
-__device__ inline void TransposeInplace3x3(mat3x3 &A)
+inline void TransposeInplace3x3(mat3x3 &A)
 {
 	float tmp;
 
@@ -213,7 +213,7 @@ __device__ inline void TransposeInplace3x3(mat3x3 &A)
 
 
 
-__device__ inline mat3x3 Transpose3x3(const mat3x3 &A)
+inline mat3x3 Transpose3x3(const mat3x3 &A)
 {
 	mat3x3 AT;
 
@@ -239,8 +239,8 @@ inline vec3 getHeatCurrent(const VolumeTextureCPU& tex, int x, int y, int z, con
 
 	vec3 j;
 
-	float ra = 7e5;
-	float pr = 0.7;
+	float ra = 7e5f;
+	float pr = 0.7f;
 	float kappa = 1 / sqrt(ra*pr);
 
 	j.x = velT.x * velT.w - kappa * gradT.x;
@@ -259,8 +259,8 @@ inline float getHeatCurrentAlignment(const VolumeTextureCPU& tex, int x, int y, 
 
 	vec3 j;
 
-	float ra = 7e5;
-	float pr = 0.7;
+	float ra = 7e5f;
+	float pr = 0.7f;
 	float kappa = 1 / sqrt(ra*pr);
 
 	j.x = velT.x * velT.w - kappa * gradT.x;
@@ -292,7 +292,7 @@ inline float getSign(const float value)
 ******************************************************************************/
 
 
-__device__ inline mat3x3 getStrainRateTensor(const mat3x3 &J)
+inline mat3x3 getStrainRateTensor(const mat3x3 &J)
 {
 	// S_ij = 1/2 (J_ij + J_ji)
 	mat3x3 S;
@@ -306,7 +306,7 @@ __device__ inline mat3x3 getStrainRateTensor(const mat3x3 &J)
 
 
 
-__device__ inline mat3x3 getSpinTensor(const mat3x3 &J)
+inline mat3x3 getSpinTensor(const mat3x3 &J)
 {
 	// O_ij = 1/2 (J_ij - J_ji)
 	mat3x3 O;
@@ -444,9 +444,9 @@ inline vec3 getCosines(float arg)
 
 float getLambda2(const mat3x3& J)
 {
-	float s01 = 0.5*( (J.m[0].x+J.m[1].y)*(J.m[0].y+J.m[1].x) + J.m[0].z*J.m[2].y + J.m[1].z*J.m[2].x);
-	float s02 = 0.5*( (J.m[0].x+J.m[2].z)*(J.m[0].z+J.m[2].x) + J.m[0].y*J.m[1].z + J.m[2].y*J.m[1].x);
-	float s12 = 0.5*( (J.m[1].y+J.m[2].z)*(J.m[1].z+J.m[2].y) + J.m[1].x*J.m[0].z + J.m[2].x*J.m[0].y);
+	float s01 = 0.5f*( (J.m[0].x+J.m[1].y)*(J.m[0].y+J.m[1].x) + J.m[0].z*J.m[2].y + J.m[1].z*J.m[2].x);
+	float s02 = 0.5f*( (J.m[0].x+J.m[2].z)*(J.m[0].z+J.m[2].x) + J.m[0].y*J.m[1].z + J.m[2].y*J.m[1].x);
+	float s12 = 0.5f*( (J.m[1].y+J.m[2].z)*(J.m[1].z+J.m[2].y) + J.m[1].x*J.m[0].z + J.m[2].x*J.m[0].y);
 
 	float s00 = J.m[0].x*J.m[0].x + J.m[0].y*J.m[1].x + J.m[0].z*J.m[2].x;
 	float s11 = J.m[1].x*J.m[0].y + J.m[1].y*J.m[1].y + J.m[1].z*J.m[2].y;
@@ -454,7 +454,7 @@ float getLambda2(const mat3x3& J)
 
 	float b= +s00 +s11 +s22;
 	float c= -s00*(s11+s22) -s11*s22 + s12*s12 + s01*s01 +s02*s02;
-	float d=  s00*(s11*s22-s12*s12)+2.0*s01*s12*s02 -s02*s02*s11 -s01*s01*s22;
+	float d=  s00*(s11*s22-s12*s12)+2.0f*s01*s12*s02 -s02*s02*s11 -s01*s01*s22;
 
 	const float onethird=1.0f/3.0f;
 	float xN		= b*onethird;
@@ -497,7 +497,7 @@ float getQHunt(const mat3x3& jacobian)
 	mat3x3 O = getSpinTensor( jacobian );
 	float fS   = FrobeniusNorm3x3( S );
 	float fO   = FrobeniusNorm3x3( O );
-	return (0.5 * ( fO*fO - fS*fS ));
+	return (0.5f * ( fO*fO - fS*fS ));
 }
 
 

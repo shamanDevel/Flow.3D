@@ -176,6 +176,7 @@ exit 1</Command>
   <ItemGroup>
     <ClCompile Include="..\include\Json\Json.cpp" />
     <ClCompile Include="..\include\Json\Json_st.cc" />
+    <ClCompile Include="..\Renderer\Measure.cpp" />
     <ClCompile Include="..\shared\CompressVolume.cpp" />
     <ClCompile Include="..\shared\FilePool.cpp" />
     <ClCompile Include="..\shared\GPUResources.cpp" />
@@ -186,6 +187,7 @@ exit 1</Command>
     <ClCompile Include="..\shared\TimerCPU.cpp" />
     <ClCompile Include="..\shared\TimeVolumeInfo.cpp" />
     <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
+    <ClCompile Include="MeasuresCPU.cpp" />
     <ClCompile Include="Preprocessor.cpp" />
     <ClCompile Include="Statistics.cpp" />
   </ItemGroup>
