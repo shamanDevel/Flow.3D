@@ -420,10 +420,10 @@ float getMeasureFromVolume(
 	if (measureSource == MEASURE_SOURCE_RAW) {
 		vec4 vel4 = sampleVolume<vec4>(tex, x, y, z);
 		return getMeasureFromRaw(measure, vel4);
-	} else if (measureSource == MEASURE_SOURCE_RAW) {
+	} else if (measureSource == MEASURE_SOURCE_HEAT_CURRENT) {
 		vec3 heatCurrent = getHeatCurrent(tex, x, y, z, h);
 		return getMeasureFromHeatCurrent(measure, heatCurrent);
-	} else if (measureSource == MEASURE_SOURCE_RAW) {
+	} else if (measureSource == MEASURE_SOURCE_JACOBIAN) {
 		mat3x3 jacobian = getJacobian(tex, x, y, z, h);
 		return getMeasureFromJac(measure, jacobian);
 	} else {

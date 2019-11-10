@@ -192,6 +192,10 @@ public:
 
 	vec4 samplevec4(int x, int y, int z) const {
 		assert(channelData.size() >= 4);
+		x = clamp(x, 0, (int)sizeX - 1);
+		y = clamp(y, 0, (int)sizeY - 1);
+		z = clamp(z, 0, (int)sizeZ - 1);
+
 		vec4 vec;
 		for (size_t i = 0; i < 4; i++) {
 			size_t idx = x + y * sizeX + z * sizeX * sizeY;
@@ -202,6 +206,10 @@ public:
 
 	vec3 samplevec3(int x, int y, int z) const {
 		assert(channelData.size() >= 3);
+		x = clamp(x, 0, (int)sizeX - 1);
+		y = clamp(y, 0, (int)sizeY - 1);
+		z = clamp(z, 0, (int)sizeZ - 1);
+
 		vec3 vec;
 		for (size_t i = 0; i < 3; i++) {
 			size_t idx = x + y * sizeX + z * sizeX * sizeY;
@@ -213,6 +221,12 @@ public:
 private:
 	size_t sizeX, sizeY, sizeZ;
 	const std::vector<std::vector<float>> &channelData;
+
+	template<typename T>
+	T clamp(T val, T min, T max) const
+	{
+		return val < min ? min : (val > max ? max : val);
+	}
 };
 
 
