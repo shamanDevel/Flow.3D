@@ -87,7 +87,8 @@ std::vector<std::string> split(const std::string &s, char delim) {
 void computeMinMaxMeasures(
 		const std::vector<std::vector<float>> &rawBrickChannelData,
 		std::vector<float> &minMeasuresInBrick, std::vector<float> &maxMeasuresInBrick,
-		size_t sizeX, size_t sizeY, size_t sizeZ, const vec3& gridSpacing) {
+		size_t sizeX, size_t sizeY, size_t sizeZ, size_t overlap, const vec3& gridSpacing,
+		MinMaxMeasureGPUHelperData& helperData) {
 	minMeasuresInBrick.resize(NUM_MEASURES);
 	maxMeasuresInBrick.resize(NUM_MEASURES);
 
@@ -96,18 +97,26 @@ void computeMinMaxMeasures(
 		float maxValue = -FLT_MAX;
 
 		eMeasureSource measureSource = GetMeasureSource((eMeasure)measureIdx);
-		VolumeTextureCPU tex(rawBrickChannelData, sizeX, sizeY, sizeZ);
+		VolumeTextureCPU tex(rawBrickChannelData, sizeX, sizeY, sizeZ, overlap);
 
-		#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
-		for (size_t z = 0; z < sizeZ; z++) {
-			for (size_t y = 0; y < sizeY; y++) {
-				for (size_t x = 0; x < sizeX; x++) {
-					float value = getMeasureFromVolume(
-						tex, x, y, z, gridSpacing, measureSource, (eMeasure)measureIdx);
-					minValue = std::min(minValue, value);
-					maxValue = std::max(maxValue, value);
+		if (useCPU) {
+			#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
+			for (size_t z = 0; z < sizeZ; z++) {
+				for (size_t y = 0; y < sizeY; y++) {
+					for (size_t x = 0; x < sizeX; x++) {
+						float value = getMeasureFromVolume(
+							tex, x, y, z, gridSpacing, measureSource, (eMeasure)measureIdx);
+						minValue = std::min(minValue, value);
+						maxValue = std::max(maxValue, value);
+					}
 				}
 			}
+		} else {
+			VolumeTextureCPU tex(rawBrickChannelData, sizeX, sizeY, sizeZ, overlap);
+			computeMeasureMinMaxGPU(
+				tex, gridSpacing, measureSource, (eMeasure)measureIdx,
+				helperData, minValue, maxValue);
+			computeMeasureMinMaxGPU(tex, gridSpacing, measureSource, (eMeasure)measureIdx);
 		}
 
 		minMeasuresInBrick[measureIdx] = minValue;
@@ -813,6 +822,8 @@ int main(int argc, char* argv[])
 		LARGE_INTEGER timestampBrickingStart;
 		QueryPerformanceCounter(&timestampBrickingStart);
 
+		MinMaxMeasureGPUHelperData helperData(brickSize, brickSize, brickSize);
+
 		// Brick and write
 		for (int32 bz = 0; bz < brickCount[2]; ++bz)
 		{
@@ -958,7 +969,9 @@ int main(int argc, char* argv[])
 					std::vector<float> minMeasuresInBrick, maxMeasuresInBrick;
 					computeMinMaxMeasures(
 							rawBrickChannelData, minMeasuresInBrick, maxMeasuresInBrick,
-							size.x(), size.y(), size.z(), vec3{ gridSpacing.x(), gridSpacing.y(), gridSpacing.z() });
+							size.x(), size.y(), size.z(), overlap,
+							vec3{ gridSpacing.x(), gridSpacing.y(), gridSpacing.z() },
+							helperData);
 
 					// Add brick to output
 					if (compression != COMPRESSION_NONE)

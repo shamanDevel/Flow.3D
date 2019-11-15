@@ -1,3 +1,6 @@
+#ifndef __TUM3D__MEASURESCPU_H__
+#define __TUM3D__MEASURESCPU_H__
+
 #include <cassert>
 #include "../Renderer/Measure.h"
 
@@ -187,8 +190,15 @@ struct mat3x3 {
 
 class VolumeTextureCPU {
 public:
-	VolumeTextureCPU(const std::vector<std::vector<float>>& channelData, size_t sizeX, size_t sizeY, size_t sizeZ)
-		: channelData(channelData), sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ) {}
+	VolumeTextureCPU(const std::vector<std::vector<float>>& channelData,
+			size_t sizeX, size_t sizeY, size_t sizeZ, size_t brickOverlap)
+		: channelData(channelData), sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ), brickOverlap(brickOverlap) {}
+
+	inline std::vector<std::vector<float>>& getChannelData() { return channelData; }
+	inline size_t getSizeX() { return sizeX; }
+	inline size_t getSizeY() { return sizeY; }
+	inline size_t getSizeZ() { return sizeZ; }
+	inline size_t getBrickOverlap() { return brickOverlap; }
 
 	vec4 samplevec4(int x, int y, int z) const {
 		assert(channelData.size() >= 4);
@@ -220,7 +230,8 @@ public:
 
 private:
 	size_t sizeX, sizeY, sizeZ;
-	const std::vector<std::vector<float>> &channelData;
+	size_t brickOverlap;
+	const std::vector<std::vector<float>>& channelData;
 
 	template<typename T>
 	T clamp(T val, T min, T max) const
@@ -237,3 +248,5 @@ private:
 float getMeasureFromVolume(
         const VolumeTextureCPU& tex, int x, int y, int z, const vec3& h,
         eMeasureSource measureSource, eMeasure measure);
+
+#endif
