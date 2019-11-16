@@ -118,6 +118,7 @@ exit 1</Command>
     </PostBuildEvent>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75;compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -170,6 +171,9 @@ exit 1</Command>
     <ClInclude Include="..\include\TimeVolumeIO.h" />
     <ClInclude Include="..\include\Utils.h" />
     <ClInclude Include="..\include\Vec.h" />
+    <ClInclude Include="..\Renderer\Measures.cuh" />
+    <ClInclude Include="MeasuresCPU.h" />
+    <ClInclude Include="MeasuresGPU.h" />
     <ClInclude Include="Statistics.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -190,6 +194,10 @@ exit 1</Command>
     <ClCompile Include="MeasuresCPU.cpp" />
     <ClCompile Include="Preprocessor.cpp" />
     <ClCompile Include="Statistics.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\Renderer\Measures.cu" />
+    <CudaCompile Include="MeasuresGPU.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

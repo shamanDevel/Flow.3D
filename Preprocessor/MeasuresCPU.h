@@ -1,6 +1,7 @@
 #ifndef __TUM3D__MEASURESCPU_H__
 #define __TUM3D__MEASURESCPU_H__
 
+#include <vector>
 #include <cassert>
 #include "../Renderer/Measure.h"
 
@@ -194,7 +195,7 @@ public:
 			size_t sizeX, size_t sizeY, size_t sizeZ, size_t brickOverlap)
 		: channelData(channelData), sizeX(sizeX), sizeY(sizeY), sizeZ(sizeZ), brickOverlap(brickOverlap) {}
 
-	inline std::vector<std::vector<float>>& getChannelData() { return channelData; }
+	inline const std::vector<std::vector<float>>& getChannelData() { return channelData; }
 	inline size_t getSizeX() { return sizeX; }
 	inline size_t getSizeY() { return sizeY; }
 	inline size_t getSizeZ() { return sizeZ; }

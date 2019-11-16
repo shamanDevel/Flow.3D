@@ -22,6 +22,7 @@
 
 #include "TimeVolumeIO.h"
 #include "MeasuresCPU.h"
+#include "MeasuresGPU.h"
 #include <../Renderer/Measure.h>
 
 #include "CompressVolume.h"
@@ -89,6 +90,7 @@ void computeMinMaxMeasures(
 		std::vector<float> &minMeasuresInBrick, std::vector<float> &maxMeasuresInBrick,
 		size_t sizeX, size_t sizeY, size_t sizeZ, size_t overlap, const vec3& gridSpacing,
 		MinMaxMeasureGPUHelperData& helperData) {
+	const bool useCPU = false;
 	minMeasuresInBrick.resize(NUM_MEASURES);
 	maxMeasuresInBrick.resize(NUM_MEASURES);
 
@@ -116,7 +118,6 @@ void computeMinMaxMeasures(
 			computeMeasureMinMaxGPU(
 				tex, gridSpacing, measureSource, (eMeasure)measureIdx,
 				helperData, minValue, maxValue);
-			computeMeasureMinMaxGPU(tex, gridSpacing, measureSource, (eMeasure)measureIdx);
 		}
 
 		minMeasuresInBrick[measureIdx] = minValue;
@@ -822,7 +823,7 @@ int main(int argc, char* argv[])
 		LARGE_INTEGER timestampBrickingStart;
 		QueryPerformanceCounter(&timestampBrickingStart);
 
-		MinMaxMeasureGPUHelperData helperData(brickSize, brickSize, brickSize);
+		MinMaxMeasureGPUHelperData helperData(brickSize, brickSize, brickSize, overlap);
 
 		// Brick and write
 		for (int32 bz = 0; bz < brickCount[2]; ++bz)

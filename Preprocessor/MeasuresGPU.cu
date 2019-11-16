@@ -1,6 +1,8 @@
 #include "MeasuresGPU.h"
+#include "cudaUtil.h"
 #include "../Renderer/Measures.cuh"
 #include "../Renderer/Coords.cuh"
+#include "../Renderer/Measures.cuh"
 
 /**
  * Reference: Based on kernel 4 from https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
@@ -80,10 +82,11 @@ inline int iceil(int x, int y)
 }
 
 
-__device__ void computeMeasuresKernel(
+template <eMeasureSource measureSource>
+__global__ void computeMeasuresKernel(
         texture<float4, cudaTextureType3D, cudaReadModeElementType>& texVolume,
         int sizeX, int sizeY, int sizeZ, int brickOverlap,
-        const float3& h, eMeasureSource measureSource, eMeasure measure,
+        const float3& h, eMeasure measure,
         float* minValueReductionArray, float* maxValueReductionArray)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x + brickOverlap;
@@ -121,7 +124,6 @@ void reduceMeasureArray(
     float* minReductionOutput;
     float* maxReductionOutput;
 
-    bool finished = false;
     int iteration = 0;
     while (numBlocks > 1) {
         inputSize = numBlocks;
@@ -140,9 +142,11 @@ void reduceMeasureArray(
         }
 
         int sharedMemorySize = BLOCK_SIZE * sizeof(float);
-        calculateMaximum<<<numBlocks, BLOCK_SIZE, sharedMemorySize>>>(
-                reductionInput, reductionOutput, numElements, BLOCK_SIZE);
-    
+		calculateMinimum<<<numBlocks, BLOCK_SIZE, sharedMemorySize>>>(
+			minReductionInput, minReductionOutput, inputSize, BLOCK_SIZE);
+		calculateMaximum<<<numBlocks, BLOCK_SIZE, sharedMemorySize>>>(
+			maxReductionInput, maxReductionOutput, inputSize, BLOCK_SIZE);
+
         iteration++;
     }
 
@@ -152,12 +156,14 @@ void reduceMeasureArray(
 
 MinMaxMeasureGPUHelperData::MinMaxMeasureGPUHelperData(size_t sizeX, size_t sizeY, size_t sizeZ, size_t brickOverlap)
 {
+	cudaChannelFormatDesc channelDesc;
+	channelDesc = cudaCreateChannelDesc<float4>();
     int reductionArraySize = (sizeX - 2*brickOverlap)*(sizeY - 2*brickOverlap)*(sizeZ - 2*brickOverlap);
     cudaSafeCall(cudaMalloc(&reductionArrayMin0, reductionArraySize*sizeof(float)));
     cudaSafeCall(cudaMalloc(&reductionArrayMin1, reductionArraySize*sizeof(float)));
     cudaSafeCall(cudaMalloc(&reductionArrayMax0, reductionArraySize*sizeof(float)));
     cudaSafeCall(cudaMalloc(&reductionArrayMax1, reductionArraySize*sizeof(float)));
-    cudaSafeCall(cudaMalloc3DArray(&textureArray, &channelDesc, extent, cudaArraySurfaceLoadStore));
+    cudaSafeCall(cudaMalloc3DArray(&textureArray, &channelDesc, make_cudaExtent(sizeX, sizeY, sizeZ), cudaArraySurfaceLoadStore));
     cpuData = new float[sizeX*sizeY*sizeZ*4]; // 4 channels
 }
 
@@ -192,7 +198,7 @@ void computeMeasureMinMaxGPU(
     int brickOverlap = texCPU.getBrickOverlap();
 
     float* cpuData = helperData.cpuData;
-    std::vector<std::vector<float>>& channelData = texCPU.getChannelData();
+    const std::vector<std::vector<float>>& channelData = texCPU.getChannelData();
     size_t n = channelData.at(0).size();
     for (int i = 0; i < n; i++) {
         for (int c = 0; c < 4; c++) {
@@ -201,8 +207,6 @@ void computeMeasureMinMaxGPU(
     }
 
     // Upload the channel data to the GPU
-    cudaChannelFormatDesc channelDesc;
-	channelDesc = cudaCreateChannelDesc<float4>();
 	cudaMemcpy3DParms memcpyParams = { 0 };
 	memcpyParams.srcPtr   = make_cudaPitchedPtr(cpuData, sizeX * 4 * sizeof(float), sizeX, sizeY);
 	memcpyParams.dstArray = textureArray;
@@ -219,14 +223,28 @@ void computeMeasureMinMaxGPU(
         iceil(sizeZ-2*brickOverlap, dimBlock.z));
     
     float3 h_cu{h.x, h.y, h.z};
-    computeMeasuresKernel<<<dimGrid,dimBlock>>>(
-        texVolume, sizeX, sizeY, sizeZ, brickOverlap,
-        h_cu, eMeasureSource measureSource, eMeasure measure,
-        reductionArrayMin0, reductionArrayMax0);
+	switch (measureSource) {
+	case MEASURE_SOURCE_RAW:
+		computeMeasuresKernel<MEASURE_SOURCE_RAW><<<dimGrid, dimBlock>>>(
+			texVolume, sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
+			helperData.reductionArrayMin0, helperData.reductionArrayMax0);
+		break;
+	case MEASURE_SOURCE_HEAT_CURRENT:
+		computeMeasuresKernel<MEASURE_SOURCE_HEAT_CURRENT><<<dimGrid, dimBlock>>>(
+			texVolume, sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
+			helperData.reductionArrayMin0, helperData.reductionArrayMax0);
+		break;
+	case MEASURE_SOURCE_JACOBIAN:
+		computeMeasuresKernel<MEASURE_SOURCE_JACOBIAN><<<dimGrid, dimBlock>>>(
+			texVolume, sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
+			helperData.reductionArrayMin0, helperData.reductionArrayMax0);
+		break;
+	}
+
     reduceMeasureArray(
         minVal, maxVal,
-        reductionArrayMin0, reductionArrayMin1,
-        reductionArrayMax0, reductionArrayMax1,
+		helperData.reductionArrayMin0, helperData.reductionArrayMin1,
+		helperData.reductionArrayMax0, helperData.reductionArrayMax1,
         sizeX, sizeY, sizeZ, brickOverlap);
 
     // Clean-up
