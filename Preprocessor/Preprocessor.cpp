@@ -136,8 +136,10 @@ int main(int argc, char* argv[])
 	{
 		string fileMask;
 		int channels;
-		FILE* file;
-		float* brickSlice; // For buffering data slices from the file
+		//FILE* file;
+		//float* brickSlice; // For buffering data slices from the file
+		MMapFile *mmapFile;
+		float* memory;
 	};
 
 	//atexit(&e);
@@ -464,7 +466,6 @@ int main(int argc, char* argv[])
 			FileListItem desc;
 			E_ASSERT("Invalid input file desc: " << *it, sscanf_s(it->c_str(), "%[^:]:%d", tmp, 1024, &desc.channels) == 2);
 			desc.fileMask = tmp;
-			desc.tmpArray = new LA3D::LargeArray3D<float>(desc.channels);
 
 			fileList.push_back(desc);
 			channels += desc.channels;
@@ -599,7 +600,6 @@ int main(int argc, char* argv[])
 	}
 
 	// accumulated timings, in seconds
-	float timeCreateLA3D = 0.0f;
 	float timeBricking = 0.0f;
 	float timeCompressGPU = 0.0f;
 	float timeDecompressGPU = 0.0f;
@@ -731,29 +731,12 @@ int main(int argc, char* argv[])
 
 		std::vector<Statistics> statsTimestepChannels(channels);
 
-		LARGE_INTEGER timestampLA3DStart;
-		QueryPerformanceCounter(&timestampLA3DStart);
-
-		bool createdLA3Ds = true;
-
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
 			cout << "\n\n";
 
 			sprintf_s(fn, fdesc->fileMask.c_str(), timestep);
 			string fileName(fn);
-
-			string tmpFilePath = tmpPath + "tmp_" + fileName + ".la3d";
-			wstring wstrTmpFilePath(tmpFilePath.begin(), tmpFilePath.end());
-
-			if (tum3d::FileExists(tmpFilePath))
-			{
-				//TODO check size etc?
-				cout << "Using existing LA3D file " << tmpFilePath << "\n";
-				fdesc->tmpArray->Open(wstrTmpFilePath.c_str(), true, laMem);
-				createdLA3Ds = false;
-				continue;
-			}
 
 			cout << "Loading channels from " << fileName << "...\n";
 
@@ -766,12 +749,10 @@ int main(int argc, char* argv[])
 			E_ASSERT("Could not open file \"" << filePath << "\"", file != nullptr);
 
 			// Create the temporary buffer
-			fdesc->brickSlice = new float[volumeSize[0] * brickSize * fdesc->channels];
+			//fdesc->brickSlice = new float[volumeSize[0] * brickSize * fdesc->channels];
+			fdesc->mmapFile = new MMapFile;
+			fdesc->memory = static_cast<float*>(fdesc->mmapFile->openFile(wstrTmpFilePath));
 		}
-
-		LARGE_INTEGER timestampLA3DEnd;
-		QueryPerformanceCounter(&timestampLA3DEnd);
-		timeCreateLA3D += float(timestampLA3DEnd.QuadPart - timestampLA3DStart.QuadPart) / float(perfFreq.QuadPart);
 
 		cout << "\n\nBricking...\n";
 
@@ -785,20 +766,6 @@ int main(int argc, char* argv[])
 		{
 			for (int32 by = 0; by < brickCount[1]; ++by)
 			{
-				for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
-				{
-					int64_t startPosY = by * brickDataSize - overlap;
-					int64_t startPosZ = bz * brickDataSize - overlap;
-					int64_t brickHeight = by < brickCount[1] - 1 ? brickSize : volumeSize[1] - by * brickDataSize + 2 * overlap;
-
-
-					int64_t filePosBytes = (startPosZ * (int64_t)volumeSize[1] * (int64_t)volumeSize[0]
-						+ startPosY * (int64_t)volumeSize[0]) * sizeof(float) * (int64_t)fdesc->channels;
-					size_t readSizeElements = brickHeight * (int64_t)volumeSize[0];
-					_fseeki64(file, filePos, SEEK_SET);
-					fread(fdesc->brickSlice, sizeof(float) * fdesc->channels, sizeof(float) * fdesc->channels, file);
-				}
-
 				for (int32 bx = 0; bx < brickCount[0]; ++bx)
 				{
 					SimpleProgress(bx + by * brickCount[0] + bz * brickCount[0] * brickCount[1], brickCount[0] * brickCount[1] * brickCount[2] - 1);
@@ -850,9 +817,8 @@ int main(int argc, char* argv[])
 
 									for (int32 localChannel = 0; localChannel < fdesc->channels; ++localChannel)
 									{
-										//*dstPtr[localChannel]++ = fdesc->tmpArray->Get(volPos[0], volPos[1], volPos[2])[localChannel];
-										ptrdiff_t localIndex = volPos[2] + volPos[1] + volPos[0];
-										*dstPtr[localChannel]++ = fdesc->brickSlice[localIndex];
+										ptrdiff_t fileOffset = ((volPos[0] + (volPos[1] + volPos[2]*volumeSize[1])*volumeSize[0]) * fdesc->channels + localChannel) * sizeof(float);
+										*dstPtr[localChannel]++ = fdesc->memory[fileOffset];
 									}
 								}
 							}
@@ -1003,7 +969,8 @@ int main(int argc, char* argv[])
 
 	for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 	{
-		delete[] fdesc->brickSlice;
+		//delete[] fdesc->brickSlice;
+		delete fdesc->mmapFile;
 	}
 
 
@@ -1031,7 +998,6 @@ int main(int argc, char* argv[])
 	std::ofstream fileTimings(outPath + outFile + "_timings.txt");
 	fileTimings;
 	fileTimings << "Total time:       " << fixed << setw(10) << setprecision(3) << timeGlobal << " s\n";
-	fileTimings << "Create LA3Ds:     " << fixed << setw(10) << setprecision(3) << timeCreateLA3D << " s\n";
 	fileTimings << "Bricking:         " << fixed << setw(10) << setprecision(3) << timeBricking << " s\n";
 	fileTimings << "Compress (GPU):   " << fixed << setw(10) << setprecision(3) << timeCompressGPU << " s\n";
 	fileTimings << "Decompress (GPU): " << fixed << setw(10) << setprecision(3) << timeDecompressGPU << " s\n";
