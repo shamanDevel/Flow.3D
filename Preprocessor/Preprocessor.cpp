@@ -135,7 +135,8 @@ int main(int argc, char* argv[])
 	{
 		string fileMask;
 		int channels;
-		LA3D::LargeArray3D<float>* tmpArray;
+		FILE* file;
+		float* brickSlice; // For buffering data slices from the file
 	};
 
 	//atexit(&e);
@@ -627,12 +628,6 @@ int main(int argc, char* argv[])
 	}
 
 
-	const size_t PAGE_SIZE = 64;
-	const size_t numPagesX = (volumeSize[0] + PAGE_SIZE - 1) / PAGE_SIZE;
-	const size_t numPagesY = (volumeSize[1] + PAGE_SIZE - 1) / PAGE_SIZE;
-	const size_t numPagesZ = (volumeSize[2] + PAGE_SIZE - 1) / PAGE_SIZE;
-
-	float* srcSlice = new float[volumeSize[0] * PAGE_SIZE * 4];		// 4 = max number of channels
 	std::vector<std::vector<float>> rawBrickChannelData(channels);
 	std::vector<std::vector<float>> rawBrickChannelDataReconst(channels);
 	std::vector<std::vector<uint32>> compressedBrickChannelData(channels);
@@ -766,51 +761,11 @@ int main(int argc, char* argv[])
 			E_ASSERT("File " << filePath << " does not exist", tum3d::FileExists(filePath));
 
 			// Open file
-			FILE* file;
-			fopen_s(&file, filePath.c_str(), "rb");
+			fopen_s(&fdesc->file, filePath.c_str(), "rb");
 			E_ASSERT("Could not open file \"" << filePath << "\"", file != nullptr);
 
-
-			// Create output array
-			fdesc->tmpArray->Create(volumeSize[0], volumeSize[1], volumeSize[2], 64, 64, 64, wstrTmpFilePath.c_str(), laMem);
-
-			// Read slice by slice and write to target array
-			cout << "Creating LA3D for " << fileName << "\n\n";
-
-			
-			for (int32 pageSliceZ = 0; pageSliceZ < numPagesZ; ++pageSliceZ)
-			{
-				SimpleProgress(pageSliceZ, numPagesZ - 1);
-
-				size_t pageZStart = pageSliceZ * PAGE_SIZE;
-				size_t pageDepth = PAGE_SIZE;
-
-				if (pageSliceZ == numPagesZ - 1 && volumeSize[2] % PAGE_SIZE != 0) {
-					pageDepth = volumeSize[2] % PAGE_SIZE;
-				}
-
-				for (int32 pageSliceY = 0; pageSliceY < numPagesY; ++pageSliceY)
-				{
-					size_t pageYStart = pageSliceY * PAGE_SIZE;
-					size_t pageHeight = PAGE_SIZE;
-
-					if (pageSliceY == numPagesY - 1 && volumeSize[1] % PAGE_SIZE != 0) {
-						pageHeight = volumeSize[1] % PAGE_SIZE;
-					}
-
-					for (int32 sliceZ = pageZStart; sliceZ < pageZStart + pageDepth; ++sliceZ)
-					{
-						int64_t filePos = ((int64_t)sliceZ * (int64_t)volumeSize[1] * (int64_t)volumeSize[0] + (int64_t)pageYStart * (int64_t)volumeSize[0])
-							* sizeof(float) * (int64_t)fdesc->channels;
-						_fseeki64(file, filePos, SEEK_SET);
-						fread(srcSlice, sizeof(float) * fdesc->channels, volumeSize[0] * pageHeight, file);
-						fdesc->tmpArray->CopyFrom(srcSlice, 0, pageYStart, sliceZ, volumeSize[0], pageHeight, 1, volumeSize[0], pageHeight);
-					}
-				}
-			}
-
-			// Open in read-only mode after everything has been written
-			fdesc->tmpArray->Open(wstrTmpFilePath.c_str(), true, laMem);
+			// Create the temporary buffer
+			fdesc->brickSlice = new float[volumeSize[0] * brickSize * fdesc->channels];
 		}
 
 		LARGE_INTEGER timestampLA3DEnd;
@@ -829,6 +784,20 @@ int main(int argc, char* argv[])
 		{
 			for (int32 by = 0; by < brickCount[1]; ++by)
 			{
+				for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
+				{
+					int64_t startPosY = by * brickDataSize - overlap;
+					int64_t startPosZ = bz * brickDataSize - overlap;
+					int64_t brickHeight = by < brickCount[1] - 1 ? brickSize : volumeSize[1] - by * brickDataSize + 2 * overlap;
+
+
+					int64_t filePosBytes = (startPosZ * (int64_t)volumeSize[1] * (int64_t)volumeSize[0]
+						+ startPosY * (int64_t)volumeSize[0]) * sizeof(float) * (int64_t)fdesc->channels;
+					size_t readSizeElements = brickHeight * (int64_t)volumeSize[0];
+					_fseeki64(file, filePos, SEEK_SET);
+					fread(fdesc->brickSlice, sizeof(float) * fdesc->channels, sizeof(float) * fdesc->channels, file);
+				}
+
 				for (int32 bx = 0; bx < brickCount[0]; ++bx)
 				{
 					SimpleProgress(bx + by * brickCount[0] + bz * brickCount[0] * brickCount[1], brickCount[0] * brickCount[1] * brickCount[2] - 1);
@@ -880,7 +849,9 @@ int main(int argc, char* argv[])
 
 									for (int32 localChannel = 0; localChannel < fdesc->channels; ++localChannel)
 									{
-										*dstPtr[localChannel]++ = fdesc->tmpArray->Get(volPos[0], volPos[1], volPos[2])[localChannel];
+										//*dstPtr[localChannel]++ = fdesc->tmpArray->Get(volPos[0], volPos[1], volPos[2])[localChannel];
+										ptrdiff_t localIndex = volPos[2] + volPos[1] + volPos[0];
+										*dstPtr[localChannel]++ = fdesc->brickSlice[localIndex];
 									}
 								}
 							}
@@ -1013,18 +984,7 @@ int main(int argc, char* argv[])
 		// close and (optionally) delete temp files
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
-			// delete file only if we created it ourselves
-			bool discard = createdLA3Ds && !keepLA3Ds;
-			// don't bother saving anything if file will be deleted anyway
-			fdesc->tmpArray->Close(discard);
-			if(discard)
-			{
-				// delete the file
-				sprintf_s(fn, fdesc->fileMask.c_str(), timestep);
-				string fileName(fn);
-				string tmpFilePath = tmpPath + "tmp_" + fileName + ".la3d";
-				DeleteFileA(tmpFilePath.c_str());
-			}
+			fclose(fdesc->file);
 		}
 
 	}	// For timestep
@@ -1042,10 +1002,9 @@ int main(int argc, char* argv[])
 
 	for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 	{
-		delete fdesc->tmpArray;
+		delete[] fdesc->brickSlice;
 	}
 
-	delete[] srcSlice;
 
 	for (int i = 0; i < channels; ++i)
 	{
