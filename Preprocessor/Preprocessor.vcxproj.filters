@@ -126,6 +126,9 @@
     <ClInclude Include="..\include\Json\json_st.hh">
       <Filter>Json</Filter>
     </ClInclude>
+    <ClInclude Include="MeasuresCPU.h" />
+    <ClInclude Include="MeasuresGPU.h" />
+    <ClInclude Include="..\Renderer\Measures.cuh" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
@@ -159,5 +162,9 @@
     <Filter Include="Json">
       <UniqueIdentifier>{d7fec3f0-079e-4485-b77e-70d323f10ac9}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="MeasuresGPU.cu" />
+    <CudaCompile Include="..\Renderer\Measures.cu" />
   </ItemGroup>
 </Project>

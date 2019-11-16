@@ -3,7 +3,7 @@
 
 #include "MeasuresCPU.h"
 
-class cudaArray;
+struct cudaArray;
 
 struct MinMaxMeasureGPUHelperData {
     MinMaxMeasureGPUHelperData(size_t sizeX, size_t sizeY, size_t sizeZ, size_t brickOverlap);
@@ -17,10 +17,10 @@ struct MinMaxMeasureGPUHelperData {
     float* reductionArrayMax1;
 };
 
-float computeMeasureMinMaxGPU(
-        VolumeTextureCPU& texCPU, const vec3& h,
-        eMeasureSource measureSource, eMeasure measure,
-        MinMaxMeasureGPUHelperData& helperData,
-        float& minVal, float& maxVal);
+void computeMeasureMinMaxGPU(
+	VolumeTextureCPU& texCPU, const vec3& h,
+    eMeasureSource measureSource, eMeasure measure,
+    MinMaxMeasureGPUHelperData& helperData,
+    float& minVal, float& maxVal);
 
 #endif
