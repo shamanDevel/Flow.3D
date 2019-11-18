@@ -1,6 +1,7 @@
 #ifndef __MMAP_FILE_H__
 #define __MMAP_FILE_H__
 
+#include <string>
 #include <windows.h>
 
 class MMapFile
@@ -8,7 +9,7 @@ class MMapFile
 public:
 	MMapFile();
 	~MMapFile();
-	void* openFile(const std::wstring& filename);
+	void* openFile(const std::string& filename);
 	void closeFile();
 	inline size_t getFileSizeInBytes() { return m_ulFileSize; }
 

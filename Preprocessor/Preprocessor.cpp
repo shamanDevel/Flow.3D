@@ -21,6 +21,7 @@
 #include "Statistics.h"
 
 #include "TimeVolumeIO.h"
+#include "MMapFile.h"
 #include "MeasuresCPU.h"
 #include "MeasuresGPU.h"
 #include <../Renderer/Measure.h>
@@ -138,7 +139,7 @@ int main(int argc, char* argv[])
 		int channels;
 		//FILE* file;
 		//float* brickSlice; // For buffering data slices from the file
-		MMapFile *mmapFile;
+		MMapFile* mmapFile;
 		float* memory;
 	};
 
@@ -744,14 +745,10 @@ int main(int argc, char* argv[])
 			string filePath = inPath + fileName;
 			E_ASSERT("File " << filePath << " does not exist", tum3d::FileExists(filePath));
 
-			// Open file
-			fopen_s(&fdesc->file, filePath.c_str(), "rb");
-			E_ASSERT("Could not open file \"" << filePath << "\"", file != nullptr);
-
 			// Create the temporary buffer
 			//fdesc->brickSlice = new float[volumeSize[0] * brickSize * fdesc->channels];
 			fdesc->mmapFile = new MMapFile;
-			fdesc->memory = static_cast<float*>(fdesc->mmapFile->openFile(wstrTmpFilePath));
+			fdesc->memory = static_cast<float*>(fdesc->mmapFile->openFile(filePath));
 		}
 
 		cout << "\n\nBricking...\n";
@@ -951,7 +948,8 @@ int main(int argc, char* argv[])
 		// close and (optionally) delete temp files
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
-			fclose(fdesc->file);
+			//fclose(fdesc->file);
+			delete fdesc->mmapFile;
 		}
 
 	}	// For timestep
@@ -970,7 +968,6 @@ int main(int argc, char* argv[])
 	for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 	{
 		//delete[] fdesc->brickSlice;
-		delete fdesc->mmapFile;
 	}
 
 

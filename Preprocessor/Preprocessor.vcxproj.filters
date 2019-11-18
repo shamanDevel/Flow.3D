@@ -129,6 +129,7 @@
     <ClInclude Include="MeasuresCPU.h" />
     <ClInclude Include="MeasuresGPU.h" />
     <ClInclude Include="..\Renderer\Measures.cuh" />
+    <ClInclude Include="MMapFile.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
@@ -148,6 +149,7 @@
     </ClCompile>
     <ClCompile Include="..\Renderer\Measure.cpp" />
     <ClCompile Include="MeasuresCPU.cpp" />
+    <ClCompile Include="MMapFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="cudaCompress">
