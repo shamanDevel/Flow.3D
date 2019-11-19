@@ -11,20 +11,17 @@
 #include <cstdlib>
 
 #include <tclap/CmdLine.h>
-#include <Json\Json.h>
+#include <Json/Json.h>
 #include <cudaCompress/Instance.h>
 #include <cudaUtil.h>
 
 #include "Utils.h"
 #include "SysTools.h"
-#include "LargeArray3D.h"
 #include "Statistics.h"
 
 #include "TimeVolumeIO.h"
 #include "MMapFile.h"
-#include "MeasuresCPU.h"
 #include "MeasuresGPU.h"
-#include <../Renderer/Measure.h>
 
 #include "CompressVolume.h"
 #include "GPUResources.h"
@@ -86,10 +83,14 @@ std::vector<std::string> split(const std::string &s, char delim) {
 	return elems;
 }
 
+/**
+ * Computes the minimum/maximum values of all measures in this brick as a preprocess step in order
+ * to be able to terminate early when raytracing iso surfaces.
+ */
 void computeMinMaxMeasures(
 		const std::vector<std::vector<float>> &rawBrickChannelData,
 		std::vector<float> &minMeasuresInBrick, std::vector<float> &maxMeasuresInBrick,
-		size_t sizeX, size_t sizeY, size_t sizeZ, size_t overlap, const vec3& gridSpacing,
+		size_t sizeX, size_t sizeY, size_t sizeZ, size_t overlap, const tum3D::Vec3f& gridSpacing,
 		MinMaxMeasureGPUHelperData* helperData) {
 	const bool useCPU = false;
 	minMeasuresInBrick.resize(NUM_MEASURES);
@@ -101,25 +102,9 @@ void computeMinMaxMeasures(
 
 		eMeasureSource measureSource = GetMeasureSource((eMeasure)measureIdx);
 		VolumeTextureCPU tex(rawBrickChannelData, sizeX, sizeY, sizeZ, overlap);
-
-		if (useCPU) {
-			#pragma omp parallel for reduction(min: minValue) reduction(max: maxValue)
-			for (size_t z = 0; z < sizeZ; z++) {
-				for (size_t y = 0; y < sizeY; y++) {
-					for (size_t x = 0; x < sizeX; x++) {
-						float value = getMeasureFromVolume(
-							tex, x, y, z, gridSpacing, measureSource, (eMeasure)measureIdx);
-						minValue = std::min(minValue, value);
-						maxValue = std::max(maxValue, value);
-					}
-				}
-			}
-		} else {
-			VolumeTextureCPU tex(rawBrickChannelData, sizeX, sizeY, sizeZ, overlap);
-			computeMeasureMinMaxGPU(
+		computeMeasureMinMaxGPU(
 				tex, gridSpacing, measureSource, (eMeasure)measureIdx,
 				helperData, minValue, maxValue);
-		}
 
 		minMeasuresInBrick[measureIdx] = minValue;
 		maxMeasuresInBrick[measureIdx] = maxValue;
@@ -137,8 +122,6 @@ int main(int argc, char* argv[])
 	{
 		string fileMask;
 		int channels;
-		//FILE* file;
-		//float* brickSlice; // For buffering data slices from the file
 		MMapFile* mmapFile;
 		float* memory;
 	};
@@ -747,8 +730,7 @@ int main(int argc, char* argv[])
 			string filePath = inPath + fileName;
 			E_ASSERT("File " << filePath << " does not exist", tum3d::FileExists(filePath));
 
-			// Create the temporary buffer
-			//fdesc->brickSlice = new float[volumeSize[0] * brickSize * fdesc->channels];
+			// Create the reading buffer
 			fdesc->mmapFile = new MMapFile;
 			fdesc->memory = static_cast<float*>(fdesc->mmapFile->openFile(filePath));
 		}
@@ -900,13 +882,11 @@ int main(int argc, char* argv[])
 					fileStatsBrick << timestep << ";" << bx << ";" << by << ";" << bz << ";";
 					WriteStatsCSV(fileStatsBrick, statsBrick.GetStats(), quantStepCommon);
 
-
+					// Compute all minimum/maximum values of the measures in this brick for accelerating raytracing of iso surfaces
 					std::vector<float> minMeasuresInBrick, maxMeasuresInBrick;
 					computeMinMaxMeasures(
 							rawBrickChannelData, minMeasuresInBrick, maxMeasuresInBrick,
-							size.x(), size.y(), size.z(), overlap,
-							vec3{ gridSpacing.x(), gridSpacing.y(), gridSpacing.z() },
-							helperData);
+							size.x(), size.y(), size.z(), overlap, gridSpacing, helperData);
 
 					// Add brick to output
 					if (compression != COMPRESSION_NONE)
@@ -965,12 +945,6 @@ int main(int argc, char* argv[])
 		statsGlobal += statsGlobalChannels[c];
 	}
 	WriteStatsCSV(fileStatsGlobal, statsGlobal.GetStats(), quantStepCommon);
-
-
-	for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
-	{
-		//delete[] fdesc->brickSlice;
-	}
 
 
 	for (int i = 0; i < channels; ++i)

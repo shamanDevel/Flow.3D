@@ -4,6 +4,13 @@
 #include <string>
 #include <windows.h>
 
+/**
+ * @class MMapFile represents a file mapped to the main memory.
+ * This uses Window's file mapping functionality.
+ * The pointer returned by "openFile" can be used like normal memory.
+ * When memory is accessed that is not yet loaded, the operating system
+ * generates an interrupt and loads memory of the size of a page.
+ */
 class MMapFile
 {
 public:

@@ -1,13 +1,11 @@
+#include <cudaUtil.h>
 #include "MeasuresGPU.h"
-#include "cudaUtil.h"
-#include "../Renderer/Measures.cuh"
-#include "../Renderer/Coords.cuh"
 #include "../Renderer/Measures.cuh"
 
 /**
  * Reference: Based on kernel 4 from https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
  * @param input The array of input values (of size 'sizeOfInput').
- * @param output The output array (of size iceil(numberOfBlocksI, blockSize1D*2)).
+ * @param output The output array (of size iceil(sizeOfInput, blockSize1D*2)).
  * @param sizeOfInput The number of input values.
  */
  __global__ void calculateMinimum(float* input, float* output, int sizeOfInput, int blockSize1D) {
@@ -43,7 +41,7 @@
 /**
  * Reference: Based on kernel 4 from https://developer.download.nvidia.com/assets/cuda/files/reduction.pdf
  * @param input The array of input values (of size 'sizeOfInput').
- * @param output The output array (of size iceil(numberOfBlocksI, blockSize1D*2)).
+ * @param output The output array (of size iceil(sizeOfInput, blockSize1D*2)).
  * @param sizeOfInput The number of input values.
  */
  __global__ void calculateMaximum(float* input, float* output, int sizeOfInput, int blockSize1D) {
@@ -76,13 +74,12 @@
     }
 }
 
-inline int iceil(int x, int y)
-{
-    return 1 + ((x - 1) / y);
-}
-
+// The volume texture
 texture<float4, cudaTextureType3D, cudaReadModeElementType> texVolume;
 
+/**
+ * Computes the passed measure type at all locations in the brick.
+ */
 template <eMeasureSource measureSource>
 __global__ void computeMeasuresKernel(
         int sizeX, int sizeY, int sizeZ, int brickOverlap,
@@ -108,6 +105,14 @@ __global__ void computeMeasuresKernel(
     }
 }
 
+inline int iceil(int x, int y)
+{
+	return 1 + ((x - 1) / y);
+}
+
+/**
+ * Computes the minimum/maximum value in reductionArrayMin0/reductionArrayMax0.
+ */
 void reduceMeasureArray(
         float& minValue, float& maxValue,
         float* reductionArrayMin0, float* reductionArrayMin1,
@@ -161,7 +166,7 @@ MinMaxMeasureGPUHelperData::MinMaxMeasureGPUHelperData(size_t sizeX, size_t size
 {
 	cudaChannelFormatDesc channelDesc;
 	channelDesc = cudaCreateChannelDesc<float4>();
-    int reductionArraySize = (sizeX - 2*brickOverlap)*(sizeY - 2*brickOverlap)*(sizeZ - 2*brickOverlap);
+    int reductionArraySize = int((sizeX - 2*brickOverlap)*(sizeY - 2*brickOverlap)*(sizeZ - 2*brickOverlap));
     cudaSafeCall(cudaMalloc(&reductionArrayMin0, reductionArraySize*sizeof(float)));
     cudaSafeCall(cudaMalloc(&reductionArrayMin1, reductionArraySize*sizeof(float)));
     cudaSafeCall(cudaMalloc(&reductionArrayMax0, reductionArraySize*sizeof(float)));
@@ -181,7 +186,7 @@ MinMaxMeasureGPUHelperData::~MinMaxMeasureGPUHelperData()
 }
 
 void computeMeasureMinMaxGPU(
-        VolumeTextureCPU& texCPU, const vec3& h,
+        VolumeTextureCPU& texCPU, const tum3D::Vec3f& h,
         eMeasureSource measureSource, eMeasure measure,
         MinMaxMeasureGPUHelperData* helperData,
         float& minVal, float& maxVal)
@@ -193,11 +198,12 @@ void computeMeasureMinMaxGPU(
 	texVolume.filterMode = cudaFilterModeLinear;
 
     cudaArray* textureArray = helperData->textureArray;
-    int sizeX = texCPU.getSizeX();
-    int sizeY = texCPU.getSizeY();
-    int sizeZ = texCPU.getSizeZ();
-    int brickOverlap = texCPU.getBrickOverlap();
+    int sizeX = int(texCPU.getSizeX());
+    int sizeY = int(texCPU.getSizeY());
+    int sizeZ = int(texCPU.getSizeZ());
+    int brickOverlap = int(texCPU.getBrickOverlap());
 
+	// Copy the channels to contiguous memory.
     float* cpuData = helperData->cpuData;
     const std::vector<std::vector<float>>& channelData = texCPU.getChannelData();
     size_t n = channelData.at(0).size();
@@ -207,7 +213,7 @@ void computeMeasureMinMaxGPU(
         }
     }
 
-    // Upload the channel data to the GPU
+    // Upload the channel data to the GPU.
 	cudaMemcpy3DParms memcpyParams = { 0 };
 	memcpyParams.srcPtr   = make_cudaPitchedPtr(cpuData, sizeX * 4 * sizeof(float), sizeX, sizeY);
 	memcpyParams.dstArray = textureArray;
@@ -223,7 +229,8 @@ void computeMeasureMinMaxGPU(
         iceil(sizeY-2*brickOverlap, dimBlock.y),
         iceil(sizeZ-2*brickOverlap, dimBlock.z));
 
-    float3 h_cu{h.x, h.y, h.z};
+	// Compute the measure for all locations in the brick.
+    float3 h_cu{h.x(), h.y(), h.z() };
 	switch (measureSource) {
 	case MEASURE_SOURCE_RAW:
 		computeMeasuresKernel<MEASURE_SOURCE_RAW><<<dimGrid, dimBlock>>>(
@@ -242,12 +249,13 @@ void computeMeasureMinMaxGPU(
 		break;
 	}
 
+	// Compute minimum and maximum measure value.
     reduceMeasureArray(
         minVal, maxVal,
 		helperData->reductionArrayMin0, helperData->reductionArrayMin1,
 		helperData->reductionArrayMax0, helperData->reductionArrayMax1,
         sizeX, sizeY, sizeZ, brickOverlap);
 
-    // Clean-up
+    // Clean-up.
 	cudaSafeCall(cudaUnbindTexture(texVolume));
 }

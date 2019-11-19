@@ -126,7 +126,6 @@
     <ClInclude Include="..\include\Json\json_st.hh">
       <Filter>Json</Filter>
     </ClInclude>
-    <ClInclude Include="MeasuresCPU.h" />
     <ClInclude Include="MeasuresGPU.h" />
     <ClInclude Include="..\Renderer\Measures.cuh" />
     <ClInclude Include="MMapFile.h" />
@@ -148,7 +147,6 @@
       <Filter>Json</Filter>
     </ClCompile>
     <ClCompile Include="..\Renderer\Measure.cpp" />
-    <ClCompile Include="MeasuresCPU.cpp" />
     <ClCompile Include="MMapFile.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -175,7 +175,6 @@ exit 1</Command>
     <ClInclude Include="..\include\Utils.h" />
     <ClInclude Include="..\include\Vec.h" />
     <ClInclude Include="..\Renderer\Measures.cuh" />
-    <ClInclude Include="MeasuresCPU.h" />
     <ClInclude Include="MeasuresGPU.h" />
     <ClInclude Include="MMapFile.h" />
     <ClInclude Include="Statistics.h" />
@@ -195,7 +194,6 @@ exit 1</Command>
     <ClCompile Include="..\shared\TimerCPU.cpp" />
     <ClCompile Include="..\shared\TimeVolumeInfo.cpp" />
     <ClCompile Include="..\shared\TimeVolumeIO.cpp" />
-    <ClCompile Include="MeasuresCPU.cpp" />
     <ClCompile Include="MMapFile.cpp" />
     <ClCompile Include="Preprocessor.cpp" />
     <ClCompile Include="Statistics.cpp" />
