@@ -81,82 +81,12 @@ inline int iceil(int x, int y)
     return 1 + ((x - 1) / y);
 }
 
-//texture<float4, cudaTextureType3D, cudaReadModeElementType> texVolume;
-
-/*template<eMeasureSource source>
-__device__ inline float getMeasureFromVolume_Preprocessor(eMeasure measure, const float3& pos, const float3& h);
-
-template<>
-__device__ inline float getMeasureFromVolume_Preprocessor<MEASURE_SOURCE_RAW>(eMeasure measure, const float3& pos, const float3& h) {
-	float4 vel4 = make_floatn<float4, float4>(tex3D(texVolume, pos.x, pos.y, pos.z));
-	return getMeasureFromRaw(measure, vel4);
-}
-
-__device__ inline float3 sampleScalarGradient_Preprocessor(float3 coord, const float3& h)
-{
-	// default implementation: just get derivatives in x, y, z
-	float3 grad;
-
-	// derivative in x direction
-	float4 dx = sampleVolumeDerivativeX<F, float4, float4>(tex, coord, h);
-	grad.x = dx.w;
-
-	// derivative in y direction
-	float4 dy = sampleVolumeDerivativeY<F, float4, float4>(tex, coord, h);
-	grad.y = dy.w;
-
-	// derivative in z direction
-	float4 dz = sampleVolumeDerivativeZ<F, float4, float4>(tex, coord, h);
-	grad.z = dz.w;
-
-
-template<>
-__device__ inline float getMeasureFromVolume_Preprocessor<MEASURE_SOURCE_HEAT_CURRENT>(eMeasure measure, const float3& pos, const float3& h) {
-	float3 heatCurrent;
-	return getMeasureFromHeatCurrent(measure, heatCurrent);
-}
-
-template<>
-__device__ inline float getMeasureFromVolume_Preprocessor<MEASURE_SOURCE_JACOBIAN>(eMeasure measure, const float3& pos, const float3& h) {
-	float4 vel4 = make_floatn<float4, float4>(tex3D(texVolume, pos.x, pos.y, pos.z));
-	float3x3 jacobian;
-	return getMeasureFromJac(measure, jacobian);
-}
-
-/*template <eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_RAW, F, MEASURE_COMPUTE_ONTHEFLY>
-{
-	__device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		float4 vel4 = make_floatn<float4, float4>(tex3D(texVolume, x, y, z));
-		return getMeasureFromRaw(measure, vel4);
-	}
-};
-
-template <eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_HEAT_CURRENT, F, MEASURE_COMPUTE_ONTHEFLY>
-{
-	__device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		float3 heatCurrent = getHeatCurrent<F>(tex, pos, h);
-		return getMeasureFromHeatCurrent(measure, heatCurrent);
-	}
-};
-
-template <eTextureFilterMode F>
-struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_JACOBIAN, F, MEASURE_COMPUTE_ONTHEFLY>
-{
-	__device__ static inline float exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 pos, float3 h)
-	{
-		float3x3 jacobian = getJacobian<F>(tex, pos, h);
-		return getMeasureFromJac(measure, jacobian);
-	}
-};*/
+texture<float4, cudaTextureType3D, cudaReadModeElementType> texVolume;
 
 template <eMeasureSource measureSource>
 __global__ void computeMeasuresKernel(
         int sizeX, int sizeY, int sizeZ, int brickOverlap,
-		cudaTextureObject_t texVolume, const float3& h, eMeasure measure,
+		float3 h, eMeasure measure,
         float* minValueReductionArray, float* maxValueReductionArray)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -168,9 +98,7 @@ __global__ void computeMeasuresKernel(
 
     if (x < sizeX - brickOverlap && y < sizeY - brickOverlap && z < sizeZ - brickOverlap) {
         // Sample at the voxel centers
-		//float3 pos{ (x + 0.5f) / float(sizeX), (y + 0.5f) / float(sizeY), (z + 0.5f) / float(sizeZ) };
 		float3 pos{ x + 0.5f, y + 0.5f, z + 0.5f };
-		//float3 pos{ 0.0f, 0.0f, 0.0f };
 		float value = getMeasure<measureSource, TEXTURE_FILTER_LINEAR, MEASURE_COMPUTE_ONTHEFLY>(
 			measure, texVolume, pos, h, 1.0f);
 
@@ -179,9 +107,6 @@ __global__ void computeMeasuresKernel(
         maxValueReductionArray[reductionWriteIndex] = value;
     }
 }
-
-#include <cmath>
-#include <algorithm>
 
 void reduceMeasureArray(
         float& minValue, float& maxValue,
@@ -196,17 +121,6 @@ void reduceMeasureArray(
     if (numBlocks == 0) {
         return;
     }
-
-	float* cpuValues = new float[numBlocks];
-	cudaMemcpy(cpuValues, reductionArrayMin0, sizeof(float) * numBlocks, cudaMemcpyDeviceToHost);
-	float cpuMin = 10000.0f;
-	float cpuMax = -10000.0f;
-	for (int i = 0; i < numBlocks; i++) {
-		cpuMin = std::min(cpuValues[i], cpuMin);
-		cpuMax = std::max(cpuValues[i], cpuMax);
-	}
-	delete[] cpuValues;
-
 
     float* minReductionInput;
     float* maxReductionInput;
@@ -272,6 +186,12 @@ void computeMeasureMinMaxGPU(
         MinMaxMeasureGPUHelperData* helperData,
         float& minVal, float& maxVal)
 {
+	texVolume.addressMode[0] = cudaAddressModeClamp;
+	texVolume.addressMode[1] = cudaAddressModeClamp;
+	texVolume.addressMode[2] = cudaAddressModeClamp;
+	texVolume.normalized = false;
+	texVolume.filterMode = cudaFilterModeLinear;
+
     cudaArray* textureArray = helperData->textureArray;
     int sizeX = texCPU.getSizeX();
     int sizeY = texCPU.getSizeY();
@@ -295,22 +215,7 @@ void computeMeasureMinMaxGPU(
 	memcpyParams.kind     = cudaMemcpyHostToDevice;
 
     cudaSafeCall(cudaMemcpy3D(&memcpyParams));
-
-	// Create the texture object
-	cudaTextureObject_t texVolume;
-	cudaResourceDesc resDesc;
-	memset(&resDesc, 0, sizeof(cudaResourceDesc));
-	resDesc.resType = cudaResourceTypeArray;
-	resDesc.res.array.array = helperData->textureArray;
-	cudaTextureDesc texDesc;
-	memset(&texDesc, 0, sizeof(cudaTextureDesc));
-	texDesc.normalizedCoords = false;
-	texDesc.filterMode = cudaFilterModeLinear;
-	texDesc.addressMode[0] = cudaAddressModeClamp;
-	texDesc.addressMode[1] = cudaAddressModeClamp;
-	texDesc.addressMode[2] = cudaAddressModeClamp;
-	texDesc.readMode = cudaReadModeElementType;
-	cudaSafeCall(cudaCreateTextureObject(&texVolume, &resDesc, &texDesc, NULL));
+	cudaSafeCall(cudaBindTextureToArray(texVolume, textureArray));
 
     dim3 dimBlock(32, 4, 1);
     dim3 dimGrid(
@@ -322,17 +227,17 @@ void computeMeasureMinMaxGPU(
 	switch (measureSource) {
 	case MEASURE_SOURCE_RAW:
 		computeMeasuresKernel<MEASURE_SOURCE_RAW><<<dimGrid, dimBlock>>>(
-			sizeX, sizeY, sizeZ, brickOverlap, texVolume, h_cu, measure,
+			sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
 			helperData->reductionArrayMin0, helperData->reductionArrayMax0);
 		break;
 	case MEASURE_SOURCE_HEAT_CURRENT:
 		computeMeasuresKernel<MEASURE_SOURCE_HEAT_CURRENT><<<dimGrid, dimBlock>>>(
-			sizeX, sizeY, sizeZ, brickOverlap, texVolume, h_cu, measure,
+			sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
 			helperData->reductionArrayMin0, helperData->reductionArrayMax0);
 		break;
 	case MEASURE_SOURCE_JACOBIAN:
 		computeMeasuresKernel<MEASURE_SOURCE_JACOBIAN><<<dimGrid, dimBlock>>>(
-			sizeX, sizeY, sizeZ, brickOverlap, texVolume, h_cu, measure,
+			sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
 			helperData->reductionArrayMin0, helperData->reductionArrayMax0);
 		break;
 	}
@@ -344,5 +249,5 @@ void computeMeasureMinMaxGPU(
         sizeX, sizeY, sizeZ, brickOverlap);
 
     // Clean-up
-	cudaDestroyTextureObject(texVolume);
+	cudaSafeCall(cudaUnbindTexture(texVolume));
 }
