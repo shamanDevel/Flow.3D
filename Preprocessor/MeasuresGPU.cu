@@ -81,7 +81,7 @@ inline int iceil(int x, int y)
     return 1 + ((x - 1) / y);
 }
 
-texture<float4, cudaTextureType3D, cudaReadModeElementType> texVolume;
+//texture<float4, cudaTextureType3D, cudaReadModeElementType> texVolume;
 
 /*template<eMeasureSource source>
 __device__ inline float getMeasureFromVolume_Preprocessor(eMeasure measure, const float3& pos, const float3& h);
@@ -156,7 +156,7 @@ struct getMeasureFromVolume_Impl2<MEASURE_SOURCE_JACOBIAN, F, MEASURE_COMPUTE_ON
 template <eMeasureSource measureSource>
 __global__ void computeMeasuresKernel(
         int sizeX, int sizeY, int sizeZ, int brickOverlap,
-        const float3& h, eMeasure measure,
+		cudaTextureObject_t texVolume, const float3& h, eMeasure measure,
         float* minValueReductionArray, float* maxValueReductionArray)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -169,13 +169,10 @@ __global__ void computeMeasuresKernel(
     if (x < sizeX - brickOverlap && y < sizeY - brickOverlap && z < sizeZ - brickOverlap) {
         // Sample at the voxel centers
 		//float3 pos{ (x + 0.5f) / float(sizeX), (y + 0.5f) / float(sizeY), (z + 0.5f) / float(sizeZ) };
-		//float3 pos{ x + 0.5f, y + 0.5f, z + 0.5f };
-		float3 pos{ 0.0f, 0.0f, 0.0f };
-		//float value = getMeasure<measureSource, TEXTURE_FILTER_LINEAR, MEASURE_COMPUTE_ONTHEFLY>(
-		//	measure, texVolume, pos, h, 1.0f);
-		float4 vel4 = sampleVolume<TEXTURE_FILTER_LINEAR, float4, float4>(texVolume, pos);
-		float value = getMeasureFromRaw(measure, vel4);
-		//float value = getMeasureFromVolume_Impl2<measureSource, TEXTURE_FILTER_LINEAR, MEASURE_COMPUTE_ONTHEFLY>::exec(measure, texVolume, pos, h);
+		float3 pos{ x + 0.5f, y + 0.5f, z + 0.5f };
+		//float3 pos{ 0.0f, 0.0f, 0.0f };
+		float value = getMeasure<measureSource, TEXTURE_FILTER_LINEAR, MEASURE_COMPUTE_ONTHEFLY>(
+			measure, texVolume, pos, h, 1.0f);
 
 		int reductionWriteIndex = i + (j + k * (sizeY - 2 * brickOverlap)) * (sizeX - 2 * brickOverlap);
 		minValueReductionArray[reductionWriteIndex] = value;
@@ -275,13 +272,6 @@ void computeMeasureMinMaxGPU(
         MinMaxMeasureGPUHelperData* helperData,
         float& minVal, float& maxVal)
 {
-    texVolume.addressMode[0] = cudaAddressModeClamp;
-    texVolume.addressMode[1] = cudaAddressModeClamp;
-    texVolume.addressMode[2] = cudaAddressModeClamp;
-    texVolume.normalized = false;
-    texVolume.filterMode = cudaFilterModeLinear;    
-
-
     cudaArray* textureArray = helperData->textureArray;
     int sizeX = texCPU.getSizeX();
     int sizeY = texCPU.getSizeY();
@@ -305,36 +295,47 @@ void computeMeasureMinMaxGPU(
 	memcpyParams.kind     = cudaMemcpyHostToDevice;
 
     cudaSafeCall(cudaMemcpy3D(&memcpyParams));
-	cudaSafeCall(cudaBindTextureToArray(texVolume, textureArray));
+
+	// Create the texture object
+	cudaTextureObject_t texVolume;
+	cudaResourceDesc resDesc;
+	memset(&resDesc, 0, sizeof(cudaResourceDesc));
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = helperData->textureArray;
+	cudaTextureDesc texDesc;
+	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	texDesc.normalizedCoords = false;
+	texDesc.filterMode = cudaFilterModeLinear;
+	texDesc.addressMode[0] = cudaAddressModeClamp;
+	texDesc.addressMode[1] = cudaAddressModeClamp;
+	texDesc.addressMode[2] = cudaAddressModeClamp;
+	texDesc.readMode = cudaReadModeElementType;
+	cudaSafeCall(cudaCreateTextureObject(&texVolume, &resDesc, &texDesc, NULL));
 
     dim3 dimBlock(32, 4, 1);
     dim3 dimGrid(
         iceil(sizeX-2*brickOverlap, dimBlock.x),
         iceil(sizeY-2*brickOverlap, dimBlock.y),
         iceil(sizeZ-2*brickOverlap, dimBlock.z));
-	//cuCtxSynchronize();
 
     float3 h_cu{h.x, h.y, h.z};
 	switch (measureSource) {
 	case MEASURE_SOURCE_RAW:
 		computeMeasuresKernel<MEASURE_SOURCE_RAW><<<dimGrid, dimBlock>>>(
-			sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
+			sizeX, sizeY, sizeZ, brickOverlap, texVolume, h_cu, measure,
 			helperData->reductionArrayMin0, helperData->reductionArrayMax0);
 		break;
 	case MEASURE_SOURCE_HEAT_CURRENT:
 		computeMeasuresKernel<MEASURE_SOURCE_HEAT_CURRENT><<<dimGrid, dimBlock>>>(
-			sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
+			sizeX, sizeY, sizeZ, brickOverlap, texVolume, h_cu, measure,
 			helperData->reductionArrayMin0, helperData->reductionArrayMax0);
 		break;
 	case MEASURE_SOURCE_JACOBIAN:
 		computeMeasuresKernel<MEASURE_SOURCE_JACOBIAN><<<dimGrid, dimBlock>>>(
-			sizeX, sizeY, sizeZ, brickOverlap, h_cu, measure,
+			sizeX, sizeY, sizeZ, brickOverlap, texVolume, h_cu, measure,
 			helperData->reductionArrayMin0, helperData->reductionArrayMax0);
 		break;
 	}
-
-	//cuCtxSynchronize();
-	cudaDeviceSynchronize();
 
     reduceMeasureArray(
         minVal, maxVal,
@@ -342,8 +343,6 @@ void computeMeasureMinMaxGPU(
 		helperData->reductionArrayMax0, helperData->reductionArrayMax1,
         sizeX, sizeY, sizeZ, brickOverlap);
 
-	cudaDeviceSynchronize();
-
     // Clean-up
-    cudaSafeCall(cudaUnbindTexture(texVolume));
+	cudaDestroyTextureObject(texVolume);
 }
