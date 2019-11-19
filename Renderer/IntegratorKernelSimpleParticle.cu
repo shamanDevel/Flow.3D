@@ -18,7 +18,7 @@
 //extern __constant__ BrickRequestsGPU c_brickRequests;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
 
-extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
+extern cudaTextureObject_t g_texVolume1;
 
 
 template<eAdvectMode advectMode, eTextureFilterMode filterMode>

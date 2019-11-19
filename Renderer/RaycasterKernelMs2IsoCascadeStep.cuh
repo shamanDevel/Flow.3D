@@ -1,8 +1,8 @@
 
 template < eMeasure M, eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM > 
 __device__ inline void ms2IsoCascadeStep(
-	//texture<float4, cudaTextureType3D, cudaReadModeElementType> texFine,		//g_texVolume1
-	//texture<float4, cudaTextureType3D, cudaReadModeElementType> texCoarse,	//g_texVolume2
+	//cudaTextureObject_t texFine,		//g_texVolume1
+	//cudaTextureObject_t texCoarse,	//g_texVolume2
 	float4& sum,
 	bool& bWasInsideCoarseTube,
 	const float3& world2texOffset,

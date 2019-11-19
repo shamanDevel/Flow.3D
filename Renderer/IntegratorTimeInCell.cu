@@ -7,7 +7,7 @@
 
 //extern __constant__ VolumeInfoGPU c_volumeInfo;
 extern __constant__ IntegrationParamsGPU c_integrationParams;
-texture<uint32, cudaTextureType2D, cudaReadModeElementType> g_cellTexture;
+cudaTextureObject_t g_cellTexture;
 
 void IntegratorTimeInCell::Upload(CellTextureGPU& info, uint32 * textureMemCPU, size_t width, size_t height)
 {
@@ -15,18 +15,28 @@ void IntegratorTimeInCell::Upload(CellTextureGPU& info, uint32 * textureMemCPU, 
 	std::cout << "cudaMallocArray " << (width * height * sizeof(uint32)) / 1024.0f << "KB" << std::endl;
 	cudaSafeCall(cudaMallocArray(&info.textureArray, &g_cellTexture.channelDesc, width, height));
 	cudaSafeCall(cudaMemcpyToArray(info.textureArray, 0, 0, textureMemCPU, width * height * sizeof(uint32), cudaMemcpyHostToDevice));
-	cudaChannelFormatDesc channelFormat = { 32, 0, 0, 0, cudaChannelFormatKindUnsigned };
-	cudaBindTextureToArray(g_cellTexture, info.textureArray);
-	g_cellTexture.normalized = true;
-	g_cellTexture.addressMode[0] = cudaAddressModeClamp;
 
+	// Create the texture object
+	cudaResourceDesc resDesc;
+	memset(&resDesc, 0, sizeof(cudaResourceDesc));
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = info.textureArray;
+	cudaTextureDesc texDesc;
+	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	texDesc.normalizedCoords = true;
+	texDesc.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
+	texDesc.addressMode[0] = cudaAddressModeClamp;
+	texDesc.readMode = cudaReadModeElementType;
+	cudaTextureObject_t texture;
+	cudaSafeCall(cudaCreateTextureObject(&texture, &resDesc, &texDesc, NULL));
+	
 	std::cout << "IntegratorTimeInCell: CellTexture uploaded" << std::endl;
 }
 
 void IntegratorTimeInCell::Free(CellTextureGPU & info)
 {
 	if (info.textureArray == NULL) return;
-	cudaSafeCall(cudaUnbindTexture(g_cellTexture));
+	cudaSafeCall(cudaDestroyTextureObject(g_cellTexture));
 	cudaSafeCall(cudaFreeArray(info.textureArray));
 	info.textureArray = NULL;
 	std::cout << "IntegratorTimeInCell: CellTexture freed" << std::endl;

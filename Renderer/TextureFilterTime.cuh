@@ -6,7 +6,7 @@
 
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeTime(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float t, float timestepInc)
+__device__ inline ResultType sampleVolumeTime(cudaTextureObject_t tex, float x, float y, float z, float t, float timestepInc)
 {
 	float t0 = floor(t);
 	float t1 = t0 + 1.0f;
@@ -16,7 +16,7 @@ __device__ inline ResultType sampleVolumeTime(texture<TexType, cudaTextureType3D
 }
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeTime(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, float t, float timestepInc)
+__device__ inline ResultType sampleVolumeTime(cudaTextureObject_t tex, float3 coord, float t, float timestepInc)
 {
 	return sampleVolumeTime<F, TexType, ResultType>(tex, coord.x, coord.y, coord.z, t, timestepInc);
 }

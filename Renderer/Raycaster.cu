@@ -15,14 +15,14 @@
 using namespace tum3D;
 
 
-texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
-texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume2;
-texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume3;
-texture<float1, cudaTextureType3D, cudaReadModeElementType> g_texFeatureVolume;
-texture<float4, cudaTextureType1D, cudaReadModeElementType> g_texTransferFunction;
+cudaTextureObject_t g_texVolume1;
+cudaTextureObject_t g_texVolume2;
+cudaTextureObject_t g_texVolume3;
+cudaTextureObject_t g_texFeatureVolume;
+cudaTextureObject_t g_texTransferFunction;
 
-surface<void,   cudaSurfaceType2D>                          g_surfTarget;
-surface<void,   cudaSurfaceType2D>                          g_surfDepth;
+surface<void, cudaSurfaceType2D> g_surfTarget;
+surface<void, cudaSurfaceType2D> g_surfDepth;
 
 
 
@@ -56,9 +56,6 @@ bool Raycaster::Create()
 	cudaSafeCall(cudaHostRegister(&m_raycastParamsGPU, sizeof(m_raycastParamsGPU), cudaHostRegisterDefault));
 	cudaSafeCall(cudaEventCreate(&m_raycastParamsUploadEvent, cudaEventDisableTiming));
 	cudaSafeCall(cudaEventRecord(m_raycastParamsUploadEvent));
-
-	g_texTransferFunction.normalized = true;
-	g_texTransferFunction.filterMode = cudaFilterModeLinear;
 
 	m_isCreated = true;
 
@@ -132,6 +129,27 @@ void Raycaster::SetParams(const ProjectionParams& projParams, const StereoParams
 }
 
 
+cudaTextureObject_t Raycaster::CreateCudaTextureObject(const cudaArray* array, const RaycastParams& params)
+{
+	// Create the texture object
+	cudaResourceDesc resDesc;
+	memset(&resDesc, 0, sizeof(cudaResourceDesc));
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = array;
+	cudaTextureDesc texDesc;
+	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	texDesc.normalizedCoords = false;
+	texDesc.filterMode = GetCudaTextureFilterMode(params.m_textureFilterMode);
+	texDesc.addressMode[0] = cudaAddressModeClamp;
+	texDesc.addressMode[1] = cudaAddressModeClamp;
+	texDesc.addressMode[2] = cudaAddressModeClamp;
+	texDesc.readMode = cudaReadModeElementType;
+	cudaTextureObject_t texture;
+	cudaSafeCall(cudaCreateTextureObject(&texture, &resDesc, &texDesc, NULL));
+	return texture;
+}
+
+
 bool Raycaster::RenderBrick(
 		cudaArray* pTargetArray,
 		cudaArray* pDepthArray,
@@ -198,25 +216,30 @@ bool Raycaster::RenderBrick(
 	cudaSafeCall(cudaBindSurfaceToArray(g_surfTarget, pTargetArray));
 	cudaSafeCall(cudaBindSurfaceToArray(g_surfDepth, pDepthArray));
 
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, brickSlots[0]->GetCudaArray()));
+	g_texVolume1 = CreateCudaTextureObject(brickSlots[0]->GetCudaArray(), params);
 	size_t tex1index = min(size_t(1), brickSlots.size() - 1);
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume2, brickSlots[tex1index]->GetCudaArray()));
+	g_texVolume2 = CreateCudaTextureObject(brickSlots[tex1index]->GetCudaArray(), params);
 	size_t tex2index = min(size_t(2), brickSlots.size() - 1);
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume3, brickSlots[tex2index]->GetCudaArray()));
+	g_texVolume3 = CreateCudaTextureObject(brickSlots[tex2index]->GetCudaArray(), params);
 
 	if(params.m_measureComputeMode != MEASURE_COMPUTE_ONTHEFLY)
 	{
-		cudaSafeCall(cudaBindTextureToArray(g_texFeatureVolume, brickSlots[0]->GetCudaArray()));
+		g_texFeatureVolume = CreateCudaTextureObject(brickSlots[0]->GetCudaArray(), params);
 	}
-
-	g_texVolume1.filterMode         = GetCudaTextureFilterMode(params.m_textureFilterMode);
-	g_texVolume2.filterMode         = GetCudaTextureFilterMode(params.m_textureFilterMode);
-	g_texVolume3.filterMode         = GetCudaTextureFilterMode(params.m_textureFilterMode);
-	g_texFeatureVolume.filterMode   = GetCudaTextureFilterMode(params.m_textureFilterMode);
 
 	if(RaycastModeNeedsTransferFunction(params.m_raycastMode))
 	{
-		cudaBindTextureToArray(g_texTransferFunction, pTfArray);
+		cudaResourceDesc resDesc;
+		memset(&resDesc, 0, sizeof(cudaResourceDesc));
+		resDesc.resType = cudaResourceTypeArray;
+		resDesc.res.array.array = pTfArray;
+		cudaTextureDesc texDesc;
+		memset(&texDesc, 0, sizeof(cudaTextureDesc));
+		texDesc.normalizedCoords = true;
+		texDesc.filterMode = cudaFilterModeLinear;
+		texDesc.addressMode[0] = cudaAddressModeClamp;
+		texDesc.readMode = cudaReadModeElementType;
+		cudaSafeCall(cudaCreateTextureObject(&g_texTransferFunction, &resDesc, &texDesc, NULL));
 	}
 
 	// kernel params
@@ -293,17 +316,17 @@ bool Raycaster::RenderBrick(
 	// unbind GPU resources again
 	if(params.m_measureComputeMode != MEASURE_COMPUTE_ONTHEFLY)
 	{
-		cudaSafeCall(cudaUnbindTexture(g_texFeatureVolume));
+		cudaSafeCall(cudaDestroyTextureObject(g_texFeatureVolume));
 	}
 
 	if(RaycastModeNeedsTransferFunction(params.m_raycastMode))
 	{
-		cudaSafeCall(cudaUnbindTexture(g_texTransferFunction));
+		cudaSafeCall(cudaDestroyTextureObject(g_texTransferFunction));
 	}
 
-	cudaSafeCall(cudaUnbindTexture(g_texVolume3));
-	cudaSafeCall(cudaUnbindTexture(g_texVolume2));
-	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
+	cudaSafeCall(cudaDestroyTextureObject(g_texVolume3));
+	cudaSafeCall(cudaDestroyTextureObject(g_texVolume2));
+	cudaSafeCall(cudaDestroyTextureObject(g_texVolume1));
 
 
 	// was this the last pass?

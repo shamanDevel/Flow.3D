@@ -59,7 +59,7 @@ namespace
 {
 
 template <typename TexType, typename ResultType>
-__device__ inline ResultType getInterpolatedCubicBSpline(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float3 g0, float3 g1, float3 h0, float3 h1)
+__device__ inline ResultType getInterpolatedCubicBSpline(cudaTextureObject_t tex, float3 g0, float3 g1, float3 h0, float3 h1)
 {
 	// fetch the eight linear interpolations
 	// weighting and fetching is interleaved for performance and stability reasons
@@ -90,7 +90,7 @@ namespace // sampleVolume implementations
 template <eTextureFilterMode F, typename TexType, typename ResultType>
 struct sampleVolume_impl
 {
-	//__device__ static ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z);
+	//__device__ static ResultType exec(cudaTextureObject_t tex, float x, float y, float z);
 	// no exec() implementation - only specializations allowed
 };
 
@@ -98,7 +98,7 @@ struct sampleVolume_impl
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_LINEAR, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		return make_floatn<TexType, ResultType>(tex3D(tex, x, y, z));
 	}
@@ -108,7 +108,7 @@ struct sampleVolume_impl<TEXTURE_FILTER_LINEAR, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -139,7 +139,7 @@ struct sampleVolume_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x, y, z) - 0.5f;
@@ -184,7 +184,7 @@ struct sampleVolume_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_CATROM_STAGGERED, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		ResultType resX = sampleVolume_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>::exec(tex, x - 0.5f, y, z);
 		ResultType resY = sampleVolume_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>::exec(tex, x, y - 0.5f, z);
@@ -213,7 +213,7 @@ __device__ inline Type interpolateLagrange4(float t, const Type v[4])
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_LAGRANGE4, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x, y, z) - 0.5f;
@@ -295,7 +295,7 @@ __device__ inline Type interpolateLagrange6(float t, const Type v[6])
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_LAGRANGE6, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x, y, z) - 0.5f;
@@ -382,7 +382,7 @@ __device__ inline Type interpolateLagrange8(float t, const Type v[8])
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_LAGRANGE8, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x, y, z) - 0.5f;
@@ -461,7 +461,7 @@ __device__ inline Type interpolateLagrange16(float t, const Type v[16])
 template <typename TexType, typename ResultType>
 struct sampleVolume_impl<TEXTURE_FILTER_LAGRANGE16, TexType, ResultType>
 {
-	__device__ static ResultType exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+	__device__ static ResultType exec(cudaTextureObject_t tex, float x, float y, float z)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x, y, z) - 0.5f;
@@ -499,13 +499,13 @@ struct sampleVolume_impl<TEXTURE_FILTER_LAGRANGE16, TexType, ResultType>
 // "public" sampleVolume functions:
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolume(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z)
+__device__ inline ResultType sampleVolume(cudaTextureObject_t tex, float x, float y, float z)
 {
 	return sampleVolume_impl<F, TexType, ResultType>::exec(tex, x, y, z);
 }
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolume(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord)
+__device__ inline ResultType sampleVolume(cudaTextureObject_t tex, float3 coord)
 {
 	return sampleVolume_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z);
 }
@@ -517,7 +517,7 @@ namespace // sampleVolumeDerivativeD implementations (where D in X, Y, Z)
 template <eTextureFilterMode F, typename TexType, typename ResultType>
 struct sampleVolumeDerivativeX_impl
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// default implementation: central differences
 		ResultType dp = sampleVolume<F, TexType, ResultType>(tex, x + 1.0f, y, z);
@@ -529,7 +529,7 @@ struct sampleVolumeDerivativeX_impl
 template <eTextureFilterMode F, typename TexType, typename ResultType>
 struct sampleVolumeDerivativeY_impl
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// default implementation: central differences
 		ResultType dp = sampleVolume<F, TexType, ResultType>(tex, x, y + 1.0f, z);
@@ -541,7 +541,7 @@ struct sampleVolumeDerivativeY_impl
 template <eTextureFilterMode F, typename TexType, typename ResultType>
 struct sampleVolumeDerivativeZ_impl
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// default implementation: central differences
 		ResultType dp = sampleVolume<F, TexType, ResultType>(tex, x, y, z + 1.0f);
@@ -554,7 +554,7 @@ struct sampleVolumeDerivativeZ_impl
 template <typename TexType, typename ResultType>
 struct sampleVolumeDerivativeX_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -590,7 +590,7 @@ struct sampleVolumeDerivativeX_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolumeDerivativeY_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -626,7 +626,7 @@ struct sampleVolumeDerivativeY_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolumeDerivativeZ_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -663,7 +663,7 @@ struct sampleVolumeDerivativeZ_impl<TEXTURE_FILTER_CUBIC, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolumeDerivativeX_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -716,7 +716,7 @@ struct sampleVolumeDerivativeX_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolumeDerivativeY_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -769,7 +769,7 @@ struct sampleVolumeDerivativeY_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 template <typename TexType, typename ResultType>
 struct sampleVolumeDerivativeZ_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 {
-	__device__ static inline ResultType exec(texture<TexType, cudaTextureType3D, cudaReadModeElementType> tex, float x, float y, float z, float h)
+	__device__ static inline ResultType exec(cudaTextureObject_t tex, float x, float y, float z, float h)
 	{
 		// shift the coordinate from [0,extent] to [-0.5, extent-0.5] (so that grid points are at integers)
 		const float3 coord_grid = make_float3(x - 0.5f, y - 0.5f, z - 0.5f);
@@ -824,19 +824,19 @@ struct sampleVolumeDerivativeZ_impl<TEXTURE_FILTER_CATROM, TexType, ResultType>
 // "public" sampleVolumeDerivative functions:
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeDerivativeX(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+__device__ inline ResultType sampleVolumeDerivativeX(cudaTextureObject_t tex, float3 coord, const float3& h)
 {
 	return sampleVolumeDerivativeX_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h.x);
 }
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeDerivativeY(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+__device__ inline ResultType sampleVolumeDerivativeY(cudaTextureObject_t tex, float3 coord, const float3& h)
 {
 	return sampleVolumeDerivativeY_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h.y);
 }
 
 template <eTextureFilterMode F, typename TexType, typename ResultType>
-__device__ inline ResultType sampleVolumeDerivativeZ(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+__device__ inline ResultType sampleVolumeDerivativeZ(cudaTextureObject_t tex, float3 coord, const float3& h)
 {
 	return sampleVolumeDerivativeZ_impl<F, TexType, ResultType>::exec(tex, coord.x, coord.y, coord.z, h.z);
 }
@@ -848,7 +848,7 @@ namespace // sampleVolumeGradient implementations
 template <eTextureFilterMode F>
 struct sampleVolumeGradient_impl
 {
-	__device__ static inline float3x3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+	__device__ static inline float3x3 exec(cudaTextureObject_t tex, float3 coord, const float3& h)
 	{
 		// default implementation: just get derivatives in x, y, z
 		// note: result is "transposed" by convention (i.e. first index is component, second index is derivative direction) - fix this some time?
@@ -879,7 +879,7 @@ struct sampleVolumeGradient_impl
 template <>
 struct sampleVolumeGradient_impl<TEXTURE_FILTER_CATROM>
 {
-	__device__ static inline float3x3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+	__device__ static inline float3x3 exec(cudaTextureObject_t tex, float3 coord, const float3& h)
 	{
 		// in CatRom case, do the 64 fetches only once and combine with different weights
 		// note: result is "transposed" by convention (i.e. first index is component, second index is derivative direction) - fix this some time?
@@ -950,7 +950,7 @@ struct sampleVolumeGradient_impl<TEXTURE_FILTER_CATROM>
 template <eTextureFilterMode F>
 struct sampleScalarGradient_impl
 {
-	__device__ static inline float3 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+	__device__ static inline float3 exec(cudaTextureObject_t tex, float3 coord, const float3& h)
 	{
 		// default implementation: just get derivatives in x, y, z
 		float3 grad;
@@ -976,13 +976,13 @@ struct sampleScalarGradient_impl
 // "public" sampleVolumeGradient function:
 
 template <eTextureFilterMode F>
-__device__ inline float3x3 sampleVolumeGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+__device__ inline float3x3 sampleVolumeGradient(cudaTextureObject_t tex, float3 coord, const float3& h)
 {
 	return sampleVolumeGradient_impl<F>::exec(tex, coord, h);
 }
 
 template <eTextureFilterMode F>
-__device__ inline float3 sampleScalarGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 coord, const float3& h)
+__device__ inline float3 sampleScalarGradient(cudaTextureObject_t tex, float3 coord, const float3& h)
 {
 	return sampleScalarGradient_impl<F>::exec(tex, coord, h);
 }

@@ -42,7 +42,7 @@ struct advectDenseInfo<ADVECT_RK547M>
 template <eAdvectMode advectMode, eTextureFilterMode filterMode>
 struct advectDense_impl
 {
-	//__device__ static inline bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
+	//__device__ static inline bool exec(cudaTextureObject_t tex,
 	//	float3& pos, float& age, float3& vel, float& deltaTime,
 	//	float3* pOutputCoeffs,
 	//	const float3& world2texOffset, const float world2texScale,
@@ -53,7 +53,7 @@ struct advectDense_impl
 template <eTextureFilterMode filterMode>
 struct advectDense_impl<ADVECT_RK547M, filterMode>
 {
-	__device__ static inline bool exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
+	__device__ static inline bool exec(cudaTextureObject_t tex,
 		float3& pos, float& age, float3& vel, float& deltaTime,
 		float3* pOutputCoeffs,
 		const float3& world2texOffset, const float3& world2texScale,
@@ -142,7 +142,7 @@ struct advectDense_impl<ADVECT_RK547M, filterMode>
 
 
 template <eAdvectMode advectMode, eTextureFilterMode filterMode>
-__device__ inline bool advectDense(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex,
+__device__ inline bool advectDense(cudaTextureObject_t tex,
 	float3& pos, float& age, float3& vel, float& deltaTime,
 	float3* pOutputCoeffs,
 	const float3& world2texOffset, const float3& world2texScale,

@@ -23,7 +23,7 @@ using namespace tum3D;
 
 
 // HACK: we use the texture reference defined in Raycaster.cu here...
-extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
+extern cudaTextureObject_t g_texVolume1;
 
 extern std::vector<float4> g_volume;
 
@@ -59,14 +59,29 @@ bool Integrator::Create()
 	cudaSafeCall(cudaHostRegister(&m_indexCountTotal, sizeof(m_indexCountTotal), cudaHostRegisterDefault));
 	cudaSafeCall(cudaEventCreate(&m_indexCountTotalDownloadEvent, cudaEventDisableTiming));
 
-	g_texVolume1.addressMode[0] = cudaAddressModeClamp;
-	g_texVolume1.addressMode[1] = cudaAddressModeClamp;
-	g_texVolume1.addressMode[2] = cudaAddressModeClamp;
-	g_texVolume1.normalized = false;
-
 	m_isCreated = true;
 
 	return true;
+}
+
+cudaTextureObject_t Integrator::CreateCudaTextureObject(const cudaArray* array, const ParticleTraceParams& params)
+{
+	// Create the texture object
+	cudaResourceDesc resDesc;
+	memset(&resDesc, 0, sizeof(cudaResourceDesc));
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = array;
+	cudaTextureDesc texDesc;
+	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	texDesc.normalizedCoords = false;
+	texDesc.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
+	texDesc.addressMode[0] = cudaAddressModeClamp;
+	texDesc.addressMode[1] = cudaAddressModeClamp;
+	texDesc.addressMode[2] = cudaAddressModeClamp;
+	texDesc.readMode = cudaReadModeElementType;
+	cudaTextureObject_t texture;
+	cudaSafeCall(cudaCreateTextureObject(&texture, &resDesc, &texDesc, NULL));
+	return texture;
 }
 
 void Integrator::Release()
@@ -118,13 +133,11 @@ void Integrator::IntegrateSimpleParticles(const BrickSlot& brickAtlas, SimplePar
 	float timeMax = 1e10f;
 	UpdateIntegrationParams(params, timeMax);
 
-
-	g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, brickAtlas.GetCudaArray()));
+	g_texVolume1 = CreateCudaTextureObject(brickAtlas.GetCudaArray(), params);
 
 	integratorKernelSimpleParticles(dpParticles, volumeInfoGPU, brickIndex, brickRequests, particleCount, params.m_advectDeltaT, params.m_advectStepsPerRound, params.m_advectMode, params.m_filterMode);
 
-	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
+	cudaSafeCall(cudaDestroyTextureObject(g_texVolume1));
 }
 
 
@@ -142,8 +155,7 @@ void Integrator::IntegrateLines(const TraceableVolume& traceableVol, const LineI
 
 	if(!params.m_cpuTracing)
 	{
-		g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
-		cudaSafeCall(cudaBindTextureToArray(g_texVolume1, traceableVol.m_brickAtlas->GetCudaArray()));
+		g_texVolume1 = CreateCudaTextureObject(traceableVol.m_brickAtlas.GetCudaArray(), params);
 	}
 
 	// launch appropriate kernel
@@ -175,8 +187,9 @@ void Integrator::IntegrateLines(const TraceableVolume& traceableVol, const LineI
 		}
 	}
 
-	if(!params.m_cpuTracing)
-		cudaSafeCall(cudaUnbindTexture(g_texVolume1));
+	if(!params.m_cpuTracing) {
+		cudaSafeCall(cudaDestroyTextureObject(g_texVolume1));
+	}
 }
 
 void Integrator::InitIntegrateParticles(const LineInfo& lineInfo, const ParticleTraceParams& params)
@@ -204,8 +217,7 @@ void Integrator::IntegrateParticles(const TraceableVolume& traceableVol, const L
 	UpdateIntegrationParams(params, timeMax);
 	UpdateLineInfo(params, lineInfo);
 
-	g_texVolume1.filterMode = GetCudaTextureFilterMode(params.m_filterMode);
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, traceableVol.m_brickAtlas->GetCudaArray()));
+	g_texVolume1 = CreateCudaTextureObject(traceableVol.m_brickAtlas.GetCudaArray(), params);
 
 	if (seed >= 0) {
 		//launch seeding kernel
@@ -215,7 +227,7 @@ void Integrator::IntegrateParticles(const TraceableVolume& traceableVol, const L
 	// launch advection kernel
 	integratorKernelParticles(m_lineInfoGPU, *traceableVol.m_volumeInfoGPU, *traceableVol.m_brickIndexGPU, *traceableVol.m_brickRequestsGPU, params.m_advectMode, params.m_filterMode, tpf);
 
-	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
+	cudaSafeCall(cudaDestroyTextureObject(g_texVolume1));
 }
 
 void Integrator::IntegrateParticlesExtraSeed(const LineInfo& lineInfo, const ParticleTraceParams& params, int seed)

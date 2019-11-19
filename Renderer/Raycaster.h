@@ -65,6 +65,7 @@ private:
 		const tum3D::Vec3f& camPos,
 		const tum3D::Vec3f& boxMinClipped,
 		const tum3D::Vec3f& boxMaxClipped) const;
+	cudaTextureObject_t CreateCudaTextureObject(const cudaArray* array, const RaycastParams& params);
 
 	bool					m_isCreated;
 

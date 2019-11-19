@@ -12,7 +12,7 @@
 #define BIN_SEARCH_STEPS (10)
 
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C>
-__device__ inline float3 binarySearch(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 texCoordOutside, float3 texCoordInside, float3 h, float iso, float measureScale)
+__device__ inline float3 binarySearch(cudaTextureObject_t tex, float3 texCoordOutside, float3 texCoordInside, float3 h, float iso, float measureScale)
 {
 	float3 texCoordMiddle = 0.5f * (texCoordOutside + texCoordInside);
 	for(uint k = 0; k < BIN_SEARCH_STEPS; k++) 
@@ -28,7 +28,7 @@ __device__ inline float3 binarySearch(texture<float4, cudaTextureType3D, cudaRea
 }
 
 template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
-__device__ inline float3 binarySearch(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, float3 texCoordOutside, float3 texCoordInside, float3 h, float iso, float measureScale)
+__device__ inline float3 binarySearch(eMeasure measure, cudaTextureObject_t tex, float3 texCoordOutside, float3 texCoordInside, float3 h, float iso, float measureScale)
 {
 	float3 texCoordMiddle = 0.5f * (texCoordOutside + texCoordInside);
 	for(uint k = 0; k < BIN_SEARCH_STEPS; k++) 
@@ -51,7 +51,7 @@ __device__ inline float3 binarySearch(eMeasure measure, texture<float4, cudaText
 *************************************************************************************************************************************/
 
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C>
-__device__ inline float3 getGradient(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& h)
+__device__ inline float3 getGradient(cudaTextureObject_t tex, const float3& pos, const float3& h)
 {
 	const float off = 1.0f;
 	float3 grad;
@@ -62,7 +62,7 @@ __device__ inline float3 getGradient(texture<float4, cudaTextureType3D, cudaRead
 }
 
 template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C>
-__device__ inline float3 getGradient(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& h)
+__device__ inline float3 getGradient(eMeasure measure, cudaTextureObject_t tex, const float3& pos, const float3& h)
 {
 	const float off = 1.0f;
 	float3 grad;
@@ -182,7 +182,7 @@ __device__ inline void convertEmissionAbsorptionToColorOpacity(float4& val, floa
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
 struct getColor_Impl
 {
-	__device__ static inline float4 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, float h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
+	__device__ static inline float4 exec(cudaTextureObject_t tex, const float3& pos, const float3& dir, float h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 	{
 		// same default code for all "normal" scalar measures
 		// specializations for vector-valued measures and lambda2 (special coloring/alpha) are below
@@ -202,7 +202,7 @@ struct getColor_Impl
 template <eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
 struct getColor_Impl<MEASURE_LAMBDA2, F, C, lighting>
 {
-	__device__ static inline float4 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
+	__device__ static inline float4 exec(cudaTextureObject_t tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 	{
 		float lambda2 = getMeasure<MEASURE_LAMBDA2,F,C>(tex, pos, h, measureScale);
 		float sgnL2	  = getSign(lambda2);
@@ -222,7 +222,7 @@ struct getColor_Impl<MEASURE_LAMBDA2, F, C, lighting>
 };
 
 template <eMeasure M, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
-__device__ inline float4 getColor(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
+__device__ inline float4 getColor(cudaTextureObject_t tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 {
     return getColor_Impl<M,F,C,lighting>::exec(tex, pos, dir, h, stepFactor, transferOffset, transferScale, tfAlphaScale, measureScale);
 }
@@ -231,7 +231,7 @@ __device__ inline float4 getColor(texture<float4, cudaTextureType3D, cudaReadMod
 template <eMeasureSource source, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
 struct getColor_Impl2
 {
-	__device__ static inline float4 exec(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
+	__device__ static inline float4 exec(eMeasure measure, cudaTextureObject_t tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 	{
 		// same default code for all "normal" scalar measures
 		float val = getMeasure<source,F,C>(measure, tex, pos, h, measureScale);
@@ -248,7 +248,7 @@ struct getColor_Impl2
 };
 
 template <eMeasureSource measureSource, eTextureFilterMode F, eMeasureComputeMode C, bool lighting>
-__device__ inline float4 getColor(eMeasure measure, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
+__device__ inline float4 getColor(eMeasure measure, cudaTextureObject_t tex, const float3& pos, const float3& dir, const float3& h, float stepFactor, float transferOffset, float transferScale, float tfAlphaScale, float measureScale)
 {
     return getColor_Impl2<measureSource,F,C,lighting>::exec(measure, tex, pos, dir, h, stepFactor, transferOffset, transferScale, tfAlphaScale, measureScale);
 }
@@ -262,7 +262,7 @@ __device__ inline float4 getColor(eMeasure measure, texture<float4, cudaTextureT
 template <eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
 struct getIsoColor_Impl
 {
-    __device__ static inline float4 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex1, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex2, float3 pos, const float4 &color)
+    __device__ static inline float4 exec(cudaTextureObject_t tex1, cudaTextureObject_t tex2, float3 pos, const float4 &color)
 	{
 		return color;
 	}
@@ -272,7 +272,7 @@ struct getIsoColor_Impl
 template <eTextureFilterMode F>
 struct getIsoColor_Impl<F,MEASURE_COMPUTE_ONTHEFLY,COLOR_MODE_VORTICITY_ALIGNMENT>
 {
-    __device__ static inline float4 exec(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex1, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex2, float3 pos, const float4 &color)
+    __device__ static inline float4 exec(cudaTextureObject_t tex1, cudaTextureObject_t tex2, float3 pos, const float4 &color)
 	{
 		float3 w1 = normalize(getVorticity<F>(tex1, pos, 1.0f)); //FIXME actually need grid spacing here...
 		float3 w2 = normalize(getVorticity<F>(tex2, pos, 1.0f));
@@ -293,7 +293,7 @@ struct getIsoColor_Impl<F,MEASURE_COMPUTE_ONTHEFLY,COLOR_MODE_VORTICITY_ALIGNMEN
 };
 
 template <eTextureFilterMode F, eMeasureComputeMode C, eColorMode CM>
-__device__ inline float4 getIsoColor(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex1, texture<float4, cudaTextureType3D, cudaReadModeElementType> tex2, float3 pos, const float4 &color)
+__device__ inline float4 getIsoColor(cudaTextureObject_t tex1, cudaTextureObject_t tex2, float3 pos, const float4 &color)
 {
     return getIsoColor_Impl<F,C,CM>::exec(tex1, tex2, pos, color);
 }

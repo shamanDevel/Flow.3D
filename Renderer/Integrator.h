@@ -65,6 +65,7 @@ public:
 private:
 	void UpdateIntegrationParams(const ParticleTraceParams& params, float timeMax, bool force = false);
 	void UpdateLineInfo(const ParticleTraceParams& params, const LineInfo& lineInfo, bool force = false);
+	cudaTextureObject_t CreateCudaTextureObject(const cudaArray* array, const ParticleTraceParams& params);
 
 	TimeVolumeInfo m_volumeInfo;
 

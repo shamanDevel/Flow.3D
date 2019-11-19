@@ -6,7 +6,7 @@
 
 
 // HACK to get stuff to compile...
-extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
+extern cudaTextureObject_t g_texVolume1;
 
 #include "VolumeFilterKernels.cuh"
 

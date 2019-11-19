@@ -9,7 +9,7 @@
 using namespace tum3D;
 
 
-extern texture<float4, cudaTextureType3D, cudaReadModeElementType> g_texVolume1;
+extern cudaTextureObject_t g_texVolume1;
 surface<void, cudaSurfaceType3D> g_surfFeatureArray;
 
 
@@ -42,10 +42,20 @@ __global__ void genFeatureKernel(int3 featureBrickResolution, float3 gridSpacing
 
 void Raycaster::FillMeasureBrick(const RaycastParams& params, const BrickSlot& brickSlotVelocity, BrickSlot& brickSlotMeasure)
 {
-	cudaTextureFilterMode eOldFilterMode = g_texVolume1.filterMode;
-	g_texVolume1.filterMode = cudaFilterModePoint;
+	cudaResourceDesc resDesc;
+	memset(&resDesc, 0, sizeof(cudaResourceDesc));
+	resDesc.resType = cudaResourceTypeArray;
+	resDesc.res.array.array = array;
+	cudaTextureDesc texDesc;
+	memset(&texDesc, 0, sizeof(cudaTextureDesc));
+	texDesc.normalizedCoords = false;
+	texDesc.filterMode = cudaFilterModePoint;
+	texDesc.addressMode[0] = cudaAddressModeClamp;
+	texDesc.addressMode[1] = cudaAddressModeClamp;
+	texDesc.addressMode[2] = cudaAddressModeClamp;
+	texDesc.readMode = cudaReadModeElementType;
+	cudaSafeCall(cudaCreateTextureObject(&g_texVolume1, &resDesc, &texDesc, NULL));
 
-	cudaSafeCall(cudaBindTextureToArray(g_texVolume1, brickSlotVelocity.GetCudaArray()));
 	cudaSafeCall(cudaBindSurfaceToArray(g_surfFeatureArray, brickSlotMeasure.GetCudaArray()));
 
 	Vec3ui size = brickSlotVelocity.GetFilledSize();
@@ -81,7 +91,7 @@ void Raycaster::FillMeasureBrick(const RaycastParams& params, const BrickSlot& b
 #undef GEN_FEATURE_CASE
 #undef GEN_FEATURE_KERNEL
 
-	cudaSafeCall(cudaUnbindTexture(g_texVolume1));
+	cudaSafeCall(cudaDestroyTextureObject(g_texVolume1));
 	g_texVolume1.filterMode = eOldFilterMode;
 
 	//if(size.volume()==128*128*128) {

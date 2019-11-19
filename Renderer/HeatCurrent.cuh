@@ -15,7 +15,7 @@
 
 // get heat current from velocity/temperature texture
 template <eTextureFilterMode F>
-__device__ inline float3 getHeatCurrent(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& texCoord, const float3& h)
+__device__ inline float3 getHeatCurrent(cudaTextureObject_t tex, const float3& texCoord, const float3& h)
 {
 	float4 velT = sampleVolume<F, float4, float4>(tex, texCoord);
 	float3 gradT = sampleScalarGradient<F>(tex, texCoord, h);
@@ -35,7 +35,7 @@ __device__ inline float3 getHeatCurrent(texture<float4, cudaTextureType3D, cudaR
 
 
 template <eTextureFilterMode F>
-__device__ inline float getHeatCurrentAlignment(texture<float4, cudaTextureType3D, cudaReadModeElementType> tex, const float3& texCoord, const float& h)
+__device__ inline float getHeatCurrentAlignment(cudaTextureObject_t tex, const float3& texCoord, const float& h)
 {
 	float4 velT = sampleVolume<F, float4, float4>(tex, texCoord);
 	float3 gradT = sampleScalarGradient<F>(tex, texCoord, h);
