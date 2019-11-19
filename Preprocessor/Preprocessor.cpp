@@ -90,7 +90,7 @@ void computeMinMaxMeasures(
 		const std::vector<std::vector<float>> &rawBrickChannelData,
 		std::vector<float> &minMeasuresInBrick, std::vector<float> &maxMeasuresInBrick,
 		size_t sizeX, size_t sizeY, size_t sizeZ, size_t overlap, const vec3& gridSpacing,
-		MinMaxMeasureGPUHelperData& helperData) {
+		MinMaxMeasureGPUHelperData* helperData) {
 	const bool useCPU = false;
 	minMeasuresInBrick.resize(NUM_MEASURES);
 	maxMeasuresInBrick.resize(NUM_MEASURES);
@@ -725,6 +725,8 @@ int main(int argc, char* argv[])
 	}
 
 
+	MinMaxMeasureGPUHelperData* helperData = new MinMaxMeasureGPUHelperData(brickSize, brickSize, brickSize, overlap);
+
 	// Run through all timesteps
 	for (int32 timestep = tMin; timestep <= tMax; timestep += tStep)
 	{
@@ -755,8 +757,6 @@ int main(int argc, char* argv[])
 
 		LARGE_INTEGER timestampBrickingStart;
 		QueryPerformanceCounter(&timestampBrickingStart);
-
-		MinMaxMeasureGPUHelperData helperData(brickSize, brickSize, brickSize, overlap);
 
 		// Brick and write
 		for (int32 bz = 0; bz < brickCount[2]; ++bz)
@@ -794,10 +794,10 @@ int main(int argc, char* argv[])
 							{
 								for (uint32 x = 0; x < size.x(); ++x)
 								{
-									int32 volPos[3];
-									volPos[0] = bx * brickDataSize - overlap + x;
-									volPos[1] = by * brickDataSize - overlap + y;
-									volPos[2] = bz * brickDataSize - overlap + z;
+									ptrdiff_t volPos[3];
+									volPos[0] = ptrdiff_t(bx) * brickDataSize - overlap + x;
+									volPos[1] = ptrdiff_t(by) * brickDataSize - overlap + y;
+									volPos[2] = ptrdiff_t(bz) * brickDataSize - overlap + z;
 
 									if(periodic)
 									{
@@ -807,14 +807,14 @@ int main(int argc, char* argv[])
 									}
 									else
 									{
-										volPos[0] = clamp(volPos[0], 0, volumeSize[0] - 1);
-										volPos[1] = clamp(volPos[1], 0, volumeSize[1] - 1);
-										volPos[2] = clamp(volPos[2], 0, volumeSize[2] - 1);
+										volPos[0] = clamp(volPos[0], ptrdiff_t(0), ptrdiff_t(volumeSize[0]) - 1);
+										volPos[1] = clamp(volPos[1], ptrdiff_t(0), ptrdiff_t(volumeSize[1]) - 1);
+										volPos[2] = clamp(volPos[2], ptrdiff_t(0), ptrdiff_t(volumeSize[2]) - 1);
 									}
 
 									for (int32 localChannel = 0; localChannel < fdesc->channels; ++localChannel)
 									{
-										ptrdiff_t fileOffset = ((volPos[0] + (volPos[1] + volPos[2]*volumeSize[1])*volumeSize[0]) * fdesc->channels + localChannel) * sizeof(float);
+										ptrdiff_t fileOffset = (volPos[0] + (volPos[1] + volPos[2]*volumeSize[1])*volumeSize[0]) * fdesc->channels + localChannel;
 										*dstPtr[localChannel]++ = fdesc->memory[fileOffset];
 									}
 								}
@@ -953,6 +953,8 @@ int main(int argc, char* argv[])
 		}
 
 	}	// For timestep
+	delete helperData;
+
 
 	// write accumulated global stats to file
 	Statistics statsTimestep;

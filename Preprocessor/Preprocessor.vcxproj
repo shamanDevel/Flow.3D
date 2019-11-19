@@ -86,6 +86,8 @@ exit 1</Command>
     </PostBuildEvent>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75;compute_61,sm_61;compute_30,sm_30</CodeGeneration>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -119,6 +121,7 @@ exit 1</Command>
     <CudaCompile>
       <CodeGeneration>compute_75,sm_75;compute_61,sm_61;compute_30,sm_30</CodeGeneration>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

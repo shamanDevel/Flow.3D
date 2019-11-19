@@ -16,7 +16,7 @@ void* MMapFile::openFile(const std::string& filename)
 	std::wstring wstrFileName(filename.begin(), filename.end());
 	const wchar_t* pwcFileName = wstrFileName.c_str();
 	m_hFile = CreateFile(pwcFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (m_hFile == nullptr) {
+	if (m_hFile == INVALID_HANDLE_VALUE) {
 		std::cerr << "MMapFile::openFile: File \"" << filename << "\" could not be opened." << std::endl;
 		return nullptr;
 	}
@@ -25,7 +25,7 @@ void* MMapFile::openFile(const std::string& filename)
 	GetFileSizeEx(m_hFile, &liFileSize);
 	m_ulFileSize = static_cast<size_t>(liFileSize.QuadPart);
 	m_hFileMapping = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-	if (m_hFileMapping == nullptr) {
+	if (m_hFileMapping == 0) {
 		std::cerr << "MMapFile::openFile: Couldn't create a file mapping for \"" << filename << "\"." << std::endl;
 		CloseHandle(m_hFile);
 		return nullptr;

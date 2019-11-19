@@ -20,7 +20,7 @@ struct MinMaxMeasureGPUHelperData {
 void computeMeasureMinMaxGPU(
 	VolumeTextureCPU& texCPU, const vec3& h,
     eMeasureSource measureSource, eMeasure measure,
-    MinMaxMeasureGPUHelperData& helperData,
+    MinMaxMeasureGPUHelperData* helperData,
     float& minVal, float& maxVal);
 
 #endif
