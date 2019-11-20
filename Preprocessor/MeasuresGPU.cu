@@ -1,3 +1,7 @@
+/**
+ * @author Christoph Neuhauser
+ */
+
 #include <cudaUtil.h>
 #include "MeasuresGPU.h"
 #include "../Renderer/Measures.cuh"

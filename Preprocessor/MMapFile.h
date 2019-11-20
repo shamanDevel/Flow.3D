@@ -1,3 +1,7 @@
+/**
+ * @author Christoph Neuhauser
+ */
+
 #ifndef __MMAP_FILE_H__
 #define __MMAP_FILE_H__
 

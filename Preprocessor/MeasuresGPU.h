@@ -1,3 +1,7 @@
+/**
+ * @author Christoph Neuhauser
+ */
+
 #ifndef __TUM3D__MEASURESGPU_H__
 #define __TUM3D__MEASURESGPU_H__
 

@@ -1,3 +1,7 @@
+/**
+ * @author Christoph Neuhauser
+ */
+
 #include <iostream>
 #include "MMapFile.h"
 
