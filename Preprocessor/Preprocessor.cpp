@@ -677,6 +677,7 @@ int main(int argc, char* argv[])
 
 	char fn[1024];
 
+	uint64 testVal = GetAvailableMemory();
 	uint64 fileBufferMem = uint64(0.8f * float(GetAvailableMemory()) / float(fileList.size()));
 
 
@@ -719,6 +720,13 @@ int main(int argc, char* argv[])
 
 		std::vector<Statistics> statsTimestepChannels(channels);
 
+		uint64_t numChannelsTotal = 0;
+
+		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
+		{
+			numChannelsTotal += fdesc->channels;
+		}
+
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
 			cout << "\n\n";
@@ -739,7 +747,7 @@ int main(int argc, char* argv[])
 #else
 			fdesc->fileSliceLoader = new FileSliceLoader();
 			const size_t SLICE_HEIGHT = 32; // TODO
-			fdesc->fileSliceLoader->openFile(filePath, fileBufferMem / fdesc->channels, SLICE_HEIGHT, volumeSize[0], volumeSize[1], volumeSize[2], fdesc->channels);
+			fdesc->fileSliceLoader->openFile(filePath, fileBufferMem * numChannelsTotal / fdesc->channels, SLICE_HEIGHT, volumeSize[0], volumeSize[1], volumeSize[2], fdesc->channels);
 #endif
 		}
 
