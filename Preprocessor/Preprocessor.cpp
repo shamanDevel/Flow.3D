@@ -21,6 +21,7 @@
 
 #include "TimeVolumeIO.h"
 #include "MMapFile.h"
+#include "FileSliceLoader.h"
 #include "MeasuresGPU.h"
 
 #include "CompressVolume.h"
@@ -122,7 +123,11 @@ int main(int argc, char* argv[])
 	{
 		string fileMask;
 		int channels;
+#ifdef USE_MMAP_FILE
 		MMapFile* mmapFile;
+#else
+		FileSliceLoader* fileSliceLoader;
+#endif
 		float* memory;
 	};
 
@@ -672,10 +677,7 @@ int main(int argc, char* argv[])
 
 	char fn[1024];
 
-	uint64 laMem = uint64(0.8f * float(GetAvailableMemory()) / float(fileList.size()));
-	// don't use more than 4 GB total
-	uint64 laMemMax = 4 * 1024ull * 1024ull * 1024ull / fileList.size();
-	laMem = min(laMem, laMemMax);
+	uint64 fileBufferMem = uint64(0.8f * float(GetAvailableMemory()) / float(fileList.size()));
 
 
 	Statistics statsGlobal;
@@ -731,8 +733,14 @@ int main(int argc, char* argv[])
 			E_ASSERT("File " << filePath << " does not exist", tum3d::FileExists(filePath));
 
 			// Create the reading buffer
+#ifdef USE_MMAP_FILE
 			fdesc->mmapFile = new MMapFile;
 			fdesc->memory = static_cast<float*>(fdesc->mmapFile->openFile(filePath));
+#else
+			fdesc->fileSliceLoader = new FileSliceLoader();
+			const size_t SLICE_HEIGHT = 32; // TODO
+			fdesc->fileSliceLoader->openFile(filePath, fileBufferMem / fdesc->channels, SLICE_HEIGHT, volumeSize[0], volumeSize[1], volumeSize[2], fdesc->channels);
+#endif
 		}
 
 		cout << "\n\nBricking...\n";
@@ -796,8 +804,12 @@ int main(int argc, char* argv[])
 
 									for (int32 localChannel = 0; localChannel < fdesc->channels; ++localChannel)
 									{
-										ptrdiff_t fileOffset = (volPos[0] + (volPos[1] + volPos[2]*volumeSize[1])*volumeSize[0]) * fdesc->channels + localChannel;
+#ifdef USE_MMAP_FILE
+										ptrdiff_t fileOffset = (volPos[0] + (volPos[1] + volPos[2] * volumeSize[1]) * volumeSize[0]) * fdesc->channels + localChannel;
 										*dstPtr[localChannel]++ = fdesc->memory[fileOffset];
+#else
+										*dstPtr[localChannel]++ = fdesc->fileSliceLoader->getMemoryAt(volPos[0], volPos[1], volPos[2], localChannel);
+#endif
 									}
 								}
 							}
@@ -929,7 +941,11 @@ int main(int argc, char* argv[])
 		for (auto fdesc = fileList.begin(); fdesc != fileList.end(); ++fdesc)
 		{
 			//fclose(fdesc->file);
+#ifdef USE_MMAP_FILE
 			delete fdesc->mmapFile;
+#else
+			delete fdesc->fileSliceLoader;
+#endif
 		}
 
 	}	// For timestep

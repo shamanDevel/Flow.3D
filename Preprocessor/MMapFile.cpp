@@ -19,7 +19,7 @@ void* MMapFile::openFile(const std::string& filename)
 {
 	std::wstring wstrFileName(filename.begin(), filename.end());
 	const wchar_t* pwcFileName = wstrFileName.c_str();
-	m_hFile = CreateFile(pwcFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	m_hFile = CreateFile(pwcFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	if (m_hFile == INVALID_HANDLE_VALUE) {
 		std::cerr << "MMapFile::openFile: File \"" << filename << "\" could not be opened." << std::endl;
 		return nullptr;
