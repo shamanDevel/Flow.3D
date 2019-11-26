@@ -56,7 +56,7 @@ bool FileSliceLoader::openFile(const std::string& filename, size_t bufferSizeByt
 }
 
 float FileSliceLoader::getMemoryAt(int64_t x, int64_t y, int64_t z, int64_t channelIdx) {
-	int64_t filePosBytes = (x + (y + z * m_sizeY) * m_sizeX) * sizeof(float) * m_numChannels;
+	int64_t filePosBytes = ((x + (y + z * m_sizeY) * m_sizeX) * m_numChannels + channelIdx) * sizeof(float);
 	int64_t sliceOffset = filePosBytes % m_readGranularity;
 	int64_t sliceIndex = filePosBytes - sliceOffset;
 
