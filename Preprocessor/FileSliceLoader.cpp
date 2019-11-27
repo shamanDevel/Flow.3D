@@ -1,3 +1,7 @@
+/**
+ * @author Christoph Neuhauser
+ */
+
 #include "FileSliceLoader.h"
 
 FileSliceLoader::~FileSliceLoader() {
