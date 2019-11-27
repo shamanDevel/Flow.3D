@@ -211,6 +211,7 @@ void computeMeasureMinMaxGPU(
     float* cpuData = helperData->cpuData;
     const std::vector<std::vector<float>>& channelData = texCPU.getChannelData();
     size_t n = channelData.at(0).size();
+	#pragma omp parallel for
     for (int i = 0; i < n; i++) {
         for (int c = 0; c < 4; c++) {
             cpuData[i*4 + c] = channelData.at(c).at(i);
