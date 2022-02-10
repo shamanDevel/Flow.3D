@@ -60,28 +60,28 @@
       <Filter>profiler</Filter>
     </ClInclude>
     <ClInclude Include="PackInc.h" />
-    <ClInclude Include="..\..\include\cudaCompress\BitStream.h" />
-    <ClInclude Include="..\..\include\cudaCompress\Encode.h" />
-    <ClInclude Include="..\..\include\cudaCompress\EncodeCommon.h" />
-    <ClInclude Include="..\..\include\cudaCompress\global.h" />
-    <ClInclude Include="..\..\include\cudaCompress\Timing.h" />
-    <ClInclude Include="..\..\include\cudaCompress\util\Bits.h">
+    <ClInclude Include="..\include\cudaCompress\BitStream.h" />
+    <ClInclude Include="..\include\cudaCompress\Encode.h" />
+    <ClInclude Include="..\include\cudaCompress\EncodeCommon.h" />
+    <ClInclude Include="..\include\cudaCompress\global.h" />
+    <ClInclude Include="..\include\cudaCompress\Timing.h" />
+    <ClInclude Include="..\include\cudaCompress\util\Bits.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\cudaCompress\util\DWT.h">
+    <ClInclude Include="..\include\cudaCompress\util\DWT.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\cudaCompress\util\Quantize.h">
+    <ClInclude Include="..\include\cudaCompress\util\Quantize.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\cudaCompress\util\YCoCg.h">
+    <ClInclude Include="..\include\cudaCompress\util\YCoCg.h">
       <Filter>util</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\cudaCompress\util\CudaTimer.h">
+    <ClInclude Include="..\include\cudaCompress\util\CudaTimer.h">
       <Filter>util</Filter>
     </ClInclude>
     <ClInclude Include="InstanceImpl.h" />
-    <ClInclude Include="..\..\include\cudaCompress\Instance.h" />
+    <ClInclude Include="..\include\cudaCompress\Instance.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="tools">
